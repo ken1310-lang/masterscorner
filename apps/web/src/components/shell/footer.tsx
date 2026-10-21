@@ -10,8 +10,16 @@ import { LogoMark } from "./logo-mark";
  */
 const footerColumns: {
   heading: string;
-  links: { to: "/"; label: string }[];
-}[] = [];
+  links: { to: "/" | "/login" | "/dashboard"; label: string }[];
+}[] = [
+  {
+    heading: "For masters",
+    links: [
+      { to: "/login", label: "Sign in" },
+      { to: "/dashboard", label: "Dashboard" },
+    ],
+  },
+];
 
 /** Prototype footer (745-787, footer markup at the end of each shell screen). */
 export function Footer() {

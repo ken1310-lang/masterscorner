@@ -1,6 +1,9 @@
 import { cn } from "@my-better-t-app/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 
+import UserMenu from "@/components/user-menu";
+import { authClient } from "@/lib/auth-client";
+
 import { LogoMark } from "./logo-mark";
 
 /**
@@ -27,6 +30,8 @@ export function SkipLink() {
 
 /** Prototype header (214-306, 2814): sticky bar, logo, nav row, actions. */
 export function Header() {
+  const { data: session } = authClient.useSession();
+
   return (
     <header className="sticky top-0 z-50 border-[rgba(23,32,51,0.08)] border-b bg-[rgba(246,245,242,0.94)] backdrop-blur-[18px] lg:h-[74px]">
       <div className="shell-container flex h-full flex-wrap items-center gap-3 py-2 md:gap-7 md:gap-y-[2px] lg:flex-nowrap lg:py-0">
@@ -53,12 +58,16 @@ export function Header() {
         )}
 
         <div className="ml-auto flex items-center gap-[18px] lg:ml-0">
-          <Link
-            className="hidden text-[#3f4b63] text-sm hover:text-navy md:inline"
-            to="/login"
-          >
-            Sign in
-          </Link>
+          {session ? (
+            <UserMenu />
+          ) : (
+            <Link
+              className="hidden text-[#3f4b63] text-sm hover:text-navy md:inline"
+              to="/login"
+            >
+              Sign in
+            </Link>
+          )}
           {/* `For Masters` becomes a Link when its route ships (Task 15, D6). */}
           <span
             className={cn(
