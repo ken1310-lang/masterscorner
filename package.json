@@ -9,6 +9,7 @@
     ],
     "catalog": {
       "zod": "^4.5.4",
+      "@types/bun": "^1.4.2",
       "@types/node": "^26.4.1",
       "varlock": "1.18.0",
       "@cloudflare/workers-types": "^5.20260906.1",
@@ -38,11 +39,11 @@
     "destroy": "turbo run destroy -F @my-better-t-app/infra --",
     "dev": "turbo run dev",
     "dev:native": "turbo run dev -F native --",
-    "dev:server": "turbo run dev:bare -F hono --",
     "dev:web": "turbo run dev:bare -F web --",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
     "fix": "ultracite fix",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/"
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
+    "test": "turbo run test"
   },
   "dependencies": {
     "zod": "catalog:"
@@ -52,6 +53,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@my-better-t-app/config": "workspace:*",
     "@neon/config": "^1.9.2",
+    "@types/bun": "catalog:",
     "@types/node": "catalog:",
     "turbo": "^2.11.7",
     "typescript": "^6.0.3",
