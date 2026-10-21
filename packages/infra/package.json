@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
-    "dev": "alchemy dev",
     "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy"
+    "deploy:production": "bun run ./src/guard-production.ts && alchemy deploy --stage production",
+    "destroy": "alchemy destroy",
+    "dev": "alchemy dev"
   },
   "dependencies": {
     "zod": "catalog:"

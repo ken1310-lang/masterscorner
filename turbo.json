@@ -37,18 +37,31 @@
       "cache": false,
       "interactive": true
     },
+    "deploy:production": {
+      "cache": false,
+      "interactive": true
+    },
     "destroy": {
       "cache": false,
       "interactive": true
     }
   },
   "globalEnv": [
+    "ALCHEMY_PASSWORD",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_ENDPOINT_URL_S3",
+    "AWS_REGION",
+    "AWS_SECRET_ACCESS_KEY",
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "CI",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "CLOUDFLARE_API_TOKEN",
     "CORS_ORIGIN",
     "DATABASE_URL",
+    "DATABASE_URL_UNPOOLED",
     "EXPO_PUBLIC_SERVER_URL",
+    "NEON_BRANCH",
     "NODE_ENV",
     "VERCEL",
     "VERCEL_ENV",
