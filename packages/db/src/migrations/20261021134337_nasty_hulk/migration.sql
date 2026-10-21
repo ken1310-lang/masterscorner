@@ -1,0 +1,3 @@
+ALTER TABLE "master_location" DROP CONSTRAINT "master_location_name_check", ADD CONSTRAINT "master_location_name_check" CHECK ("name" ~ '[^[:space:]]');--> statement-breakpoint
+ALTER TABLE "master_martial_art" DROP CONSTRAINT "master_martial_art_name_check", ADD CONSTRAINT "master_martial_art_name_check" CHECK ("name" ~ '[^[:space:]]');--> statement-breakpoint
+ALTER TABLE "master_profile" DROP CONSTRAINT "master_profile_display_name_check", ADD CONSTRAINT "master_profile_display_name_check" CHECK ("display_name" ~ '[^[:space:]]');

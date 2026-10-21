@@ -43,6 +43,7 @@ export const masterProfile = pgTable(
     homeCity: text("home_city"),
     introduction: text("introduction"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    /** Row-level edit time; child rows carry their own timestamps. */
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -51,7 +52,7 @@ export const masterProfile = pgTable(
   (table) => [
     check(
       "master_profile_display_name_check",
-      sql`length(btrim(${table.displayName})) > 0`
+      sql`${table.displayName} ~ '[^[:space:]]'`
     ),
     check(
       "master_profile_years_teaching_check",
@@ -80,7 +81,7 @@ export const masterLocation = pgTable(
       table.profileId,
       table.position
     ),
-    check("master_location_name_check", sql`length(btrim(${table.name})) > 0`),
+    check("master_location_name_check", sql`${table.name} ~ '[^[:space:]]'`),
     check("master_location_position_check", sql`${table.position} >= 0`),
   ]
 );
@@ -109,10 +110,7 @@ export const masterMartialArt = pgTable(
       table.profileId,
       table.position
     ),
-    check(
-      "master_martial_art_name_check",
-      sql`length(btrim(${table.name})) > 0`
-    ),
+    check("master_martial_art_name_check", sql`${table.name} ~ '[^[:space:]]'`),
     check("master_martial_art_position_check", sql`${table.position} >= 0`),
   ]
 );

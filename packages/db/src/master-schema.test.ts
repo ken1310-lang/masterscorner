@@ -67,10 +67,7 @@ describe("master profile schema", () => {
     expect(owner?.reference().foreignColumns[0]?.name).toBe("id");
     expect(
       checkSql(masterProfile, "master_profile_display_name_check")
-    ).toContain("btrim");
-    expect(
-      checkSql(masterProfile, "master_profile_display_name_check")
-    ).toContain("> 0");
+    ).toContain("[^[:space:]]");
     expect(
       checkSql(masterProfile, "master_profile_years_teaching_check")
     ).toContain(">= 0");
@@ -115,17 +112,11 @@ describe("master profile schema", () => {
       checkSql(masterMartialArt, "master_martial_art_position_check")
     ).toContain(">= 0");
     expect(checkSql(masterLocation, "master_location_name_check")).toContain(
-      "btrim"
-    );
-    expect(checkSql(masterLocation, "master_location_name_check")).toContain(
-      "> 0"
+      "[^[:space:]]"
     );
     expect(
       checkSql(masterMartialArt, "master_martial_art_name_check")
-    ).toContain("btrim");
-    expect(
-      checkSql(masterMartialArt, "master_martial_art_name_check")
-    ).toContain("> 0");
+    ).toContain("[^[:space:]]");
   });
 
   test("media rejects unknown roles and empty objects", () => {
