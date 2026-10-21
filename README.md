@@ -136,6 +136,12 @@ Bun's automatic env loading is disabled in `bunfig.toml`; the framework integrat
 
 Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
 
+## Master accounts
+
+Every account in the first release is a master. `user.account_type` is `text NOT NULL DEFAULT 'master'` and is typed as `AccountType`; Better Auth declares it under `user.additionalFields` with `input: false`, so a sign-up or update payload cannot set it. The session user carries `accountType`, and `protectedProcedure` is the server-side boundary.
+
+Email verification and password reset are not configured yet: no provider has been chosen and no verified sender domain exists. Sign-up and sign-in work without them; the follow-up PR for Task 4 adds both when a provider is available. See `docs/specs/SPEC-identity.md` §2.2 and §10.
+
 ## Web session cache isolation
 
 Each web router owns its QueryClient and session-cache lifecycle. Successful sign-in, sign-up and sign-out await cancellation of outstanding queries and clear cached queries and mutations before navigating when the user identity changes. The cleanup promise is published before cancellation begins, so even synchronous abort callbacks entering the boundary for the same new account wait for cache removal. The protected-route guard awaits that boundary before rendering a different account.
