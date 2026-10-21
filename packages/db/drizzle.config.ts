@@ -1,5 +1,6 @@
 import { defineConfig } from "drizzle-kit";
 import "varlock/auto-load";
+import generationConfig from "./drizzle.generate.config";
 import { canonicalDatabaseHost } from "./src/connection";
 
 /**
@@ -28,10 +29,7 @@ if (!process.env.DATABASE_URL_UNPOOLED && url) {
 }
 
 export default defineConfig({
-  schema: "./src/schema/index.ts",
-  out: "./src/migrations",
-  dialect: "postgresql",
-  schemaFilter: ["public"],
+  ...generationConfig,
   dbCredentials: {
     url,
   },

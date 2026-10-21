@@ -43,7 +43,7 @@ neon env pull --file apps/server/.env              # DATABASE_URL, DATABASE_URL_
 
 `neon deploy` applies the policy to the **pinned** branch only. Only `production` (the default branch) and `development` are exempt; every other branch is treated as a throwaway with a 7-day TTL and the cheapest compute, and that includes branches that already exist — so a preview cannot outlive its purpose. Changing a branch that already exists needs `neon deploy --update-existing`; without the flag the CLI prints the difference and stops.
 
-`DATABASE_URL` (pooled) serves application traffic; `DATABASE_URL_UNPOOLED` (direct) is what migrations use, because PgBouncer's transaction mode breaks DDL and session state in ways that never mention pooling. When both are set, the migration configuration refuses different endpoints, ports or database names before connecting. Neon pooled/direct hostname aliases count as the same endpoint; credentials may differ. Pull both URLs from the intended branch together. `db:migrate` warns when only the pooled URL is present.
+`DATABASE_URL` (pooled) serves application traffic; `DATABASE_URL_UNPOOLED` (direct) is what database-connected Drizzle commands use. The connecting config (`drizzle.config.ts`) refuses different endpoints, nondefault ports or database names before connecting. Neon pooled/direct hostname aliases and omitted versus explicit PostgreSQL port `5432` count as the same endpoint; credentials may differ. Pull both URLs from the intended branch together. The config warns when only the pooled URL is present.
 
 Apply schema changes like this:
 
@@ -51,6 +51,8 @@ Apply schema changes like this:
 bun run db:generate   # writes SQL into packages/db/src/migrations
 bun run db:migrate    # applies it to the pinned branch
 ```
+
+`db:generate` selects `packages/db/drizzle.generate.config.ts`, which contains only schema and migration-output settings: it loads no environment or database credentials. Generation remains offline even when the shell's connection URLs are stale or mismatched. Migrate, push and studio continue to use the guarded connecting config.
 
 Use versioned migrations, never `db:push`, against a shared branch.
 
@@ -174,7 +176,7 @@ Development values must never reach production, so production has its own entry 
 bun run deploy:production
 ```
 
-`packages/infra/src/deploy-production.ts` rejects forwarded arguments before loading the environment, runs `guard-production.ts`, and only then starts `alchemy deploy --stage production` with the checked environment. The production command accepts no arguments: do not append `--env-file`, `--stage` or another stack path. Export production values in the shell instead. This prevents Alchemy from selecting configuration different from what the guard checked. The guard refuses to continue when:
+`packages/infra/src/deploy-production.ts` rejects forwarded arguments before loading the environment, runs `guard-production.ts`, and only then starts `alchemy deploy --stage production` with the checked environment. The production command accepts no arguments: do not append `--env-file`, `--stage` or another stack path. Export production values in the shell instead. Alchemy 2 beta.83 prefers that inherited environment over its default `.env` fallback; the stack declares no `secrets` override. This guarantee depends on that configuration: changing secret providers or CLI flags requires reviewing the guard against the new value source ([Alchemy precedence](https://alchemy.run/environments/secret-providers/)). The guard refuses to continue when:
 
 - `NODE_ENV` is not `production` — production deploys take their values from the deploy environment, never from a development shell;
 - `NEON_BRANCH` is missing or names a branch other than `production` — the marker `neon env pull` writes is the only signal that says where the values came from, so the guard fails closed instead of guessing;

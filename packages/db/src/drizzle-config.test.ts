@@ -1,8 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawn } from "bun";
+import { fileURLToPath } from "node:url";
+import { Glob, spawn } from "bun";
 
 const pooled =
   "postgresql://app:fixture@ep-production-pooler.ap-southeast-1.aws.neon.tech/app";
@@ -92,6 +99,35 @@ describe("Drizzle migration target", () => {
     }
   );
 
+  test.each([
+    [
+      "postgresql://app:fixture@localhost/app",
+      "postgresql://migrator:fixture@localhost:5432/app",
+    ],
+    [
+      "postgresql://app:fixture@localhost:5432/app",
+      "postgresql://migrator:fixture@localhost/app",
+    ],
+    [pooled, direct.replace("neon.tech", "neon.tech:5432")],
+    [pooled.replace("neon.tech", "neon.tech:5432"), direct],
+  ])(
+    "accepts equivalent default PostgreSQL ports %#",
+    async (databaseUrl, unpooledUrl) => {
+      const result = await loadConfig(databaseUrl, unpooledUrl);
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ url: unpooledUrl });
+    }
+  );
+
+  test("retains nondefault ports for non-Neon targets", async () => {
+    const result = await loadConfig(
+      "postgresql://app:fixture@localhost/app",
+      "postgresql://migrator:fixture@localhost:5433/app"
+    );
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain("DATABASE_URL_UNPOOLED");
+  });
+
   test("does not treat non-Neon pooled-looking hostnames as aliases", async () => {
     const result = await loadConfig(
       "postgresql://app:fixture@ep-example-pooler.example.com/app",
@@ -101,3 +137,65 @@ describe("Drizzle migration target", () => {
     expect(result.stderr).toContain("DATABASE_URL_UNPOOLED");
   });
 });
+
+test("generates migration SQL offline despite mismatched connection URLs", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "mc-drizzle-generate-"));
+  const schemaDirectory = join(directory, "src", "schema");
+  const outputDirectory = join(directory, "src", "migrations");
+  const pgCorePath = fileURLToPath(import.meta.resolve("drizzle-orm/pg-core"));
+  mkdirSync(schemaDirectory, { recursive: true });
+  writeFileSync(
+    join(schemaDirectory, "index.ts"),
+    `import { pgTable, integer } from ${JSON.stringify(pgCorePath)};
+export const offlineFixture = pgTable("offline_generation_fixture", {
+  id: integer("id").primaryKey(),
+});
+`
+  );
+  try {
+    const child = spawn(
+      [
+        process.execPath,
+        "--no-env-file",
+        fileURLToPath(
+          new URL("../node_modules/drizzle-kit/bin.cjs", import.meta.url)
+        ),
+        "generate",
+        "--config",
+        fileURLToPath(
+          new URL("../drizzle.generate.config.ts", import.meta.url)
+        ),
+      ],
+      {
+        cwd: directory,
+        env: {
+          ...process.env,
+          DATABASE_URL: pooled,
+          DATABASE_URL_UNPOOLED: direct.replace(
+            "ep-production.",
+            "ep-development."
+          ),
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      }
+    );
+    const [exitCode, stdout, stderr] = await Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    expect({ exitCode, stdout, stderr }).toMatchObject({ exitCode: 0 });
+    const migrations = [
+      ...new Glob("**/*.sql").scanSync({
+        cwd: outputDirectory,
+        absolute: true,
+      }),
+    ];
+    const sql = migrations.map((path) => readFileSync(path, "utf8")).join("\n");
+    expect(sql).toContain('CREATE TABLE "offline_generation_fixture"');
+    expect(sql).toContain('"id" integer PRIMARY KEY');
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+}, 30_000);

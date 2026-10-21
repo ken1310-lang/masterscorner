@@ -107,6 +107,34 @@ describe("assertProductionTarget", () => {
     ).toThrow(DATABASE_REFUSAL);
   });
 
+  test("refuses the development endpoint when only one URL spells the default port", () => {
+    const implicitPort =
+      "postgresql://dev:fixture@ep-development-pooler.ap-southeast-1.aws.neon.tech/db";
+    const explicitPort =
+      "postgresql://deploy:fixture@ep-development.ap-southeast-1.aws.neon.tech:5432/another";
+    for (const [databaseUrl, developmentUrl] of [
+      [explicitPort, implicitPort],
+      [implicitPort, explicitPort],
+    ]) {
+      expect(() =>
+        assertProductionTarget(
+          target({ databaseUrl, developmentDatabaseUrl: developmentUrl })
+        )
+      ).toThrow(DEVELOPMENT_DATABASE_REFUSAL);
+    }
+  });
+
+  test("keeps a nondefault port distinct from the development endpoint", () => {
+    expect(() =>
+      assertProductionTarget(
+        target({
+          databaseUrl:
+            "postgresql://deploy:fixture@ep-development.ap-southeast-1.aws.neon.tech:5433/db",
+        })
+      )
+    ).not.toThrow();
+  });
+
   test("refuses a deploy that reuses the development secret or origin", () => {
     expect(() =>
       assertProductionTarget(
