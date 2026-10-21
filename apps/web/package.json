@@ -7,7 +7,8 @@
     "check-types": "vite build && tsc --noEmit",
     "dev:bare": "vite dev",
     "env:generate": "varlock codegen",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "test": "bun test --pass-with-no-tests"
   },
   "dependencies": {
     "@my-better-t-app/api": "workspace:*",
@@ -37,6 +38,7 @@
     "@tanstack/react-router-devtools": "^1.167.2",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
+    "@types/bun": "catalog:",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",

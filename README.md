@@ -207,11 +207,28 @@ Four things the first rehearsal taught:
 
 Padding `packages/infra/.env` with the same values works too, but that file also feeds `alchemy dev`, so a production database parked there points local development at production.
 
-The `db:*`, `deploy`, `deploy:production` and `destroy` scripts run Turbo tasks marked `interactive: true`. Turbo refuses an interactive task when there is no terminal UI, and `TURBO_UI=true` does not lift that, so run these from a real terminal; a CI job must call the package script directly instead.
+The `db:generate`, `db:push`, `deploy`, `deploy:production` and `destroy` scripts run Turbo tasks marked `interactive: true`. Turbo refuses an interactive task when there is no terminal UI, and `TURBO_UI=true` does not lift that, so run these from a real terminal; a CI job must call the package script directly instead. `db:migrate` is deliberately **not** interactive — `drizzle-kit migrate` never reads stdin — so a CI job can run it through Turbo.
 
 ### Production origins
 
 - Required after the first deploy: set `CORS_ORIGIN` **in the deploy environment** (not in `apps/server/.env`, which holds the development value the guard compares against) to the exact deployed web origin, such as `https://my-better-t-app-web-production-<hash>.masterscorner.workers.dev`, then deploy again. The browser sends `credentials: "include"`, so the API must echo the exact origin with `Access-Control-Allow-Credentials: true`; a placeholder origin answers the preflight but leaves the web app unable to call the API.
+
+## Quality gates and CI
+
+Every pull request runs the same four gates locally and in `.github/workflows/ci.yml`:
+
+| Command | What it checks |
+| --- | --- |
+| `bun run check` | Biome through Ultracite — lint, assist and formatting. Warnings are reported and do not fail the run; errors do. |
+| `bun run check-types` | `tsc --noEmit` per package, plus a web build, which is what generates the route tree. |
+| `bun run build` | Production builds: web (`vite build`) and server (`tsdown`). |
+| `bun run test` | `bun test` in the packages that declare a `test` script — the router contract gate in `packages/api` and the deploy-guard matrix in `packages/infra`. |
+
+The workflow runs on pull requests to `development` and `master`, and on pushes to `development`. It needs **no secrets and no `.env` files**: installing, running the Varlock codegen postinstall, linting, type-checking and building all succeed with nothing set (measured in a clean worktree), and the web build simply inlines no `VITE_SERVER_URL` — CI never deploys that artifact. No test may read a real value.
+
+Tests are `bun:test`, colocated as `*.test.ts` next to the code they cover. Packages without tests yet declare `bun test --pass-with-no-tests`, so dropping a test file into one of them is all it takes to be covered. The gates that need a terminal (`db:generate`, `db:push`, `deploy`, `deploy:production`, `destroy`) are never invoked by CI — Turbo refuses interactive tasks without a TTY.
+
+Requiring this workflow before merging into `development` and `master` is branch protection, which is a repository setting and therefore an owner action.
 
 ## Project Structure
 
@@ -233,10 +250,11 @@ my-better-t-app/
 - `bun run dev`: Start all applications in development mode
 - `bun run build`: Build all applications
 - `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
 - `bun run deploy`: Deploy to the default development stage
 - `bun run deploy:production`: Deploy to production (guarded, see Deployment)
+- `bun run check`: Lint and format check (Biome through Ultracite)
 - `bun run check-types`: Check TypeScript types across all apps
+- `bun run test`: Run the package test suites
 - `bun run dev:native`: Start the React Native/Expo development server
 - `bun run db:push`: Push schema changes to database
 - `bun run db:generate`: Generate database client/types

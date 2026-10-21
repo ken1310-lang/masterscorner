@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [development, master]
+  push:
+    branches: [development]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: check, check-types, build, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # turbo.json asks for the TUI; CI has no terminal, so the plain stream is
+      # the readable form. Interactive tasks (db:*, deploy*, destroy) are never
+      # invoked here — turbo refuses them without a TTY.
+      TURBO_UI: stream
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Mirrors `packageManager` in package.json.
+          bun-version: 1.4.2
+
+      # No secrets are needed: the Varlock codegen postinstall succeeds with no
+      # environment at all, and no test reads a real value (README, Quality gates).
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint and format
+        run: bun run check
+
+      - name: Types
+        run: bun run check-types
+
+      - name: Build
+        run: bun run build
+
+      - name: Test
+        run: bun run test
