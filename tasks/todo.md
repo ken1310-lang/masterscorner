@@ -66,7 +66,7 @@ One task = one pull request. A task is done only when its verification column pa
 
 ## Phase 1 — Identity
 
-### [ ] 4. Master account and auth
+### [~] 4. Master account and auth
 
 - **Description:** Master account creation with an account type on the user record, sign-up and sign-in through Better Auth, password reset, and the email-verification configuration (PRD §15.2). Email delivery depends on the single open decision (the provider, `tasks/plan.md` §Open Questions): if it is not settled for this PR, ship sign-up and sign-in, and add verification and reset in the follow-up PR for this task.
 - **Acceptance:** a new account is created with account type `master`; sessions survive reload; a protected procedure returns `UNAUTHORIZED` without a session and the session user id with one; password reset works end to end.
@@ -74,11 +74,13 @@ One task = one pull request. A task is done only when its verification column pa
 - **Deps:** 1, 2
 - **Files:** `packages/auth/src/index.ts`, `packages/db/src/schema/auth.ts`, `packages/api/src/routers/*.ts`, `apps/server/src/index.ts`
 - **Scope:** Medium
+- **Status (2026-10-21): account type and the session boundary done on `pr/4-identity`; email flows deferred by the owner.** `user.account_type` is `text NOT NULL DEFAULT 'master'`, typed `AccountType`, and `user.additionalFields.accountType` is server-owned (`input: false`, `defaultValue: "master"`), so a forged sign-up payload cannot set it. Migration `20261021120119_identity_account_type` applied to the development branch; re-generating reports "No schema changes". Verified on the running development stack: sign-up with `"accountType": "admin"` returned `master`; sign-in and `get-session` returned `master`; `privateData` returned the record with the session cookie and `401 UNAUTHORIZED` without one; the existing `shell-probe@example.com` row was backfilled to `master`; the Task 4 probe account was deleted. Gates: `check` 0 errors / 22 warnings, `check-types` 8/8, `build` 2/2, `test` 5/5 (52 tests). **Deferred half:** password reset and email verification wait for a provider and a verified sender domain (the account has no Cloudflare zone yet); the owner chose the deferral on 2026-10-21 and the follow-up PR for this task owns them. No stub or fake sender ships. Task 5 (auth screens, guard, console shell) remains.
 
 ### [ ] 5. Auth screens and route guards
 
 - **Description:** Sign-up, sign-in and password-reset screens ported from the prototype's auth layout, plus the protected console shell (PRD §15, deviation D7: the label is Email, not Email or mobile).
 - **Acceptance:** a master can sign up, sign in and reset a password from the UI; unauthenticated visits to `/dashboard*` redirect to sign-in and return afterwards; console navigation shows Overview, Profile, Classes and Pro Site only.
+- **Deferred:** the password-reset screen ships with the Task 4 email follow-up (`docs/specs/SPEC-identity.md` §2.2); Task 5 ships sign-up and sign-in only.
 - **Verify:** browser walkthrough of the three screens and the redirect both ways; empty-state console renders without error.
 - **Deps:** 4
 - **Files:** `apps/web/src/routes/login.tsx`, `apps/web/src/routes/signup.tsx`, `apps/web/src/routes/_auth/route.tsx`, `apps/web/src/routes/_auth/dashboard/*`, `apps/web/src/lib/auth-client.ts`

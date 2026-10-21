@@ -9,7 +9,11 @@ import { appRouter } from "./index";
  */
 const session = {
   session: { id: "session_1" },
-  user: { id: "user_1", email: "master@example.com" },
+  user: {
+    id: "user_1",
+    email: "master@example.com",
+    accountType: "master",
+  },
 };
 
 const anonymous = appRouter.createCaller({
