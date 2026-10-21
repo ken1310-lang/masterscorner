@@ -4,10 +4,13 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import { createTRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import Loader from "./components/loader";
 import { ENV } from "./env.public";
+import { authClient } from "./lib/auth-client";
+import { createSessionQueryCache } from "./lib/session-query-cache";
 import { routeTree } from "./routeTree.gen";
 import { TRPCProvider } from "./utils/trpc";
 
@@ -45,6 +48,7 @@ const trpcClient = createTRPCClient<AppRouter>({
 
 export const getRouter = () => {
   const queryClient = createQueryClient();
+  const sessionQueries = createSessionQueryCache(queryClient);
   const trpc = createTRPCOptionsProxy({
     client: trpcClient,
     queryClient,
@@ -54,14 +58,27 @@ export const getRouter = () => {
     routeTree,
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    context: { trpc, queryClient },
+    context: { trpc, queryClient, sessionQueries },
     defaultPendingComponent: () => <Loader />,
     defaultNotFoundComponent: () => <div>Not Found</div>,
-    Wrap: ({ children }) => (
-      <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
-        {children}
-      </TRPCProvider>
-    ),
+    Wrap: ({ children }) => {
+      useEffect(
+        () =>
+          authClient.$store.atoms.session?.subscribe((session) => {
+            const cleanup = sessionQueries.observeSession(session);
+            if (cleanup) {
+              cleanup.then(() => router.invalidate());
+            }
+          }),
+        []
+      );
+
+      return (
+        <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
+          {children}
+        </TRPCProvider>
+      );
+    },
   });
 
   setupRouterSsrQueryIntegration({

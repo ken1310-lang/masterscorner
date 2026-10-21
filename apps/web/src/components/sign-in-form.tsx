@@ -2,7 +2,7 @@ import { Button } from "@my-better-t-app/ui/components/button";
 import { Input } from "@my-better-t-app/ui/components/input";
 import { Label } from "@my-better-t-app/ui/components/label";
 import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -19,6 +19,7 @@ export default function SignInForm({
     from: "/",
   });
   const { isPending } = authClient.useSession();
+  const { sessionQueries } = useRouter().options.context;
 
   const form = useForm({
     defaultValues: {
@@ -32,8 +33,9 @@ export default function SignInForm({
           password: value.password,
         },
         {
-          onSuccess: () => {
-            navigate({
+          onSuccess: async ({ data }) => {
+            await sessionQueries.setIdentity(data.user.id);
+            await navigate({
               to: "/dashboard",
             });
             toast.success("Sign in successful");

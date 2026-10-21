@@ -134,6 +134,14 @@ Bun's automatic env loading is disabled in `bunfig.toml`; the framework integrat
 
 Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
 
+## Web session cache isolation
+
+Each web router owns its QueryClient and session-cache lifecycle. Successful sign-in, sign-up and sign-out await cancellation of outstanding queries and clear cached queries and mutations before navigating when the user identity changes. The protected-route guard applies the same boundary before rendering a different account.
+
+A client-side Better Auth session subscription also handles session loss and account changes outside those buttons, then revalidates routes. Refreshing the same account does not clear its cache. Cleanup intentionally clears the whole client cache rather than relying on every protected query being tagged correctly; public data refetches as needed. SSR requests keep separate clients and do not install the browser subscription.
+
+`apps/web/src/lib/session-query-cache.test.ts` covers account transitions and late responses, including fetchers that ignore abort signals.
+
 ## Deployment
 
 ### Alchemy
