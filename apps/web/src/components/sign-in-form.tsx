@@ -1,25 +1,22 @@
 import { Button } from "@my-better-t-app/ui/components/button";
-import { Input } from "@my-better-t-app/ui/components/input";
-import { Label } from "@my-better-t-app/ui/components/label";
 import { useForm } from "@tanstack/react-form";
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { safeRedirectPath } from "@/lib/auth-redirect";
 
+import { AuthField } from "./auth/auth-field";
 import Loader from "./loader";
 
-export default function SignInForm({
-  onSwitchToSignUp,
-}: {
-  onSwitchToSignUp: () => void;
-}) {
-  const navigate = useNavigate({
-    from: "/",
-  });
+export default function SignInForm({ redirect }: { redirect?: string }) {
+  const navigate = useNavigate();
   const { isPending } = authClient.useSession();
   const { sessionQueries } = useRouter().options.context;
+  const [formError, setFormError] = useState<string | null>(null);
+  const destination = safeRedirectPath(redirect);
 
   const form = useForm({
     defaultValues: {
@@ -27,6 +24,7 @@ export default function SignInForm({
       password: "",
     },
     onSubmit: async ({ value }) => {
+      setFormError(null);
       await authClient.signIn.email(
         {
           email: value.email,
@@ -35,13 +33,11 @@ export default function SignInForm({
         {
           onSuccess: async ({ data }) => {
             await sessionQueries.setIdentity(data.user.id);
-            await navigate({
-              to: "/dashboard",
-            });
-            toast.success("Sign in successful");
+            toast.success("Signed in");
+            await navigate({ href: destination ?? "/dashboard" });
           },
           onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
+            setFormError(error.error.message || error.error.statusText);
           },
         }
       );
@@ -59,62 +55,48 @@ export default function SignInForm({
   }
 
   return (
-    <div className="mx-auto mt-10 w-full max-w-md p-6">
-      <h1 className="mb-6 text-center font-bold text-3xl">Welcome Back</h1>
-
+    <>
       <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
+        className="mt-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setFormError(null);
           form.handleSubmit();
         }}
       >
-        <div>
+        <div className="space-y-4">
           <form.Field name="email">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  type="email"
-                  value={field.state.value}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p className="text-red-500" key={error?.message}>
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+              <AuthField
+                autoComplete="email"
+                field={field}
+                label="Email"
+                type="email"
+              />
+            )}
+          </form.Field>
+
+          <form.Field name="password">
+            {(field) => (
+              <AuthField
+                autoComplete="current-password"
+                field={field}
+                label="Password"
+                type="password"
+              />
             )}
           </form.Field>
         </div>
 
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  type="password"
-                  value={field.state.value}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p className="text-red-500" key={error?.message}>
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+        {formError ? (
+          <p
+            className="mt-4 rounded-[10px] border border-brand/30 bg-brand/5 p-3 text-brand-strong text-xs"
+            role="alert"
+          >
+            {formError}
+          </p>
+        ) : null}
 
         <form.Subscribe
           selector={(state) => ({
@@ -124,25 +106,35 @@ export default function SignInForm({
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
-              className="w-full"
+              className="mt-6 h-auto w-full rounded-[11px] bg-navy px-3.5 py-[14px] font-black text-sm text-white hover:bg-navy-deep"
               disabled={!canSubmit || isSubmitting}
               type="submit"
             >
-              {isSubmitting ? "Submitting..." : "Sign In"}
+              {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>
           )}
         </form.Subscribe>
       </form>
 
-      <div className="mt-4 text-center">
-        <Button
-          className="text-indigo-600 hover:text-indigo-800"
-          onClick={onSwitchToSignUp}
-          variant="link"
+      <div className="mt-4 space-y-1 text-[12px] text-muted-text">
+        <p>
+          New to MastersCorner?{" "}
+          <Link
+            className="font-extrabold text-navy underline-offset-4 hover:underline"
+            search={{ redirect: destination }}
+            to="/signup"
+          >
+            Create an account
+          </Link>
+          .
+        </p>
+        <Link
+          className="inline-flex min-h-11 items-center font-extrabold text-muted-text underline-offset-4 hover:text-navy hover:underline"
+          to="/"
         >
-          Need an account? Sign Up
-        </Button>
+          ← Back to marketplace
+        </Link>
       </div>
-    </div>
+    </>
   );
 }

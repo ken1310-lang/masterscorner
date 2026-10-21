@@ -119,18 +119,18 @@ The probe account is temporary and is removed after verification; no test depend
 
 ### 5.3 Auth screens (Task 5)
 
-- **Layout.** Two columns `1.05fr .95fr` (1408–1410): navy brand panel with the inverse logo, kicker `Master Portal`, h1 `Manage your presence from one place.`, paragraph; white card `min(440px, 100% - 40px)`, padding 38px, radius 20px, the one shadow (1437–1445). At `md` and below the layout is one column, the brand panel is at least 300px with 30px padding, its h1 is 40px, and the card is `30px auto` (2626–2637). The screen is full height, has the skip link, and no marketplace header or footer.
+- **Layout.** Two columns `1.05fr .95fr` (1408–1410): navy brand panel with the inverse logo, kicker `Master Portal`, h1 `Manage your presence from one place.`, paragraph; white card `min(440px, 100% - 40px)`, padding 38px, radius 20px, the one shadow (1437–1445). At `md` and below the layout is one column, the brand panel is at least 300px with 30px padding, its h1 is 40px, and the card is `30px auto` (2626–2637). The screen is full height, has the skip link, and no marketplace header or footer. The panel paragraph is `Your profile, classes and Pro Site in one console`; the mock's preview sentence is removed.
 - **Sign-in card.** h2 `Sign in`; labels `Email`, `Password` (D7 replaces the mock's `Email or mobile`); submit `Sign in`; a link to `/signup`; the mock's `← Back to marketplace` link. The mock's preview sentences ("This preview login opens the sample master dashboard.", "Preview account. No real credentials required.") are prototype chrome and are removed; the button is not "Open Dashboard".
 - **Sign-up card (no mock screen; design from §7 of the alignment doc).** h2 `Create account`; `Name`, `Email`, `Password`; submit `Create account`; a link back to `/login`. Validation mirrors the current forms: name ≥ 2, valid email, password ≥ 8. Server errors render as `error.error.message`.
 - **One screen state.** `/login` keeps `validateSearch` for `form`, and `/signup` is the canonical sign-up address. The toggle navigates (`/login?form=signup`, `/signup?`), so reload and Back preserve the form; `_auth` and `UserMenu` callers keep `form=signin`.
 - **After auth.** Success clears or establishes the query-cache identity through `sessionQueries.setIdentity` (PR 8's barrier), then navigates to the validated `redirect` or `/dashboard`.
-- **Client typing.** The web auth client adds `inferAdditionalFields<typeof createAuth>()` (the auth package exports the factory type) so `useSession()` and `getSession()` type `accountType`; the runtime payload already carries it.
+- **Client typing.** The web auth client declares `accountType` to `inferAdditionalFields` with `input: false`, so `useSession()` and `getSession()` type it as a string; the runtime payload already carries it. The declaration is client-side only; the server remains the authority.
 
 ### 5.4 Console shell and guard (Task 5)
 
-- **Guard.** `_auth` stays `ssr: false`. Its `beforeLoad` reads `authClient.getSession()`, applies the identity boundary, and on no session throws `redirect({ to: "/login", search: { form: "signin", redirect: <current path+search> } })`. The login screen accepts `redirect` only when it starts with `/` and not `//`; anything else falls back to `/dashboard`. After sign-in/sign-up, the form navigates to that path. The protected outlet stays keyed by user id (PR 8).
-- **Shell.** Sidebar with the inverse logo, the signed-in master's name and initials (the mock's "Pro plan · Verified" block is removed under D2/D4), nav links, `← Marketplace`, and a top bar naming the console and the current screen. Main region has the skip-link target and `tabindex={-1}`.
-- **Nav.** Exactly `Overview` (`/dashboard`), `Profile` (`/dashboard/profile`), `Classes` (`/dashboard/classes`), `Pro Site` (`/dashboard/site`) — D9/C8. The mock's `Leads` is Phase 2 and is not rendered. Every destination exists in Task 5 as a real screen with a truthful empty state; no link points at an unbuilt route and no "coming soon" card substitutes for a screen.
+- **Guard.** `_auth` stays `ssr: false`. Its `beforeLoad` reads `authClient.getSession()`, applies the identity boundary, and on no session throws `redirect({ to: "/login", search: { form: "signin", redirect: <current path+search> } })`. The login screen accepts `redirect` only as an absolute path on this origin (a single leading `/`, no `//` or `\`, including paths that normalize to `//` through dot segments); anything else falls back to `/dashboard`. The router retains an unknown search key even when `validateSearch` drops it, so the screen re-sanitizes the value before rendering links and before navigating. After sign-in/sign-up, the form navigates to that path. The protected outlet stays keyed by user id (PR 8).
+- **Shell.** Sidebar with the inverse logo, the signed-in master's name and initials, and the real account type (`Master account`); the mock's "Pro plan · Verified" block is removed under D2/D4. Nav links, `← Marketplace`, and a top bar naming the console and the current screen. Main region has the skip-link target and `tabindex={-1}`.
+- **Nav.** Exactly `Overview` (`/dashboard`), `Profile` (`/dashboard/profile`), `Classes` (`/dashboard/classes`), `Pro Site` (`/dashboard/site`) — D9/C8. The mock's `Leads` is Phase 2 and is not rendered. Every destination exists in Task 5 as a real screen with a truthful empty state; no link points at an unbuilt route and no "coming soon" card substitutes for a screen. The active state matches the pathname only, so a query string such as `?tab=classes` does not clear the current item.
 - **Empty states.** Overview greets the master by name and shows what the account actually supports (account type, email, a pointer to the profile); no profile views, trial enquiries, booked trials, profile score or "Pro plan". Profile/Classes/Pro Site state that nothing has been created yet and what the next task will add, without controls that do nothing. No fabricated dates, metrics or addresses (C10, §6 of the alignment doc).
 - **Sign-out.** `UserMenu` remains the only sign-out control; it calls `authClient.signOut`, then `sessionQueries.setIdentity(null)`, then navigates to `/` (or `/login`). The Task 3 behaviour is unchanged.
 
@@ -145,17 +145,19 @@ packages/api/src/routers/index.test.ts    # literal assertion + compile-time ses
 apps/web/src/routes/login.tsx             # /login?form=signin|signup (sign-in card)
 apps/web/src/routes/signup.tsx            # /signup (sign-up card; same layout)
 apps/web/src/routes/_auth/route.tsx       # guard + redirect contract
-apps/web/src/routes/_auth/dashboard.tsx   # shell layout (pathless for /dashboard/*)
+apps/web/src/routes/_auth/dashboard/route.tsx
+                                          # console shell for /dashboard/*
 apps/web/src/routes/_auth/dashboard/index.tsx
 apps/web/src/routes/_auth/dashboard/profile.tsx
 apps/web/src/routes/_auth/dashboard/classes.tsx
 apps/web/src/routes/_auth/dashboard/site.tsx
 apps/web/src/components/auth/*            # shared layout, field, submit state
+apps/web/src/components/console/*         # shell, page header, empty state
 README.md                                 # server-owned account type; email deferred
 tasks/todo.md                             # Task 4/5 status and deferral
 ```
 
-The current `_auth/dashboard.tsx` is a leaf route at `/dashboard`; Task 5 turns it into the pathless console layout and moves the overview to `_auth/dashboard/index.tsx`. The route tree is regenerated by `vite build` / `vite dev`; `routeTree.gen.ts` stays gitignored.
+Task 5 replaces the leaf `_auth/dashboard.tsx` with `_auth/dashboard/route.tsx` (the console shell) and moves the overview to `_auth/dashboard/index.tsx`; profile, classes and site are siblings. The route tree is regenerated by `vite build` / `vite dev`; `routeTree.gen.ts` stays gitignored.
 
 ## 7. Testing strategy
 
@@ -165,11 +167,14 @@ The current `_auth/dashboard.tsx` is a leaf route at `/dashboard`; Task 5 turns 
 | Schema | `bun run db:generate` + `bun run db:migrate` | One migration adds `account_type` with `DEFAULT 'master' NOT NULL`; a second generate reports no changes; migrate is clean on development |
 | Runtime | `bun run dev` on the development branch | Sign-up returns a user with `accountType: "master"`; a forged `accountType` is ignored; `get-session` after reload keeps it; tRPC `privateData` with the session cookie returns it; without a cookie it refuses |
 | UI (Task 5) | Browser at 1440, 980, 760, 520 px | Auth layout against 2842/1406–1475/2626–2636; D7 label; no preview copy; keyboard order and skip link; sign-up and sign-in; `/dashboard/profile` → `/login?form=signin&redirect=%2Fdashboard%2Fprofile` → sign-in returns to the profile; console nav is exactly four labels; every destination renders its empty state; sign-out returns to the public site |
-| Repository | `bun run gates` | `check` 0 errors, `check-types` 8/8, `build` 2/2, `test` all pass |
+| Web logic (Task 5) | `bun test` (`apps/web`) | `safeRedirectPath` accepts same-origin absolute paths and drops external, protocol-relative, backslash and normalized-`//` targets; login search defaults to sign-in and preserves a valid redirect with its query and hash; signup search drops invalid ones |
+| Repository | `bun run gates` | `check` passes, `check-types` 8/8, `build` 2/2, `test` 5/5 (60 tests: API 4, db 16, infra 25, web 15) |
 
 There is no database in the test seam: the API tests use `createCaller` with a stub DB, and the web tests use real `QueryClient`s without a server. Sign-up is Better Auth's integration behaviour, so it is proven at runtime on the development branch, not with a mock adapter. The permanent suite pins the field's presence and type; it does not re-test Better Auth's `input: false` parser. No permanent test depends on a real secret or the network.
 
-## 8. Verification for Task 4 (the PR this spec unblocks)
+## 8. Verification
+
+### Task 4 (PR 9)
 
 1. Generate and review the migration; apply it to the development branch; re-run generate and confirm "No schema changes".
 2. Sign up a fresh account on the running development stack. The response and `GET /api/auth/get-session` both return `accountType: "master"`; the row's `account_type` is `master` (checked through the session, and through a one-off query if a direct read is available).
@@ -178,7 +183,14 @@ There is no database in the test seam: the API tests use `createCaller` with a s
 5. Call `privateData` with the session cookie → the record with `accountType`; without the cookie → `UNAUTHORIZED`.
 6. Run `bun run gates`; remove the probe account; confirm the diff contains only §3's files and no secret.
 
-Task 5 repeats its own list in §7 (UI row) against the dev stack at four widths.
+### Task 5 (PR 10)
+
+1. On the development stack, `/login` and `/signup` render at 1440/980/760/520 with the `Email` label (D7), no preview copy, and no marketplace header or footer; Tab starts at the skip link, then the logo, fields, submit and switch/back links, and Enter on the skip link focuses `#main`.
+2. Signed out, `/dashboard` lands on `/login?form=signin&redirect=%2Fdashboard`; creating an account from that screen returns to `/dashboard`.
+3. An external or backslash `redirect` is dropped from the signup link and from post-auth navigation, including dot-segment inputs that normalize to `//`; a valid `/dashboard/profile` survives the signup/sign-in toggle.
+4. Sign-in works; a duplicate email renders `User already exists. Use another email.`; sign-out returns to `/`, clears the session cookie, and `/dashboard` redirects again.
+5. The console nav has exactly four labels with the active item and matching top-bar title; each destination renders its empty state; no horizontal overflow at 520; no dead links.
+6. Run `bun run gates`; delete the probe account.
 
 ## 9. Success criteria
 
@@ -188,7 +200,7 @@ Task 5 repeats its own list in §7 (UI row) against the dev stack at four widths
 4. **Task 4.** `db:generate` produces exactly one reviewable migration, `db:migrate` applies it cleanly to development, and a second generate reports no changes.
 5. **Task 4.** `bun run gates` passes; no email provider, verification, reset or email env var is added; the deferral is recorded in `tasks/todo.md`.
 6. **Task 5.** `/login` and `/signup` match the mock's auth layout at 1440/980/760/520 with D7 applied and no preview copy.
-7. **Task 5.** An unauthenticated `/dashboard/profile` visit lands on `/login?form=signin`, and a successful sign-in returns to `/dashboard/profile`; an external `redirect` value is refused.
+7. **Task 5.** An unauthenticated `/dashboard/profile` visit lands on `/login?form=signin&redirect=%2Fdashboard%2Fprofile`, and a successful sign-in returns to `/dashboard/profile`; an external, backslash or normalized protocol-relative `redirect` is dropped from links and navigation.
 8. **Task 5.** The console nav is exactly Overview, Profile, Classes and Pro Site; each destination renders a truthful empty state; no plan, verification, fabricated metric or dead link appears.
 9. **Task 5.** Sign-out ends the session, clears the account's cached data and returns to the public site.
 
