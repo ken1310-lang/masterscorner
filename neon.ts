@@ -21,14 +21,16 @@ export default defineConfig({
     media: { access: "public_read" },
   },
   branch: (branch) => {
-    if (branch.isDefault || branch.exists || LONG_LIVED_BRANCHES[branch.name]) {
+    if (branch.isDefault || LONG_LIVED_BRANCHES[branch.name]) {
       // `production` is the default branch; `development` is created once by
       // `neon checkout development --create`. Neither is a throwaway, so
       // neither gets a TTL or a compute profile from this policy.
       return {};
     }
-    // Anything else is a throwaway branch (preview, CI): expire it and keep it
-    // on the cheapest compute.
+    // Everything else is a throwaway (a preview for a risky change, CI), and
+    // that includes branches that already exist: leaving `branch.exists` out of
+    // the exemption above is deliberate, because a branch created before
+    // `neon deploy` would otherwise keep no expiry and stay forever.
     return {
       ttl: "7d",
       postgres: {

@@ -2,11 +2,12 @@
  * Production deploy guard — see docs/specs/SPEC-platform.md §7.
  *
  * Nothing about a Postgres connection string says which Neon branch it belongs
- * to, so this guard does not try to recognise "a development database". It
- * compares the deploy target against the development value already on disk
- * (`apps/server/.env`) and refuses to continue when they are the same database.
- * That is the failure it exists for: a deployment that carries development
- * credentials into production.
+ * to, so the authoritative signal is the `NEON_BRANCH` marker that
+ * `neon env pull` writes next to it: this guard refuses to deploy without it,
+ * and refuses any value other than `production`. Comparing against the
+ * development value on disk (`apps/server/.env`) is a second, weaker check for
+ * the case where a deploy environment carries the marker by accident — it
+ * cannot answer on its own, because that file may not exist at all.
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -42,9 +43,10 @@ export function assertProductionTarget(target: DeployTarget): void {
         "Production deploys take their values from the deploy environment only, never from a development shell."
     );
   }
-  if (target.neonBranch && target.neonBranch !== "production") {
+  if (target.neonBranch !== "production") {
     throw new Error(
-      `Refusing to deploy: NEON_BRANCH is "${target.neonBranch}", not "production", so this environment is holding another branch's values. Run \`neon env pull\` on the production branch, or unset the variable in this shell.`
+      `Refusing to deploy: NEON_BRANCH is ${target.neonBranch ? `"${target.neonBranch}"` : "unset"}, expected "production". ` +
+        "The marker is what proves which Neon branch these values came from — run `neon env pull` on the production branch in this shell, or unset the variable if it is leaking in from a development environment."
     );
   }
   if (!target.databaseUrl) {

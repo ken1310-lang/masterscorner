@@ -14,6 +14,15 @@ export const server = Cloudflare.Worker("server", {
     CORS_ORIGIN: Config.String("CORS_ORIGIN"),
     BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
     BETTER_AUTH_URL: Cloudflare.Worker.URL,
+    // The branch's media bucket (SPEC-platform §7): the same four names the
+    // development branch supplies locally, bound as deploy-time secrets so the
+    // deployed Worker can read the objects it uploads. The guard already
+    // requires the bucket endpoint, so a production deploy without them is a
+    // mistake, not a configuration.
+    AWS_ACCESS_KEY_ID: Config.Redacted("AWS_ACCESS_KEY_ID"),
+    AWS_ENDPOINT_URL_S3: Config.String("AWS_ENDPOINT_URL_S3"),
+    AWS_REGION: Config.String("AWS_REGION"),
+    AWS_SECRET_ACCESS_KEY: Config.Redacted("AWS_SECRET_ACCESS_KEY"),
   },
   dev: {
     port: 3000,
