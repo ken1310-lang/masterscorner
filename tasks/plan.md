@@ -44,7 +44,7 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Checkpoint A
 
-- [ ] API and web run against the development branch; CI is green on a throwaway PR.
+- [ ] API and web run against the development branch; CI is green on a throwaway PR. **CI green is postponed to `Last` in `tasks/todo.md`:** the workflow is merged and the pipeline was rehearsed green in a clean worktree, but GitHub refuses to start a job for this account — "your account is locked due to a billing issue" — and the owner is fixing that later. Until then `bun run gates` is the merge gate and branch protection is deliberately off.
 - [ ] The production stack deploys from `master` as an empty rehearsal: both Workers serve their public URLs and the custom domain resolves.
 - [ ] Review with owner before feature work starts.
 
