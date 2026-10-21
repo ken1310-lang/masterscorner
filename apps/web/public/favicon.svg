@@ -1,0 +1,28 @@
+<svg
+  aria-hidden="true"
+  height="31"
+  viewBox="0 0 31 31"
+  width="31"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect fill="#0b132b" height="31" rx="9" width="31" />
+  <rect
+    fill="#f6f5f2"
+    height="16"
+    rx="3"
+    transform="rotate(-24 10 16)"
+    width="4"
+    x="8"
+    y="8"
+  />
+  <rect
+    fill="#f6f5f2"
+    height="16"
+    rx="3"
+    transform="rotate(24 21 16)"
+    width="4"
+    x="19"
+    y="8"
+  />
+  <rect fill="#d14b5a" height="13" rx="3" width="4" x="14" y="10" />
+</svg>
