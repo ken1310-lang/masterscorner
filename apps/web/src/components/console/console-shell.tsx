@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { SkipLink } from "@/components/shell/header";
 import { LogoMark } from "@/components/shell/logo-mark";
 import UserMenu from "@/components/user-menu";
+import { accountTypeLabel } from "@/lib/account-type";
 
 interface ConsoleUser {
   accountType: string;
@@ -56,8 +57,7 @@ export function ConsoleShell({ children, user }: ConsoleShellProps) {
       state.location.pathname.replace(TRAILING_SLASHES, "") || "/",
   });
   const title = screenTitles[pathname] ?? "Console";
-  const accountLabel =
-    user.accountType === "master" ? "Master account" : "Account";
+  const accountLabel = accountTypeLabel(user.accountType);
 
   return (
     <>
@@ -91,7 +91,7 @@ export function ConsoleShell({ children, user }: ConsoleShellProps) {
           >
             {navItems.map((item) => (
               <Link
-                activeOptions={{ exact: true }}
+                activeOptions={{ exact: true, includeSearch: false }}
                 activeProps={{
                   className: "bg-white/[.08] text-white",
                 }}

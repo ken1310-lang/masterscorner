@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { ConsolePageHeader } from "@/components/console/page-header";
+import { accountTypeLabel } from "@/lib/account-type";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: Overview,
@@ -14,8 +15,7 @@ function Overview() {
     return null;
   }
 
-  const accountLabel =
-    user.accountType === "master" ? "Master account" : "Account";
+  const accountLabel = accountTypeLabel(user.accountType);
 
   return (
     <>

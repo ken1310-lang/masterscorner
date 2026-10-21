@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import z from "zod";
 
 import { authClient } from "@/lib/auth-client";
+import { safeRedirectPath } from "@/lib/auth-redirect";
 
 import { AuthField } from "./auth/auth-field";
 import Loader from "./loader";
@@ -15,6 +16,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
   const { isPending } = authClient.useSession();
   const { sessionQueries } = useRouter().options.context;
   const [formError, setFormError] = useState<string | null>(null);
+  const destination = safeRedirectPath(redirect);
 
   const form = useForm({
     defaultValues: {
@@ -32,7 +34,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
           onSuccess: async ({ data }) => {
             await sessionQueries.setIdentity(data.user.id);
             toast.success("Signed in");
-            await navigate({ href: redirect ?? "/dashboard" });
+            await navigate({ href: destination ?? "/dashboard" });
           },
           onError: (error) => {
             setFormError(error.error.message || error.error.statusText);
@@ -59,6 +61,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          setFormError(null);
           form.handleSubmit();
         }}
       >
@@ -118,7 +121,7 @@ export default function SignInForm({ redirect }: { redirect?: string }) {
           New to MastersCorner?{" "}
           <Link
             className="font-extrabold text-navy underline-offset-4 hover:underline"
-            search={{ redirect }}
+            search={{ redirect: destination }}
             to="/signup"
           >
             Create an account

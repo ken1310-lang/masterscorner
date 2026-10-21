@@ -52,6 +52,12 @@ describe("auth redirect", () => {
     expect(
       parseLoginSearch({ form: "signin", redirect: "/dashboard" })
     ).toEqual({ form: "signin", redirect: "/dashboard" });
+    expect(
+      parseLoginSearch({ redirect: "/dashboard/profile?tab=classes#top" })
+    ).toEqual({
+      form: "signin",
+      redirect: "/dashboard/profile?tab=classes#top",
+    });
   });
 
   test("login renders sign-up only for form=signup", () => {
@@ -60,12 +66,24 @@ describe("auth redirect", () => {
     expect(
       parseLoginSearch({ form: "signup", redirect: "//evil.example" })
     ).toEqual({ form: "signup" });
+    expect(
+      parseLoginSearch({
+        form: "signup",
+        redirect: "/dashboard?tab=classes#top",
+      })
+    ).toEqual({
+      form: "signup",
+      redirect: "/dashboard?tab=classes#top",
+    });
   });
 
   test("signup keeps only a valid redirect", () => {
     expect(parseSignupSearch({ redirect: "/dashboard/classes" })).toEqual({
       redirect: "/dashboard/classes",
     });
+    expect(
+      parseSignupSearch({ redirect: "/dashboard?tab=classes#top" })
+    ).toEqual({ redirect: "/dashboard?tab=classes#top" });
     expect(parseSignupSearch({ redirect: "https://evil.example" })).toEqual({});
   });
 });
