@@ -43,7 +43,10 @@ export const masterProfile = pgTable(
     homeCity: text("home_city"),
     introduction: text("introduction"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    /** Row-level edit time; child rows carry their own timestamps. */
+    /**
+     * Profile activity time. Child triggers bump it on location, martial-art
+     * and media inserts, updates and deletes; direct edits bump it here.
+     */
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
