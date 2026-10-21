@@ -11,6 +11,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { canonicalDatabaseHost } from "@my-better-t-app/db/connection";
 
 /** `KEY=value`, with optional `export` and optional quotes around the value. */
 const DOTENV_ENTRY = /^\s*(?:export\s+)?([A-Za-z0-9_]+)\s*=\s*(.*)$/;
@@ -82,7 +83,7 @@ export function assertProductionTarget(target: DeployTarget): void {
   }
 }
 
-/** True when both URLs name the same host; credentials differ between branches. */
+/** True for the same endpoint (including Neon pooler aliases), regardless of database path. */
 export function isSameDatabase(
   a: string | undefined,
   b: string | undefined
@@ -92,7 +93,7 @@ export function isSameDatabase(
   }
   const parse = (url: string) => {
     try {
-      return new URL(url).host;
+      return canonicalDatabaseHost(new URL(url));
     } catch {
       return url;
     }

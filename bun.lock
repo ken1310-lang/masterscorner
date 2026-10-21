@@ -194,6 +194,7 @@
         "@effect/platform-bun": "4.0.5",
         "@effect/platform-node": "4.0.5",
         "@my-better-t-app/config": "workspace:*",
+        "@my-better-t-app/db": "workspace:*",
         "@types/bun": "catalog:",
         "alchemy": "2.0.0-beta.83",
         "effect": "4.0.5",
