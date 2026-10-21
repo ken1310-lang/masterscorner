@@ -77,7 +77,7 @@ One task = one pull request. A task is done only when its verification column pa
 - **Status (2026-10-21): account type and the session boundary done on `pr/4-identity`; email flows deferred by the owner.** `user.account_type` is `text NOT NULL DEFAULT 'master'`, typed `AccountType`, and `user.additionalFields.accountType` is server-owned (`input: false`, `defaultValue: DEFAULT_ACCOUNT_TYPE`), so a forged sign-up payload cannot set it. Migration `20261021120119_identity_account_type` applied to the development branch; re-generating reports "No schema changes". Verified on the running development stack: sign-up with `"accountType": "admin"` returned `master`; sign-in and `get-session` returned `master`; `privateData` returned the record with the session cookie and `401 UNAUTHORIZED` without one; the existing `shell-probe@example.com` row was backfilled to `master`; the Task 4 probe account was deleted. Gates: `check` 0 errors / 22 warnings, `check-types` 8/8, `build` 2/2, `test` 5/5 (53 tests). **Deferred half:** password reset and email verification wait for a provider and a verified sender domain (the account has no Cloudflare zone yet); the owner chose the deferral on 2026-10-21 and the follow-up PR for this task owns them. No stub or fake sender ships. Task 5 (auth screens, guard, console shell) remains.
 - **Review follow-up (2026-10-21):** `DEFAULT_ACCOUNT_TYPE` is now shared by the column default and Better Auth's `defaultValue`; the contract assertion names the literal and a compile-time check pins `Session["user"]["accountType"]` to `AccountType`; the web client's `inferAdditionalFields` typing is recorded for Task 5. Tests are 53 (API 4, db 16, infra 25, web 8).
 
-### [ ] 5. Auth screens and route guards
+### [x] 5. Auth screens and route guards
 
 - **Description:** Sign-up, sign-in and password-reset screens ported from the prototype's auth layout, plus the protected console shell (PRD §15, deviation D7: the label is Email, not Email or mobile).
 - **Acceptance:** a master can sign up, sign in and reset a password from the UI; unauthenticated visits to `/dashboard*` redirect to sign-in and return afterwards; console navigation shows Overview, Profile, Classes and Pro Site only.
@@ -86,10 +86,11 @@ One task = one pull request. A task is done only when its verification column pa
 - **Deps:** 4
 - **Files:** `apps/web/src/routes/login.tsx`, `apps/web/src/routes/signup.tsx`, `apps/web/src/routes/_auth/route.tsx`, `apps/web/src/routes/_auth/dashboard/*`, `apps/web/src/lib/auth-client.ts`
 - **Scope:** Medium
+- **Status (2026-10-21): done on `pr/5-auth-screens` (stacked on `pr/4-identity`).** `/login` and canonical `/signup` use the prototype's auth layout; the guard carries the current path and the forms return to it. The web client declares `accountType` to `inferAdditionalFields` (`input: false`), so the console labels the real account type. Console nav is exactly Overview, Profile, Classes and Pro Site; each destination renders a truthful empty state, and `UserMenu` is the only sign-out control. Browser walkthrough at 1440/980/760/520: auth layout and keyboard order, sign-up, sign-in, duplicate-email error, external/backslash redirect dropped, guard round trip, active nav/top-bar title, no overflow at 520; sign-out returns to `/` and the session cookie is cleared. Gates: `check` passes, `check-types` 8/8, `build` 2/2, `test` 5/5 (59 tests: API 4, db 16, infra 25, web 14). The probe account was deleted. Password reset remains deferred with Task 4's email follow-up.
 
 ### Checkpoint B
 
-- [ ] A master can create an account and reach an empty console; no console link points at an unbuilt screen.
+- [x] A master can create an account and reach an empty console; no console link points at an unbuilt screen.
 
 ## Phase 2 — Master profile and media
 
