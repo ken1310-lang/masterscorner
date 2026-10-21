@@ -17,7 +17,9 @@ export function safeRedirectPath(value: unknown): string | undefined {
   }
 
   const url = new URL(value, LOCAL_ORIGIN);
-  if (url.origin !== LOCAL_ORIGIN) {
+  // Dot segments can normalize into a leading `//` (e.g. `/..//evil.com`),
+  // which a later href consumer would treat as another origin.
+  if (url.origin !== LOCAL_ORIGIN || url.pathname.startsWith("//")) {
     return undefined;
   }
   return `${url.pathname}${url.search}${url.hash}`;

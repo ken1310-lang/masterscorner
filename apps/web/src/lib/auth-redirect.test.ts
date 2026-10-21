@@ -29,6 +29,18 @@ describe("auth redirect", () => {
     }
   });
 
+  test("drops paths that normalize into a protocol-relative path", () => {
+    for (const value of [
+      "/..//evil.example",
+      "/%2e%2e//evil.example",
+      "/.%2e//evil.example",
+      "/a/..//evil.example",
+      "/\t/evil.example",
+    ]) {
+      expect(safeRedirectPath(value)).toBeUndefined();
+    }
+  });
+
   test("drops values that are not strings", () => {
     expect(safeRedirectPath(undefined)).toBeUndefined();
     expect(safeRedirectPath(null)).toBeUndefined();
