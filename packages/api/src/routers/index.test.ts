@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import type { Session } from "@my-better-t-app/auth";
+import type { AccountType } from "@my-better-t-app/db/schema/auth";
+
 import { appRouter } from "./index";
+
+/** Compile-time equality: fails the typecheck if the session loses the field. */
+type Equal<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 
 /**
  * The contract gate: `healthCheck` is public, `privateData` is not, and a
@@ -40,7 +46,19 @@ describe("appRouter", () => {
   test("privateData answers a signed-in caller with their own record", async () => {
     await expect(signedIn.privateData()).resolves.toMatchObject({
       message: "This is private",
-      user: session.user,
+      user: {
+        id: "user_1",
+        email: "master@example.com",
+        accountType: "master",
+      },
     });
+  });
+
+  test("the session type carries the account type", () => {
+    const accountTypeIsMaster: Equal<
+      Session["user"]["accountType"],
+      AccountType
+    > = true;
+    expect(accountTypeIsMaster).toBe(true);
   });
 });

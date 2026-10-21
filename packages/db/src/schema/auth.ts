@@ -2,11 +2,12 @@ import { defineRelationsPart } from "drizzle-orm";
 import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 /**
- * The first release has one account type (ADR-002). Keep the list here so the
- * database default and Better Auth's server-owned field can share it.
+ * The first release has one account type (ADR-002). The default is named so
+ * reordering the list cannot silently change what new accounts receive.
  */
 export const ACCOUNT_TYPES = ["master"] as const;
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
+export const DEFAULT_ACCOUNT_TYPE: AccountType = "master";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -16,7 +17,7 @@ export const user = pgTable("user", {
   image: text("image"),
   accountType: text("account_type")
     .$type<AccountType>()
-    .default("master")
+    .default(DEFAULT_ACCOUNT_TYPE)
     .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

@@ -33,7 +33,7 @@ export function createAuth(
         accountType: {
           type: [...schema.ACCOUNT_TYPES],
           required: true,
-          defaultValue: schema.ACCOUNT_TYPES[0],
+          defaultValue: schema.DEFAULT_ACCOUNT_TYPE,
           input: false,
         },
       },

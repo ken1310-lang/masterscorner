@@ -63,10 +63,10 @@ Better Auth **1.7.7**, Drizzle ORM/Kit **1.0.0-rc.4** on Neon HTTP, tRPC 11, Tan
 
 | File | Change |
 | --- | --- |
-| `packages/db/src/schema/auth.ts` | `ACCOUNT_TYPES = ["master"] as const`, `AccountType`, and `accountType: text("account_type").$type<AccountType>().default("master").notNull()` on `user` |
+| `packages/db/src/schema/auth.ts` | `ACCOUNT_TYPES = ["master"] as const`, `AccountType`, `DEFAULT_ACCOUNT_TYPE = "master"`, and `accountType: text("account_type").$type<AccountType>().default(DEFAULT_ACCOUNT_TYPE).notNull()` on `user` |
 | `packages/db/src/migrations/*` | One generated migration: add the column with its default and `NOT NULL` |
-| `packages/auth/src/index.ts` | `user.additionalFields.accountType = { type: ["master"], required: true, defaultValue: "master", input: false }`; no email config |
-| `packages/api/src/routers/index.test.ts` | Session fixture gains `accountType: "master"`; the existing assertions then cover the field through `privateData` |
+| `packages/auth/src/index.ts` | `user.additionalFields.accountType = { type: [...ACCOUNT_TYPES], required: true, defaultValue: DEFAULT_ACCOUNT_TYPE, input: false }`; no email config |
+| `packages/api/src/routers/index.test.ts` | Session fixture gains `accountType: "master"`; the assertion names the literal, and a compile-time check pins the session type to `AccountType` |
 | `apps/web/src/routes/login.tsx` | Port the mock's auth layout; sign-in card; the sign-up toggle updates the URL |
 | `apps/web/src/routes/signup.tsx` | Canonical `/signup`, rendering the same layout and the sign-up card (the mock has no sign-up screen; layout is §7 of the alignment doc) |
 | `apps/web/src/routes/_auth/route.tsx` | Guard with `redirect` search parameter and same-origin validation; session cache identity boundary kept |
@@ -105,8 +105,8 @@ The probe account is temporary and is removed after verification; no test depend
 
 ### 5.1 Account type
 
-- **Column.** `user.account_type` is `text NOT NULL DEFAULT 'master'`. A text column with a TypeScript union is deliberate for the first release: there is one value, and a Postgres enum would add an `ALTER TYPE` migration for every future account type. The union is `AccountType = "master"`; the database default is the authority for rows created outside the app.
-- **Server-owned.** Better Auth's `additionalFields` entry sets `input: false`, so a sign-up or update payload containing `accountType` cannot write it. `defaultValue: "master"` applies at the auth layer; the column default covers direct inserts and the existing rows (the Task 3 probe user) when the migration runs.
+- **Column.** `user.account_type` is `text NOT NULL DEFAULT 'master'`. A text column with a TypeScript union is deliberate for the first release: there is one value, and a Postgres enum would add an `ALTER TYPE` migration for every future account type. The union is `AccountType = "master"`, and `DEFAULT_ACCOUNT_TYPE` names the value once so the column default and Better Auth's `defaultValue` cannot drift.
+- **Server-owned.** Better Auth's `additionalFields` entry sets `input: false`, so a sign-up or update payload containing `accountType` cannot write it. `defaultValue: DEFAULT_ACCOUNT_TYPE` applies at the auth layer; the column default covers direct inserts and the existing rows (the Task 3 probe user) when the migration runs.
 - **Readable.** `returned` stays at its default (`true`), so `GET /api/auth/get-session`, `ctx.session.user` and `$Infer` carry `accountType`. Task 5 and the console need it to label the account truthfully.
 - **One account type.** No authorization branch exists yet: every authenticated user is a master. Later modules check `accountType` when a second type exists; until then the field is recorded and displayed, not branched on.
 
@@ -124,6 +124,7 @@ The probe account is temporary and is removed after verification; no test depend
 - **Sign-up card (no mock screen; design from §7 of the alignment doc).** h2 `Create account`; `Name`, `Email`, `Password`; submit `Create account`; a link back to `/login`. Validation mirrors the current forms: name ≥ 2, valid email, password ≥ 8. Server errors render as `error.error.message`.
 - **One screen state.** `/login` keeps `validateSearch` for `form`, and `/signup` is the canonical sign-up address. The toggle navigates (`/login?form=signup`, `/signup?`), so reload and Back preserve the form; `_auth` and `UserMenu` callers keep `form=signin`.
 - **After auth.** Success clears or establishes the query-cache identity through `sessionQueries.setIdentity` (PR 8's barrier), then navigates to the validated `redirect` or `/dashboard`.
+- **Client typing.** The web auth client adds `inferAdditionalFields<typeof createAuth>()` (the auth package exports the factory type) so `useSession()` and `getSession()` type `accountType`; the runtime payload already carries it.
 
 ### 5.4 Console shell and guard (Task 5)
 
@@ -136,11 +137,11 @@ The probe account is temporary and is removed after verification; no test depend
 ## 6. Where things land
 
 ```text
-packages/db/src/schema/auth.ts            # ACCOUNT_TYPES, AccountType, accountType column
+packages/db/src/schema/auth.ts            # ACCOUNT_TYPES, AccountType, DEFAULT_ACCOUNT_TYPE, accountType column
 packages/db/src/migrations/<ts>_identity_account_type/
                                           # generated migration + snapshot
 packages/auth/src/index.ts                # user.additionalFields.accountType
-packages/api/src/routers/index.test.ts    # fixture carries accountType
+packages/api/src/routers/index.test.ts    # literal assertion + compile-time session check
 apps/web/src/routes/login.tsx             # /login?form=signin|signup (sign-in card)
 apps/web/src/routes/signup.tsx            # /signup (sign-up card; same layout)
 apps/web/src/routes/_auth/route.tsx       # guard + redirect contract
@@ -160,13 +161,13 @@ The current `_auth/dashboard.tsx` is a leaf route at `/dashboard`; Task 5 turns 
 
 | Level | Tool | What it covers |
 | --- | --- | --- |
-| Contract | `appRouter.createCaller({ session, db })` | `privateData` still refuses `session: null` with `UNAUTHORIZED`; a signed-in caller's record includes `accountType: "master"` |
+| Contract | `appRouter.createCaller({ session, db })` | `privateData` still refuses `session: null` with `UNAUTHORIZED`; a signed-in caller's record includes `accountType: "master"`, and a compile-time check pins `Session["user"]["accountType"]` to `AccountType` |
 | Schema | `bun run db:generate` + `bun run db:migrate` | One migration adds `account_type` with `DEFAULT 'master' NOT NULL`; a second generate reports no changes; migrate is clean on development |
 | Runtime | `bun run dev` on the development branch | Sign-up returns a user with `accountType: "master"`; a forged `accountType` is ignored; `get-session` after reload keeps it; tRPC `privateData` with the session cookie returns it; without a cookie it refuses |
 | UI (Task 5) | Browser at 1440, 980, 760, 520 px | Auth layout against 2842/1406–1475/2626–2636; D7 label; no preview copy; keyboard order and skip link; sign-up and sign-in; `/dashboard/profile` → `/login?form=signin&redirect=%2Fdashboard%2Fprofile` → sign-in returns to the profile; console nav is exactly four labels; every destination renders its empty state; sign-out returns to the public site |
 | Repository | `bun run gates` | `check` 0 errors, `check-types` 8/8, `build` 2/2, `test` all pass |
 
-There is no database in the test seam: the API tests use `createCaller` with a stub DB, and the web tests use real `QueryClient`s without a server. Sign-up is Better Auth's integration behaviour, so it is proven at runtime on the development branch, not with a mock adapter. No permanent test depends on a real secret or the network.
+There is no database in the test seam: the API tests use `createCaller` with a stub DB, and the web tests use real `QueryClient`s without a server. Sign-up is Better Auth's integration behaviour, so it is proven at runtime on the development branch, not with a mock adapter. The permanent suite pins the field's presence and type; it does not re-test Better Auth's `input: false` parser. No permanent test depends on a real secret or the network.
 
 ## 8. Verification for Task 4 (the PR this spec unblocks)
 
@@ -196,7 +197,7 @@ Task 5 repeats its own list in §7 (UI row) against the dev stack at four widths
 1. **Email provider** (follow-up PR for Task 4): Resend, Cloudflare Email Service or SES. It needs a verified sender domain; the account currently has no Cloudflare zone, so `masterscorner.in` must be added before any provider can send to arbitrary addresses. The owner selected **defer** on 2026-10-21.
 2. **Verification policy** (same follow-up): whether `requireEmailVerification` becomes true once a provider exists. Default: no until every existing account can verify, because enabling it would lock out the accounts created by Tasks 4–5.
 3. **`/signup` and `/login?form=signup`**: Task 5 makes `/signup` canonical and keeps `?form=signup` working for existing callers. If the owner prefers a single URL, `/signup` can redirect to `/login?form=signup` instead of rendering the card; the screen, copy and layout are identical either way.
-4. **Second account type**: none in the first release (ADR-002). When one arrives, promote the text union to whatever the authorization model needs; the column name does not change.
+4. **Second account type**: none in the first release (ADR-002). When one arrives, promote the text union to whatever the authorization model needs — including a database `CHECK` or domain, which the first release omits because one value and no authorization branch make it redundant; the column name does not change.
 
 ---
 
