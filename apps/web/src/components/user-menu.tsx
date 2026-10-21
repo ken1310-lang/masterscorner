@@ -9,13 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@my-better-t-app/ui/components/dropdown-menu";
 import { Skeleton } from "@my-better-t-app/ui/components/skeleton";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 
 import { authClient } from "@/lib/auth-client";
 
 export default function UserMenu() {
   const navigate = useNavigate();
   const { data: session, isPending } = authClient.useSession();
+  const { sessionQueries } = useRouter().options.context;
 
   if (isPending) {
     return <Skeleton className="h-9 w-24" />;
@@ -43,8 +44,9 @@ export default function UserMenu() {
             onClick={() => {
               authClient.signOut({
                 fetchOptions: {
-                  onSuccess: () => {
-                    navigate({
+                  onSuccess: async () => {
+                    await sessionQueries.setIdentity(null);
+                    await navigate({
                       to: "/",
                     });
                   },

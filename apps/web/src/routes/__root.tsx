@@ -17,6 +17,7 @@ import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 import { useCallback } from "react";
 
 import { SkipLink } from "@/components/shell/header";
+import type { SessionQueryCache } from "@/lib/session-query-cache";
 import { ErrorScreenContent } from "@/routes/error";
 import { NotFoundScreen } from "@/routes/not-found";
 
@@ -24,6 +25,7 @@ import appCss from "../index.css?url";
 
 export interface RouterAppContext {
   queryClient: QueryClient;
+  sessionQueries: SessionQueryCache;
   trpc: TRPCOptionsProxy<AppRouter>;
 }
 
