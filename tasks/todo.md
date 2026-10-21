@@ -96,7 +96,7 @@ One task = one pull request. A task is done only when its verification column pa
 
 ## Phase 2 — Master profile and media
 
-### [ ] 6. Profile schema
+### [x] 6. Profile schema
 
 - **Description:** Tables and relations for master profile (name, martial arts, years teaching, home city, introduction), teaching locations and media references, with a migration (PRD §8, §8.2).
 - **Acceptance:** migration applies cleanly to the development branch and is committed; one master owns many locations and many media items; a profile cannot exist without an owner.
@@ -104,6 +104,9 @@ One task = one pull request. A task is done only when its verification column pa
 - **Deps:** 4
 - **Files:** `packages/db/src/schema/master.ts`, `packages/db/src/schema/index.ts`, `packages/db/src/relations.ts`, `packages/db/src/migrations/*`
 - **Scope:** Medium
+- **Status (2026-10-21): done on `pr/6-profile-schema` (stacked on `pr/5-auth-screens`).** Adds `master_profile` (one row per `user`; `display_name`, nullable `years_teaching` >= 0, `home_city`, `introduction`), `master_location` (name plus per-profile `position`), `master_martial_art` (unique name and position per profile; position 0 is the primary discipline), and `media` (profile-photo/site-logo roles, unique object key, content type, positive byte size). Every child cascades from the profile and the profile cascades from `user`, so an ownerless row cannot exist and deleting an owner removes the graph. The generated migration `20261021133503_white_sphinx` applied cleanly to the development branch over the unpooled connection; `db:generate` then reported no changes.
+- **Verification (2026-10-21):** through `createDb` against the development branch, one profile loaded with 2 locations, 2 arts and 2 media; a missing owner returned `23503`; a second profile for the same owner, a duplicate location position and a case-variant martial art returned `23505`; a location without a position returned `23502`; negative years, blank display/location names, an unknown media role and zero byte size returned `23514`; deleting the owner removed the profile, locations, arts and media. `createDb` composes the new graph without dropping `user` -> sessions/accounts. Unit tests: 5 schema tests; db 21, total 65. Gates: `check` passes, `check-types` 8/8, `build` 2/2, `test` 5/5.
+- **Assumptions:** `display_name` is the public listing name, separate from `user.name`; position 0 is the primary art; positions are allocated explicitly by the API (no database default), and reordering uses a free slot because `(profile_id, position)` is unique; locations carry a name and order in this slice, with address and public slug deferred to the screens that need them; media allows multiple rows per profile and the media module owns choosing the current photo/logo; the API must scope child writes by the caller's profile (no RLS).
 
 ### [ ] 7. Console profile editor
 
