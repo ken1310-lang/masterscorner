@@ -28,16 +28,29 @@ bun install
 
 ## Database Setup
 
-This project uses PostgreSQL with Drizzle ORM.
+This project uses PostgreSQL (Neon) with Drizzle ORM, with one Neon project and two branches: `development` for everyday work and `production` for real users.
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
+Install the [Neon CLI](https://neon.com/docs/cli/install) and sign in once, then from the repository root:
 
 ```bash
-bun run db:push
+neon link --project-name masterscorner --region-id aws-ap-southeast-1 --no-env-pull
+neon checkout development --create --no-env-pull   # pins the branch in the gitignored .neon
+neon deploy                                        # applies neon.ts: the media bucket appears on this branch
+neon env pull --file apps/server/.env              # DATABASE_URL, DATABASE_URL_UNPOOLED, AWS_*
 ```
+
+`neon.ts` declares object storage (`media`), so every branch gets its own bucket and branch-scoped S3 credentials. `neon status` prints the branch's live configuration and `neon config plan` diffs it against `neon.ts` without applying anything.
+
+`DATABASE_URL` (pooled) serves application traffic; `DATABASE_URL_UNPOOLED` (direct) is what migrations use, because PgBouncer's transaction mode breaks DDL and session state in ways that never mention pooling. `db:migrate` warns when only the pooled URL is present.
+
+Apply schema changes like this:
+
+```bash
+bun run db:generate   # writes SQL into packages/db/src/migrations
+bun run db:migrate    # applies it to the pinned branch
+```
+
+Use versioned migrations, never `db:push`, against a shared branch.
 
 Then, run the development server:
 
@@ -48,6 +61,8 @@ bun run dev
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 From `apps/native`, run the `ios` script for iOS or the `android` script for Android to build and launch the app. See [Expo development builds](https://docs.expo.dev/develop/development-builds/introduction/) for device setup.
 The API is running at [http://localhost:3000](http://localhost:3000).
+
+`bun run dev` runs two things at once: the API through `alchemy dev` (port 3000) and the web app through Alchemy's Vite site (port 3001). Alchemy therefore needs Cloudflare provider credentials before the stack can start — configure them once with the interactive `cd packages/infra && bunx alchemy profile edit` (it refuses to run without a real terminal), or export the credentials the provider reads from the environment (`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the names its `CredentialsUnavailable` error reports). Without them the run stops at `CredentialsUnavailable: Missing required env: CLOUDFLARE_ACCOUNT_ID`.
 
 ## UI Customization
 
@@ -99,15 +114,70 @@ Run standalone Node/Bun tools that use Varlock from the owning app directory so 
 
 `alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
 
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
+The Cloudflare provider also reads `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` from the environment and prefers them over the profile (its log says so: "Cloudflare: using environment variables … instead of the profile"), so a machine can deploy without an interactive login by putting both in the gitignored `packages/infra/.env`. The token is account-scoped: `GET /user/tokens/verify` rejects it with `Invalid API Token` while `/accounts/<id>/…` calls accept it, which is normal for tokens owned by the account rather than the user.
+
+Two account-level prerequisites, once per Cloudflare account:
 
 ```bash
-cd packages/infra && bunx alchemy deploy --stage production
+cd packages/infra
+bunx alchemy provider cloudflare bootstrap --log-level info   # deploys the alchemy-state-store Worker (Durable Object backed)
 ```
+
+- `bootstrap` fails with "Forbidden: You need a workers.dev subdomain in order to proceed" on an account that has never run a Worker. Register one over the API — `PUT /accounts/<id>/workers/subdomain` with `{"subdomain":"masterscorner"}` — or open the Workers page in the dashboard once; this account now owns `masterscorner.workers.dev`.
+- `alchemy deploy` on a stack without a bootstrapped state store stops with "Cloudflare State store not found. Run 'alchemy provider cloudflare bootstrap …'". The bootstrap adopts the Worker it already created, so it is safe to re-run.
+
+Deploys are staged and default to a personal `dev_<username>` stage:
+
+```bash
+cd packages/infra && bunx alchemy deploy
+```
+
+### Production deploys are guarded
+
+Development values must never reach production, so production has its own entry point:
+
+```bash
+bun run deploy:production
+```
+
+It runs `packages/infra/src/guard-production.ts` and only then `alchemy deploy --stage production`. The guard loads the deploy environment the same way Alchemy does and refuses to continue when:
+
+- `NODE_ENV` is not `production` — production deploys take their values from the deploy environment, never from a development shell;
+- `NEON_BRANCH` names a branch other than `production` — the environment is holding another branch's values (`neon env pull` writes that marker);
+- `DATABASE_URL` is unset;
+- `AWS_ENDPOINT_URL_S3` is unset — `neon.ts` declares the media bucket, so the production branch must supply its endpoint;
+- `DATABASE_URL` names the same host as the value in `apps/server/.env`, which is the development branch;
+- `BETTER_AUTH_SECRET` is still the value in `apps/server/.env` — production must sign its own sessions, never the development secret;
+- `CORS_ORIGIN` is still the value in `apps/server/.env` — otherwise the API trusts the development origin and the deployed web app is locked out.
+
+Each refusal prints what to do next. Supply the production branch's values to the deploy process itself — never pull them into `apps/server/.env`, which stays the development file: doing that points `bun run dev` at production *and* makes the guard's own comparison meaningless.
+
+The load order is verified: an exported shell variable wins over `packages/infra/.env`, which wins over the development values that `packages/infra/.env.schema` imports from `apps/server/.env`. So a production deploy looks like this (POSIX shell; any shell works as long as the variables are exported):
+
+```bash
+neon env pull --branch production --file /tmp/production.env   # production DATABASE_URL, DATABASE_URL_UNPOOLED, NEON_BRANCH, AWS_*
+set -a; . /tmp/production.env; set +a
+export NODE_ENV=production                                     # Neon does not write this, and the guard requires it
+export CORS_ORIGIN=<the web Worker URL, not the development localhost>
+export BETTER_AUTH_SECRET=<the stored production secret>
+bun run db:migrate                                            # apply the production branch's migrations before the Workers
+bun run deploy:production
+```
+
+Four things the first rehearsal taught:
+
+- **Generate the production `BETTER_AUTH_SECRET` once and store it** — password manager, CI secret, or the deploy environment. Regenerating it per deploy invalidates every existing session, and the env schema rejects a value below its minimum before the guard's own checks run.
+- **The first production deploy is a two-pass deploy.** Alchemy names the Workers `my-better-t-app-<name>-<stage>-<hash>.<subdomain>.workers.dev` (for example `my-better-t-app-web-production-5x7dz4qwhr5nq46v.masterscorner.workers.dev`), so the web origin only exists after the first pass. Deploy with any placeholder, take `web` from the printed `{ web, server }` object, set `CORS_ORIGIN` to it and deploy again — the second pass changes one binding (`server/CORS_ORIGIN`). Confirm with `curl -D - -o /dev/null <server>/trpc/healthCheck -H "Origin: <web>"`, which must answer `Access-Control-Allow-Origin: <web>` and `Access-Control-Allow-Credentials: true`.
+- **Turbo hides environment variables it does not know** (strict env mode). A variable reaches a task only when it is declared — in `globalEnv` or the task's own `env` — otherwise the task silently reads the value from the env files instead. `NEON_BRANCH`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` and `ALCHEMY_PASSWORD` are declared for that reason; when `NEON_BRANCH` was missing from that list, the guard inside `bun run deploy:production` reported `NEON_BRANCH is "development"` while the operator's shell said `production`.
+- **Verify the deploy against the branch, not the URL.** A deployed API can answer on its workers.dev URL while pointing at the wrong database, so sign a probe account up through the deployed API and count it on the branch (`select count(*) from public."user"`), then remove it.
+
+Padding `packages/infra/.env` with the same values works too, but that file also feeds `alchemy dev`, so a production database parked there points local development at production.
+
+The `db:*`, `deploy`, `deploy:production` and `destroy` scripts run Turbo tasks marked `interactive: true`. Turbo refuses an interactive task when there is no terminal UI, and `TURBO_UI=true` does not lift that, so run these from a real terminal; a CI job must call the package script directly instead.
 
 ### Production origins
 
-- Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
+- Required after the first deploy: set `CORS_ORIGIN` **in the deploy environment** (not in `apps/server/.env`, which holds the development value the guard compares against) to the exact deployed web origin, such as `https://my-better-t-app-web-production-<hash>.masterscorner.workers.dev`, then deploy again. The browser sends `credentials: "include"`, so the API must echo the exact origin with `Access-Control-Allow-Credentials: true`; a placeholder origin answers the preflight but leaves the web app unable to call the API.
 
 ## Project Structure
 
@@ -130,6 +200,8 @@ my-better-t-app/
 - `bun run build`: Build all applications
 - `bun run dev:web`: Start only the web application
 - `bun run dev:server`: Start only the server
+- `bun run deploy`: Deploy to the default development stage
+- `bun run deploy:production`: Deploy to production (guarded, see Deployment)
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run dev:native`: Start the React Native/Expo development server
 - `bun run db:push`: Push schema changes to database
