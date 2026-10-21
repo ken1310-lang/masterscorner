@@ -6,15 +6,21 @@ import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
   createRootRouteWithContext,
+  type ErrorComponentProps,
   HeadContent,
   Outlet,
   Scripts,
+  useRouter,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
+import { useCallback } from "react";
+
+import { SkipLink } from "@/components/shell/header";
+import { ErrorScreenContent } from "@/routes/error";
+import { NotFoundScreen } from "@/routes/not-found";
+
 import appCss from "../index.css?url";
-import { ErrorScreenContent } from "../routes/error";
-import { NotFoundScreen } from "../routes/not-found";
 
 export interface RouterAppContext {
   queryClient: QueryClient;
@@ -76,19 +82,33 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   }),
 
   component: RootDocument,
-  errorComponent: ({ reset }) => (
+  errorComponent: RootErrorScreen,
+  notFoundComponent: () => <NotFoundScreen />,
+});
+
+/** Root boundary: the `reset` re-renders the route, then cached data refetches. */
+function RootErrorScreen({ reset }: ErrorComponentProps) {
+  const router = useRouter();
+  const { queryClient } = Route.useRouteContext();
+  const retry = useCallback(async () => {
+    reset();
+    await queryClient.invalidateQueries({ refetchType: "all" });
+    await router.invalidate();
+  }, [queryClient, reset, router]);
+
+  return (
     <>
+      <SkipLink />
       <main
         className="grid min-h-dvh place-content-center gap-2.5 text-center"
         id="main"
         tabIndex={-1}
       >
-        <ErrorScreenContent onRetry={reset} />
+        <ErrorScreenContent onRetry={retry} />
       </main>
     </>
-  ),
-  notFoundComponent: () => <NotFoundScreen />,
-});
+  );
+}
 
 function RootDocument() {
   return (

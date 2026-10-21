@@ -9,8 +9,11 @@ const headingClass =
 
 /**
  * Prototype `/error` copy (masterscorner.html 2853-2854), with the heading
- * scale applied (deviation D13). Retry re-runs the route: the boundary resets
- * it, the standalone screen invalidates the router.
+ * scale applied (deviation D13). Retry refetches cached data and re-runs the
+ * route: the boundary resets it, the standalone screen invalidates the router.
+ * `refetchType: "all"` matters because the failed component is unmounted by the
+ * time the button is reachable, so a default invalidation would leave its query
+ * stale without refetching.
  */
 export function ErrorScreenContent({ onRetry }: { onRetry: () => void }) {
   return (
@@ -29,9 +32,11 @@ export function ErrorScreenContent({ onRetry }: { onRetry: () => void }) {
 
 function ErrorScreen() {
   const router = useRouter();
+  const { queryClient } = Route.useRouteContext();
   const retry = useCallback(async () => {
+    await queryClient.invalidateQueries({ refetchType: "all" });
     await router.invalidate();
-  }, [router]);
+  }, [queryClient, router]);
 
   return (
     <>
