@@ -34,7 +34,7 @@ const trpcClient = createTRPCClient<AppRouter>({
     httpBatchLink({
       url: `${ENV.VITE_SERVER_URL.replace(/\/$/, "")}/trpc`,
       fetch(url, options) {
-        return fetch(url, {
+        return globalThis.fetch(url, {
           ...options,
           credentials: "include",
         });
@@ -58,7 +58,7 @@ export const getRouter = () => {
     defaultPendingComponent: () => <Loader />,
     defaultNotFoundComponent: () => <div>Not Found</div>,
     Wrap: ({ children }) => (
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+      <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
         {children}
       </TRPCProvider>
     ),

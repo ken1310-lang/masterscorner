@@ -1,0 +1,26 @@
+# Line endings: text files are stored with LF and checked out with LF, on every
+# platform. Without this, a Windows checkout (core.autocrlf=true) hands the
+# formatter CRLF files and Biome reports whole-file diffs that Linux CI, which
+# reads LF, never sees — a gate that cannot be trusted locally.
+* text=auto eol=lf
+
+# Binary assets keep their bytes.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.avif binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+
+# Generated artefacts and lockfiles: still diffed when they change, collapsed by
+# default in review so the machine-written part does not hide the human part.
+packages/db/src/migrations/**/snapshot.json linguist-generated=true
+apps/web/src/routeTree.gen.ts linguist-generated=true
+bun.lock linguist-generated=true

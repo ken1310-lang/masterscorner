@@ -1,5 +1,5 @@
 import { createAuth as createConfiguredAuth } from "@my-better-t-app/auth";
-import { type Database, createDb } from "@my-better-t-app/db";
+import { createDb, type Database } from "@my-better-t-app/db";
 
 import { ENV } from "./env.server";
 
