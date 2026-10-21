@@ -4,16 +4,16 @@ import type { Database } from "@my-better-t-app/db";
 import * as schema from "@my-better-t-app/db/schema/auth";
 import { betterAuth } from "better-auth";
 
-export type AuthConfig = {
-  BETTER_AUTH_URL: string;
+export interface AuthConfig {
   BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL: string;
   CORS_ORIGIN: string;
-};
+}
 
 export function createAuth(
   env: AuthConfig,
   database: Database,
-  desktopOrigins: readonly string[] = [],
+  desktopOrigins: readonly string[] = []
 ) {
   return betterAuth({
     database: drizzleAdapter(database, {
