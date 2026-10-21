@@ -1,6 +1,7 @@
 {
   "name": "my-better-t-app",
   "private": true,
+  "type": "module",
   "workspaces": {
     "packages": [
       "apps/*",
@@ -24,24 +25,24 @@
       "drizzle-orm": "1.0.0-rc.4"
     }
   },
-  "type": "module",
   "scripts": {
-    "dev": "turbo run dev",
     "build": "turbo run build",
+    "check": "ultracite check",
     "check-types": "turbo run check-types",
-    "dev:native": "turbo run dev -F native --",
-    "dev:web": "turbo run dev:bare -F web --",
-    "dev:server": "turbo run dev:bare -F hono --",
-    "db:push": "turbo run db:push -F @my-better-t-app/db --",
-    "db:studio": "turbo run db:studio -F @my-better-t-app/db --",
     "db:generate": "turbo run db:generate -F @my-better-t-app/db --",
     "db:migrate": "turbo run db:migrate -F @my-better-t-app/db --",
+    "db:push": "turbo run db:push -F @my-better-t-app/db --",
+    "db:studio": "turbo run db:studio -F @my-better-t-app/db --",
     "deploy": "turbo run deploy -F @my-better-t-app/infra --",
+    "deploy:production": "turbo run deploy:production -F @my-better-t-app/infra --",
     "destroy": "turbo run destroy -F @my-better-t-app/infra --",
+    "dev": "turbo run dev",
+    "dev:native": "turbo run dev -F native --",
+    "dev:server": "turbo run dev:bare -F hono --",
+    "dev:web": "turbo run dev:bare -F web --",
     "env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
-    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
-    "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/"
   },
   "dependencies": {
     "zod": "catalog:"
@@ -50,6 +51,7 @@
     "@biomejs/biome": "2.5.15",
     "@cloudflare/workers-types": "catalog:",
     "@my-better-t-app/config": "workspace:*",
+    "@neon/config": "^1.9.2",
     "@types/node": "catalog:",
     "turbo": "^2.11.7",
     "typescript": "^6.0.3",
