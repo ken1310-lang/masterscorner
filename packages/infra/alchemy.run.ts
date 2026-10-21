@@ -5,15 +5,14 @@ import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
 /**
- * Branded, stage-scoped Worker names. Resolving the stage here keeps
- * production (`masterscorner-*-production`) and any future stage from
- * replacing each other, and gives both Workers stable URLs.
+ * Production-only Worker names. Other stages keep Alchemy's generated names,
+ * so an unguarded dev-stage deploy cannot take over the production Workers.
+ * The guarded production deploy requires NODE_ENV=production.
  */
 const workerName = (role: "server" | "web") =>
-  Effect.gen(function* () {
-    const stage = yield* Alchemy.Stage;
-    return `masterscorner-${role}-${stage}`;
-  });
+  process.env.NODE_ENV === "production"
+    ? `masterscorner-${role}-production`
+    : undefined;
 
 export const server = Cloudflare.Worker("server", {
   name: workerName("server"),
@@ -51,9 +50,18 @@ export default Alchemy.Stack(
   },
   Effect.gen(function* () {
     const serverWorker = yield* server;
-    const webWorker = yield* Cloudflare.Website.Vite("web", {
+    // A new logical id is deliberate: Alchemy does not replace an assets
+    // Worker on an explicit name change, and the old physical name cannot be
+    // changed in place. This creates `masterscorner-web-production` and drops
+    // the old `my-better-t-app-web-*` script from the stack.
+    const webWorker = yield* Cloudflare.Worker("web-app", {
       name: workerName("web"),
-      rootDir: "../../apps/web",
+      // The Vite wrapper delegates to this Worker shape; declaring it directly
+      // keeps the explicit name in the Worker props so a name change replaces
+      // the script instead of updating the old one in place.
+      vite: {
+        rootDir: "../../apps/web",
+      },
       compatibility: {
         flags: ["nodejs_compat"],
       },
