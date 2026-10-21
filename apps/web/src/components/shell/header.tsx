@@ -63,6 +63,7 @@ export function Header() {
           ) : (
             <Link
               className="hidden text-[#3f4b63] text-sm hover:text-navy md:inline"
+              search={{ form: "signin" }}
               to="/login"
             >
               Sign in

@@ -10,12 +10,16 @@ import { LogoMark } from "./logo-mark";
  */
 const footerColumns: {
   heading: string;
-  links: { to: "/" | "/login" | "/dashboard"; label: string }[];
+  links: {
+    to: "/" | "/login" | "/dashboard";
+    label: string;
+    search?: { form: "signin" };
+  }[];
 }[] = [
   {
     heading: "For masters",
     links: [
-      { to: "/login", label: "Sign in" },
+      { to: "/login", label: "Sign in", search: { form: "signin" } },
       { to: "/dashboard", label: "Dashboard" },
     ],
   },
@@ -53,6 +57,7 @@ export function Footer() {
                     <Link
                       className="inline-flex min-h-11 items-center text-[#8f9bb1] text-[13px] md:block md:min-h-[auto]"
                       key={link.to}
+                      search={link.search}
                       to={link.to}
                     >
                       {link.label}
