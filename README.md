@@ -215,7 +215,7 @@ The `db:generate`, `db:push`, `deploy`, `deploy:production` and `destroy` script
 
 ## Quality gates and CI
 
-Every pull request runs the same four gates locally and in `.github/workflows/ci.yml`:
+Every pull request runs the same four gates locally and in `.github/workflows/ci.yml`. `bun run gates` runs them in order, and is the merge gate whenever CI cannot run:
 
 | Command | What it checks |
 | --- | --- |
@@ -255,6 +255,7 @@ my-better-t-app/
 - `bun run check`: Lint and format check (Biome through Ultracite)
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run test`: Run the package test suites
+- `bun run gates`: Run check, check-types, build and test in order
 - `bun run dev:native`: Start the React Native/Expo development server
 - `bun run db:push`: Push schema changes to database
 - `bun run db:generate`: Generate database client/types
