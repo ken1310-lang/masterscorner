@@ -21,7 +21,7 @@ export default defineConfig({
     media: { access: "public_read" },
   },
   branch: (branch) => {
-    if (branch.isDefault || LONG_LIVED_BRANCHES[branch.name]) {
+    if (branch.isDefault || Object.hasOwn(LONG_LIVED_BRANCHES, branch.name)) {
       // `production` is the default branch; `development` is created once by
       // `neon checkout development --create`. Neither is a throwaway, so
       // neither gets a TTL or a compute profile from this policy.

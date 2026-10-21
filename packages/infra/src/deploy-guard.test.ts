@@ -96,6 +96,17 @@ describe("assertProductionTarget", () => {
     ).toThrow(DEVELOPMENT_DATABASE_REFUSAL);
   });
 
+  test("refuses the development endpoint's direct alias even with a different database path", () => {
+    expect(() =>
+      assertProductionTarget(
+        target({
+          databaseUrl:
+            "postgresql://other:fixture@ep-development.ap-southeast-1.aws.neon.tech/another",
+        })
+      )
+    ).toThrow(DATABASE_REFUSAL);
+  });
+
   test("refuses a deploy that reuses the development secret or origin", () => {
     expect(() =>
       assertProductionTarget(
@@ -119,6 +130,26 @@ describe("isSameDatabase", () => {
         "postgresql://b:pw@ep-x-pooler.ap-southeast-1.aws.neon.tech/other"
       )
     ).toBe(true);
+  });
+
+  test("matches pooled and direct Neon endpoints in either direction", () => {
+    const direct =
+      "postgresql://migrator:fixture@ep-development.ap-southeast-1.aws.neon.tech/other";
+    expect(isSameDatabase(developmentDatabaseUrl, direct)).toBe(true);
+    expect(isSameDatabase(direct, developmentDatabaseUrl)).toBe(true);
+  });
+
+  test("does not remove pooled-looking suffixes from non-Neon hosts or other labels", () => {
+    for (const [a, b] of [
+      ["ep-x-pooler.example.com", "ep-x.example.com"],
+      ["ep-x-pooler.neon.tech.example.com", "ep-x.neon.tech.example.com"],
+      ["ep-x.region-pooler.aws.neon.tech", "ep-x.region.aws.neon.tech"],
+      ["ep-x-pooler.aws.neon.tech:5432", "ep-x.aws.neon.tech:5433"],
+    ]) {
+      expect(
+        isSameDatabase(`postgresql://a@${a}/db`, `postgresql://b@${b}/db`)
+      ).toBe(false);
+    }
   });
 
   test("is false for different hosts and for a missing side", () => {

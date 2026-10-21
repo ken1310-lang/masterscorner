@@ -1,5 +1,5 @@
 /**
- * Entry point for the production deploy — `bun run deploy:production`.
+ * Standalone production target check, also loaded by deploy-production.ts.
  *
  * It loads the deploy environment the same way `alchemy.run.ts` does, then
  * applies the checks in ./deploy-guard.ts before Alchemy touches a resource.
