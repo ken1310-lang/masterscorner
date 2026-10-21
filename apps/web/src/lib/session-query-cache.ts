@@ -24,9 +24,10 @@ export function createSessionQueryCache(
     }
     userId = nextUserId;
 
-    // Cancellation must precede removal, including fetchers that ignore abort.
-    const cancelled = queryClient.cancelQueries();
-    cleanup = Promise.all([cleanup, cancelled]).then(() => {
+    // Publish the barrier before cancellation can synchronously reenter through
+    // abort listeners. Every caller must await cancellation and cache removal.
+    cleanup = cleanup.then(async () => {
+      await queryClient.cancelQueries();
       queryClient.clear();
     });
     return cleanup;

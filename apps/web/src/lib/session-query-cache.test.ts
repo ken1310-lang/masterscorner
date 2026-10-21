@@ -54,6 +54,39 @@ describe("session query cache", () => {
     queryClient.clear();
   });
 
+  test("a route entering during cancellation waits for the new account's cache boundary", async () => {
+    const queryClient = createClient();
+    const sessionQueries = createSessionQueryCache(queryClient);
+    await sessionQueries.setIdentity("account-a");
+    queryClient.setQueryData(privateKey, { user: { id: "account-a" } });
+    const oldResponse = deferred<string>();
+    const concurrentRead = deferred<string>();
+    const pendingRequest = queryClient.fetchQuery({
+      queryKey: ["old-account-request"],
+      queryFn: ({ signal }) => {
+        signal.addEventListener("abort", () => {
+          // Cancellation callbacks can synchronously enter the route boundary.
+          sessionQueries.setIdentity("account-b").then(async () => {
+            const response = await queryClient.fetchQuery({
+              queryKey: privateKey,
+              queryFn: () => ({ user: { id: "account-b" } }),
+            });
+            concurrentRead.resolve(response.user.id);
+          });
+        });
+        return oldResponse.promise;
+      },
+    });
+    const cancelledRequest = pendingRequest.catch((error: unknown) => error);
+
+    await sessionQueries.setIdentity("account-b");
+    oldResponse.resolve("old-account-response");
+    await cancelledRequest;
+
+    expect(await concurrentRead.promise).toBe("account-b");
+    queryClient.clear();
+  });
+
   test("cancels transport before removing cache and does not admit a late old response", async () => {
     const queryClient = createClient();
     const sessionQueries = createSessionQueryCache(queryClient);
