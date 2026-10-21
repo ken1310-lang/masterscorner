@@ -5,11 +5,12 @@ import { authClient } from "@/lib/auth-client";
 export const Route = createFileRoute("/_auth")({
   ssr: false,
   component: AuthLayout,
-  beforeLoad: async () => {
+  beforeLoad: async ({ context, location }) => {
     const session = await authClient.getSession();
+    await context.sessionQueries.setIdentity(session.data?.user.id ?? null);
     if (!session.data) {
       throw redirect({
-        search: { form: "signin" },
+        search: { form: "signin", redirect: location.href },
         to: "/login",
       });
     }
@@ -18,5 +19,6 @@ export const Route = createFileRoute("/_auth")({
 });
 
 function AuthLayout() {
-  return <Outlet />;
+  const { session } = Route.useRouteContext();
+  return <Outlet key={session.data?.user.id} />;
 }

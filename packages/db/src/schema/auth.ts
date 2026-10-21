@@ -1,12 +1,24 @@
 import { defineRelationsPart } from "drizzle-orm";
 import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
+/**
+ * The first release has one account type (ADR-002). The default is named so
+ * reordering the list cannot silently change what new accounts receive.
+ */
+export const ACCOUNT_TYPES = ["master"] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+export const DEFAULT_ACCOUNT_TYPE: AccountType = "master";
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  accountType: text("account_type")
+    .$type<AccountType>()
+    .default(DEFAULT_ACCOUNT_TYPE)
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()

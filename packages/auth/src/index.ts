@@ -28,6 +28,16 @@ export function createAuth(
       "http://localhost:8081",
     ],
     emailAndPassword: { enabled: true },
+    user: {
+      additionalFields: {
+        accountType: {
+          type: [...schema.ACCOUNT_TYPES],
+          required: true,
+          defaultValue: schema.DEFAULT_ACCOUNT_TYPE,
+          input: false,
+        },
+      },
+    },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {

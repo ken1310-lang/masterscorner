@@ -66,7 +66,7 @@ One task = one pull request. A task is done only when its verification column pa
 
 ## Phase 1 — Identity
 
-### [ ] 4. Master account and auth
+### [~] 4. Master account and auth
 
 - **Description:** Master account creation with an account type on the user record, sign-up and sign-in through Better Auth, password reset, and the email-verification configuration (PRD §15.2). Email delivery depends on the single open decision (the provider, `tasks/plan.md` §Open Questions): if it is not settled for this PR, ship sign-up and sign-in, and add verification and reset in the follow-up PR for this task.
 - **Acceptance:** a new account is created with account type `master`; sessions survive reload; a protected procedure returns `UNAUTHORIZED` without a session and the session user id with one; password reset works end to end.
@@ -74,23 +74,29 @@ One task = one pull request. A task is done only when its verification column pa
 - **Deps:** 1, 2
 - **Files:** `packages/auth/src/index.ts`, `packages/db/src/schema/auth.ts`, `packages/api/src/routers/*.ts`, `apps/server/src/index.ts`
 - **Scope:** Medium
+- **Status (2026-10-21): account type and the session boundary done on `pr/4-identity`; email flows deferred by the owner.** `user.account_type` is `text NOT NULL DEFAULT 'master'`, typed `AccountType`, and `user.additionalFields.accountType` is server-owned (`input: false`, `defaultValue: DEFAULT_ACCOUNT_TYPE`), so a forged sign-up payload cannot set it. Migration `20261021120119_identity_account_type` applied to the development branch; re-generating reports "No schema changes". Verified on the running development stack: sign-up with `"accountType": "admin"` returned `master`; sign-in and `get-session` returned `master`; `privateData` returned the record with the session cookie and `401 UNAUTHORIZED` without one; the existing `shell-probe@example.com` row was backfilled to `master`; the Task 4 probe account was deleted. Gates: `check` 0 errors / 22 warnings, `check-types` 8/8, `build` 2/2, `test` 5/5 (53 tests). **Deferred half:** password reset and email verification wait for a provider and a verified sender domain (the account has no Cloudflare zone yet); the owner chose the deferral on 2026-10-21 and the follow-up PR for this task owns them. No stub or fake sender ships. Task 5 (auth screens, guard, console shell) remains.
+- **Review follow-up (2026-10-21):** `DEFAULT_ACCOUNT_TYPE` is now shared by the column default and Better Auth's `defaultValue`; the contract assertion names the literal and a compile-time check pins `Session["user"]["accountType"]` to `AccountType`; the web client's `inferAdditionalFields` typing is recorded for Task 5. Tests are 53 (API 4, db 16, infra 25, web 8).
 
-### [ ] 5. Auth screens and route guards
+### [x] 5. Auth screens and route guards
 
 - **Description:** Sign-up, sign-in and password-reset screens ported from the prototype's auth layout, plus the protected console shell (PRD §15, deviation D7: the label is Email, not Email or mobile).
 - **Acceptance:** a master can sign up, sign in and reset a password from the UI; unauthenticated visits to `/dashboard*` redirect to sign-in and return afterwards; console navigation shows Overview, Profile, Classes and Pro Site only.
+- **Deferred:** the password-reset screen ships with the Task 4 email follow-up (`docs/specs/SPEC-identity.md` §2.2); Task 5 ships sign-up and sign-in only.
 - **Verify:** browser walkthrough of the three screens and the redirect both ways; empty-state console renders without error.
 - **Deps:** 4
 - **Files:** `apps/web/src/routes/login.tsx`, `apps/web/src/routes/signup.tsx`, `apps/web/src/routes/_auth/route.tsx`, `apps/web/src/routes/_auth/dashboard/*`, `apps/web/src/lib/auth-client.ts`
 - **Scope:** Medium
+- **Status (2026-10-21): done on `pr/5-auth-screens` (stacked on `pr/4-identity`).** `/login` and canonical `/signup` use the prototype's auth layout; the guard carries the current path and the forms return to it. The web client declares `accountType` to `inferAdditionalFields` (`input: false`), so the console labels the real account type. Console nav is exactly Overview, Profile, Classes and Pro Site; each destination renders a truthful empty state, and `UserMenu` is the only sign-out control. Browser walkthrough at 1440/980/760/520: auth layout and keyboard order, sign-up, sign-in, duplicate-email error, external/backslash redirect dropped, guard round trip, active nav/top-bar title, no overflow at 520; sign-out returns to `/` and the session cookie is cleared. Gates: `check` passes, `check-types` 8/8, `build` 2/2, `test` 5/5 (60 tests: API 4, db 16, infra 25, web 15). The probe account was deleted. Password reset remains deferred with Task 4's email follow-up.
+- **Security follow-up (2026-10-21):** the review found that dot-segment inputs (`/..//evil`) normalize into a protocol-relative pathname. `safeRedirectPath` now rejects a normalized `//` path, and the regression test covers four dot-segment forms plus a stripped control character.
+- **Code-review follow-up (2026-10-21):** nav active state ignores the search string, so `/dashboard/profile?tab=classes` still marks Profile; a stale server error is cleared before client validation runs; the account-type label is shared by the shell and the overview; parse tests cover query/hash redirects.
 
 ### Checkpoint B
 
-- [ ] A master can create an account and reach an empty console; no console link points at an unbuilt screen.
+- [x] A master can create an account and reach an empty console; no console link points at an unbuilt screen.
 
 ## Phase 2 — Master profile and media
 
-### [ ] 6. Profile schema
+### [x] 6. Profile schema
 
 - **Description:** Tables and relations for master profile (name, martial arts, years teaching, home city, introduction), teaching locations and media references, with a migration (PRD §8, §8.2).
 - **Acceptance:** migration applies cleanly to the development branch and is committed; one master owns many locations and many media items; a profile cannot exist without an owner.
@@ -98,6 +104,9 @@ One task = one pull request. A task is done only when its verification column pa
 - **Deps:** 4
 - **Files:** `packages/db/src/schema/master.ts`, `packages/db/src/schema/index.ts`, `packages/db/src/relations.ts`, `packages/db/src/migrations/*`
 - **Scope:** Medium
+- **Status (2026-10-21): done on `pr/6-profile-schema` (stacked on `pr/5-auth-screens`).** Adds `master_profile` (one row per `user`; `display_name`, nullable `years_teaching` >= 0, `home_city`, `introduction`), `master_location` (name plus per-profile `position`), `master_martial_art` (unique name and position per profile; position 0 is the primary discipline), and `media` (profile-photo/site-logo roles, unique object key, content type, positive byte size). Every child cascades from the profile and the profile cascades from `user`, so an ownerless row cannot exist and deleting an owner removes the graph. The generated migration `20261021133503_white_sphinx` applied cleanly to the development branch over the unpooled connection; the follow-up `20261021134337_nasty_hulk` first repairs whitespace-only profile names from the account name (falling back to `Master`) and deletes whitespace-only locations/arts, which have no usable name and no class references at this migration point, then replaces the three name checks with `~ '[^[:space:]]'`; `db:generate` then reported no changes. The applied activity migration `20261021135517_touch_profile_on_child_change` adds the triggers and remains unchanged; the forward migration `20261021141827_fix_profile_touch_locks` replaces its function with `GREATEST(updated_at, clock_timestamp()::timestamp)` and UUID-ordered `FOR NO KEY UPDATE` locks (compatible with the foreign key's `FOR KEY SHARE`), so fresh and already-migrated databases converge. Cascade deletes are safe.
+- **Verification (2026-10-21):** through `createDb` against the development branch, one profile loaded with 2 locations, 2 arts and 2 media; a missing owner returned `23503`; a second profile for the same owner, a duplicate location position and a case-variant martial art returned `23505`; a location without a position returned `23502`; negative years, blank display/location names, an unknown media role and zero byte size returned `23514`; tab/newline and non-breaking-space names returned `23514` for all three name fields. The stricter migration was rehearsed against rows accepted by the old checks while the old constraints were recreated: a blank profile name was repaired from the account name, a blank account name fell back to `Master`, invalid locations/arts were deleted, valid siblings survived, and a new whitespace-only location still returned `23514`. The activity trigger was verified for location, martial-art and media inserts, updates and deletes: each bumped the profile timestamp; deleting the owner with remaining children succeeded and removed the graph. A direct profile edit five minutes ahead followed by a child insert in the same transaction preserved the newer timestamp. Replaying the immutable activity migration followed by the forward fix, sorted `FOR UPDATE` deadlocked once in 30 concurrent opposite transfers because the FK check's `FOR KEY SHARE` conflicts with it; `FOR NO KEY UPDATE` completed 100/100 with no deadlocks. `createDb` composes the new graph without dropping `user` -> sessions/accounts. Unit tests: 5 schema tests; db 21, total 65. Gates: `check` passes, `check-types` 8/8, `build` 2/2, `test` 5/5.
+- **Assumptions:** `display_name` is the public listing name, separate from `user.name`; position 0 is the primary art; positions are allocated explicitly by the API (no database default), and reordering uses a free slot because `(profile_id, position)` is unique; locations carry a name and order in this slice, with address and public slug deferred to the screens that need them; media allows multiple rows per profile and the media module owns choosing the current photo/logo; the API must scope child writes by the caller's profile (no RLS); `master_profile.updated_at` is the profile activity timestamp: direct profile edits use `$onUpdate`, and the `touch_master_profile` trigger bumps it for child inserts, updates and deletes.
 
 ### [ ] 7. Console profile editor
 

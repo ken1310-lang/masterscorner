@@ -43,7 +43,7 @@ neon env pull --file apps/server/.env              # DATABASE_URL, DATABASE_URL_
 
 `neon deploy` applies the policy to the **pinned** branch only. Only `production` (the default branch) and `development` are exempt; every other branch is treated as a throwaway with a 7-day TTL and the cheapest compute, and that includes branches that already exist — so a preview cannot outlive its purpose. Changing a branch that already exists needs `neon deploy --update-existing`; without the flag the CLI prints the difference and stops.
 
-`DATABASE_URL` (pooled) serves application traffic; `DATABASE_URL_UNPOOLED` (direct) is what migrations use, because PgBouncer's transaction mode breaks DDL and session state in ways that never mention pooling. `db:migrate` warns when only the pooled URL is present.
+`DATABASE_URL` (pooled) serves application traffic; `DATABASE_URL_UNPOOLED` (direct) is what database-connected Drizzle commands use. The connecting config (`drizzle.config.ts`) refuses different endpoints, nondefault ports or database names before connecting. Neon pooled/direct hostname aliases and omitted versus explicit PostgreSQL port `5432` count as the same endpoint; credentials may differ. Pull both URLs from the intended branch together. The config warns when only the pooled URL is present.
 
 Apply schema changes like this:
 
@@ -51,6 +51,8 @@ Apply schema changes like this:
 bun run db:generate   # writes SQL into packages/db/src/migrations
 bun run db:migrate    # applies it to the pinned branch
 ```
+
+`db:generate` selects `packages/db/drizzle.generate.config.ts`, which contains only schema and migration-output settings: it loads no environment or database credentials. Generation remains offline even when the shell's connection URLs are stale or mismatched. Migrate, push and studio continue to use the guarded connecting config.
 
 Use versioned migrations, never `db:push`, against a shared branch.
 
@@ -134,6 +136,20 @@ Bun's automatic env loading is disabled in `bunfig.toml`; the framework integrat
 
 Run standalone Node/Bun tools that use Varlock from the owning app directory so they load that app's schema and env files. `env:generate` only generates TypeScript files; it does not initialize environment values in a subsequent command.
 
+## Master accounts
+
+Every account in the first release is a master. `user.account_type` is `text NOT NULL DEFAULT 'master'` and is typed as `AccountType`; Better Auth declares it under `user.additionalFields` with `input: false`, so a sign-up or update payload cannot set it. The session user carries `accountType`, and `protectedProcedure` is the server-side boundary.
+
+Email verification and password reset are not configured yet: no provider has been chosen and no verified sender domain exists. Sign-up and sign-in work without them; the follow-up PR for Task 4 adds both when a provider is available. See `docs/specs/SPEC-identity.md` §2.2 and §10.
+
+## Web session cache isolation
+
+Each web router owns its QueryClient and session-cache lifecycle. Successful sign-in, sign-up and sign-out await cancellation of outstanding queries and clear cached queries and mutations before navigating when the user identity changes. The cleanup promise is published before cancellation begins, so even synchronous abort callbacks entering the boundary for the same new account wait for cache removal. The protected-route guard awaits that boundary before rendering a different account.
+
+A client-side Better Auth session subscription also handles session loss and account changes outside those buttons, then revalidates routes. Refreshing the same account does not clear its cache. Cleanup intentionally clears the whole client cache rather than relying on every protected query being tagged correctly; public data refetches as needed. SSR requests keep separate clients and do not install the browser subscription.
+
+`apps/web/src/lib/session-query-cache.test.ts` covers account transitions, reentrant route entry during cancellation, and late responses, including fetchers that ignore abort signals.
+
 ## Deployment
 
 ### Alchemy
@@ -174,13 +190,13 @@ Development values must never reach production, so production has its own entry 
 bun run deploy:production
 ```
 
-It runs `packages/infra/src/guard-production.ts` and only then `alchemy deploy --stage production`. The guard loads the deploy environment the same way Alchemy does and refuses to continue when:
+`packages/infra/src/deploy-production.ts` rejects forwarded arguments before loading the environment, runs `guard-production.ts`, and only then starts `alchemy deploy --stage production` with the checked environment. The production command accepts no arguments: do not append `--env-file`, `--stage` or another stack path. Export production values in the shell instead. Alchemy 2 beta.83 prefers that inherited environment over its default `.env` fallback; the stack declares no `secrets` override. This guarantee depends on that configuration: changing secret providers or CLI flags requires reviewing the guard against the new value source ([Alchemy precedence](https://alchemy.run/environments/secret-providers/)). The guard refuses to continue when:
 
 - `NODE_ENV` is not `production` — production deploys take their values from the deploy environment, never from a development shell;
 - `NEON_BRANCH` is missing or names a branch other than `production` — the marker `neon env pull` writes is the only signal that says where the values came from, so the guard fails closed instead of guessing;
 - `DATABASE_URL` is unset;
 - `AWS_ENDPOINT_URL_S3` is unset — `neon.ts` declares the media bucket, so the production branch must supply its endpoint;
-- `DATABASE_URL` names the same host as the value in `apps/server/.env`, which is the development branch;
+- `DATABASE_URL` names the same endpoint as the value in `apps/server/.env`, including Neon's pooled/direct hostname aliases, which is the development branch;
 - `BETTER_AUTH_SECRET` is still the value in `apps/server/.env` — production must sign its own sessions, never the development secret;
 - `CORS_ORIGIN` is still the value in `apps/server/.env` — otherwise the API trusts the development origin and the deployed web app is locked out.
 
@@ -222,7 +238,7 @@ Every pull request runs the same four gates locally and in `.github/workflows/ci
 | `bun run check` | Biome through Ultracite — lint, assist and formatting. Warnings are reported and do not fail the run; errors do. |
 | `bun run check-types` | `tsc --noEmit` per package, plus a web build, which is what generates the route tree. |
 | `bun run build` | Production builds: web (`vite build`) and server (`tsdown`). |
-| `bun run test` | `bun test` in the packages that declare a `test` script — the router contract gate in `packages/api` and the deploy-guard matrix in `packages/infra`. |
+| `bun run test` | Colocated `bun:test` suites, including the API authorization contract, migration-target checks, production deploy guard/CLI checks and Neon branch lifecycle policy. |
 
 The workflow runs on pull requests to `development` and `master`, and on pushes to `development`. It needs **no secrets and no `.env` files**: installing, running the Varlock codegen postinstall, linting, type-checking and building all succeed with nothing set (measured in a clean worktree), and the web build simply inlines no `VITE_SERVER_URL` — CI never deploys that artifact. No test may read a real value.
 
