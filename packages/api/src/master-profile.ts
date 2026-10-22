@@ -49,7 +49,7 @@ function refineUniqueNames(
       ctx.addIssue({
         code: "custom",
         message: `${label} must be unique`,
-        path: [index],
+        path: [index, "name"],
       });
       return;
     }

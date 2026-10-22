@@ -15,9 +15,10 @@ import {
 } from "../master-profile";
 
 /**
- * Positions are unique per profile. A reorder first moves the kept rows out of
- * the way, then writes their final positions, so no intermediate update can
- * collide with a row that has not moved yet.
+ * Positions are unique per profile, and a martial-art name is unique per
+ * profile after trimming and lowercasing. A reorder first moves the kept rows
+ * out of the way, and a rename first vacates the kept art names, so no
+ * intermediate update can collide with a row that has not moved yet.
  */
 const VACATE_OFFSET = 1_000_000;
 
@@ -136,9 +137,18 @@ export const masterRouter = router({
           ctx.db
             .update(masterMartialArt)
             .set({
+              name: sql`'vacated:' || ${masterMartialArt.id}::text`,
               position: sql`${masterMartialArt.position} + ${VACATE_OFFSET}`,
             })
-            .where(eq(masterMartialArt.profileId, profileId))
+            .where(
+              and(
+                eq(masterMartialArt.profileId, profileId),
+                inArray(
+                  masterMartialArt.id,
+                  artsPlan.updates.map((row) => row.id)
+                )
+              )
+            )
         );
       }
       if (locationsPlan.updates.length > 0) {

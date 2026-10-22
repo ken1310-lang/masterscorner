@@ -131,7 +131,7 @@ describe("saveProfileInputSchema", () => {
     }
     expect(result.error.issues[0]).toMatchObject({
       message: "Martial arts must be unique",
-      path: ["martialArts", 1],
+      path: ["martialArts", 1, "name"],
     });
   });
 
@@ -182,5 +182,21 @@ describe("profileFormSchema", () => {
       });
       expect(result.success).toBe(false);
     }
+  });
+
+  test("attaches a duplicate name to the row's name field", () => {
+    const result = profileFormSchema.safeParse({
+      ...formValues,
+      locations: [{ name: "Nanganallur" }, { name: " nanganallur " }],
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      return;
+    }
+    expect(result.error.issues[0]).toMatchObject({
+      message: "Locations must be unique",
+      path: ["locations", 1, "name"],
+    });
   });
 });
