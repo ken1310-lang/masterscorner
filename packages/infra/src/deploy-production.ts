@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { createDb } from "@my-better-t-app/db";
 import { spawn } from "bun";
 
 /** Only the documented, argument-free production invocation is supported. */
@@ -10,6 +11,24 @@ export function assertProductionDeployArgs(args: readonly string[]): void {
   }
 }
 
+/**
+ * The profile API reads `master_profile.revision` in every profile request.
+ * Refuse to replace the Workers while the target branch cannot serve that
+ * read; the migration must be applied in this same environment first.
+ */
+export async function assertProfileRevisionReadable(
+  readRevision: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await readRevision();
+  } catch (error) {
+    throw new Error(
+      "Refusing to deploy: the database does not expose master_profile.revision. Run `bun run db:migrate` against the production branch in this environment, then retry.",
+      { cause: error }
+    );
+  }
+}
+
 if (import.meta.main) {
   try {
     assertProductionDeployArgs(process.argv.slice(2));
@@ -17,6 +36,17 @@ if (import.meta.main) {
     // A static import would load Varlock before rejecting configuration overrides.
     // This also keeps guard-production.ts independently invokable.
     await import("./guard-production");
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error("Refusing to deploy: DATABASE_URL is unset.");
+    }
+    const db = createDb({ DATABASE_URL: databaseUrl });
+    await assertProfileRevisionReadable(() =>
+      db.query.masterProfile.findFirst({ columns: { revision: true } })
+    );
+    console.log(
+      "Database schema verified: master_profile.revision is readable."
+    );
     const deploy = spawn(
       [
         process.execPath,
