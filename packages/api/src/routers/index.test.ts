@@ -32,6 +32,15 @@ const signedIn = appRouter.createCaller({
   session: session as never,
 });
 
+const profileInput = {
+  displayName: "Master Arun Vel",
+  homeCity: "Chennai",
+  introduction: null,
+  locations: [],
+  martialArts: [{ name: "Silambam" }],
+  yearsTeaching: null,
+};
+
 describe("appRouter", () => {
   test("healthCheck answers an anonymous caller", async () => {
     await expect(anonymous.healthCheck()).resolves.toBe("OK");
@@ -52,6 +61,21 @@ describe("appRouter", () => {
         accountType: "master",
       },
     });
+  });
+
+  test("master profile procedures refuse an anonymous caller", async () => {
+    await expect(anonymous.master.getProfile()).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+    await expect(
+      anonymous.master.saveProfile(profileInput)
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  test("saveProfile rejects invalid input before touching the database", async () => {
+    await expect(
+      signedIn.master.saveProfile({ ...profileInput, displayName: "  " })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   test("the session type carries the account type", () => {
