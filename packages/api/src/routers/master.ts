@@ -4,6 +4,7 @@ import {
   masterMartialArt,
   masterProfile,
 } from "@my-better-t-app/db/schema/master";
+import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
@@ -22,8 +23,39 @@ import {
  */
 const VACATE_OFFSET = 1_000_000;
 
-const profileIdFor = (userId: string) =>
-  sql`(select ${masterProfile.id} from ${masterProfile} where ${masterProfile.userId} = ${userId})`;
+const PROFILE_CONFLICT_MESSAGE =
+  "This profile changed in another session. Reload the page and save again.";
+const DUPLICATE_KEY = /duplicate key value/i;
+
+function profileConflict() {
+  return new TRPCError({
+    code: "CONFLICT",
+    message: PROFILE_CONFLICT_MESSAGE,
+  });
+}
+
+/** A concurrent first save hits the one-profile-per-user unique constraint. */
+function isUniqueViolation(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  if ("code" in error && error.code === "23505") {
+    return true;
+  }
+  if (
+    "cause" in error &&
+    error.cause &&
+    typeof error.cause === "object" &&
+    "code" in error.cause &&
+    error.cause.code === "23505"
+  ) {
+    return true;
+  }
+  return error instanceof Error && DUPLICATE_KEY.test(error.message);
+}
+
+const profileIdForRevision = (userId: string, revision: string) =>
+  sql`(select ${masterProfile.id} from ${masterProfile} where ${masterProfile.userId} = ${userId} and ${masterProfile.revision} = ${revision})`;
 
 async function loadProfile(
   db: Database,
@@ -57,6 +89,7 @@ async function loadProfile(
       homeCity: profile.homeCity,
       id: profile.id,
       introduction: profile.introduction,
+      revision: profile.revision,
       yearsTeaching: profile.yearsTeaching,
     },
   };
@@ -76,6 +109,11 @@ export const masterRouter = router({
         with: { locations: true, martialArts: true },
       });
 
+      if ((existing?.revision ?? null) !== input.revision) {
+        throw profileConflict();
+      }
+
+      const nextRevision = crypto.randomUUID();
       const artsPlan = planProfileChildren(
         existing?.martialArts ?? [],
         input.martialArts
@@ -84,28 +122,37 @@ export const masterRouter = router({
         existing?.locations ?? [],
         input.locations
       );
-      const profileId = profileIdFor(userId);
-      const statements: BatchItem<"pg">[] = [
-        ctx.db
-          .insert(masterProfile)
-          .values({
-            displayName: input.displayName,
-            homeCity: input.homeCity,
-            introduction: input.introduction,
-            userId,
-            yearsTeaching: input.yearsTeaching,
-          })
-          .onConflictDoUpdate({
-            target: masterProfile.userId,
-            set: {
+      const profileId = profileIdForRevision(userId, nextRevision);
+      const profileWrite = existing
+        ? ctx.db
+            .update(masterProfile)
+            .set({
               displayName: input.displayName,
               homeCity: input.homeCity,
               introduction: input.introduction,
+              revision: nextRevision,
               updatedAt: new Date(),
               yearsTeaching: input.yearsTeaching,
-            },
-          }),
-      ];
+            })
+            .where(
+              and(
+                eq(masterProfile.userId, userId),
+                eq(masterProfile.revision, existing.revision)
+              )
+            )
+            .returning({ id: masterProfile.id })
+        : ctx.db
+            .insert(masterProfile)
+            .values({
+              displayName: input.displayName,
+              homeCity: input.homeCity,
+              introduction: input.introduction,
+              revision: nextRevision,
+              userId,
+              yearsTeaching: input.yearsTeaching,
+            })
+            .returning({ id: masterProfile.id });
+      const statements: BatchItem<"pg">[] = [profileWrite];
 
       if (artsPlan.deleteIds.length > 0) {
         statements.push(
@@ -189,34 +236,62 @@ export const masterRouter = router({
         );
       }
 
-      if (artsPlan.inserts.length > 0) {
+      for (const row of artsPlan.inserts) {
         statements.push(
-          ctx.db.insert(masterMartialArt).values(
-            artsPlan.inserts.map((row) => ({
-              name: row.name,
-              position: row.position,
-              profileId,
-            }))
+          ctx.db.insert(masterMartialArt).select(
+            ctx.db
+              .select({
+                name: sql<string>`${row.name}`.as("name"),
+                position: sql<number>`${row.position}`.as("position"),
+                profileId: masterProfile.id,
+              })
+              .from(masterProfile)
+              .where(
+                and(
+                  eq(masterProfile.userId, userId),
+                  eq(masterProfile.revision, nextRevision)
+                )
+              )
           )
         );
       }
-      if (locationsPlan.inserts.length > 0) {
+      for (const row of locationsPlan.inserts) {
         statements.push(
-          ctx.db.insert(masterLocation).values(
-            locationsPlan.inserts.map((row) => ({
-              name: row.name,
-              position: row.position,
-              profileId,
-            }))
+          ctx.db.insert(masterLocation).select(
+            ctx.db
+              .select({
+                name: sql<string>`${row.name}`.as("name"),
+                position: sql<number>`${row.position}`.as("position"),
+                profileId: masterProfile.id,
+              })
+              .from(masterProfile)
+              .where(
+                and(
+                  eq(masterProfile.userId, userId),
+                  eq(masterProfile.revision, nextRevision)
+                )
+              )
           )
         );
       }
 
       const [first, ...rest] = statements;
-      if (first) {
+      if (!first) {
+        throw new Error("Profile save produced no statements");
+      }
+      try {
         await ctx.db.batch([first, ...rest]);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          throw profileConflict();
+        }
+        throw error;
       }
 
-      return loadProfile(ctx.db, userId);
+      const saved = await loadProfile(ctx.db, userId);
+      if (saved.profile?.revision !== nextRevision) {
+        throw profileConflict();
+      }
+      return saved;
     }),
 });

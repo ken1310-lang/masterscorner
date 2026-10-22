@@ -9,6 +9,7 @@ import {
 } from "./master-profile";
 
 const validInput = {
+  revision: null,
   displayName: "Master Arun Vel",
   homeCity: "Chennai",
   introduction: "Traditional Silambam training.",
@@ -154,10 +155,19 @@ describe("saveProfileInputSchema", () => {
     );
     expect(parse({ martialArts: manyArts }).success).toBe(false);
   });
+
+  test("requires a revision token or null for a new profile", () => {
+    expect(
+      parse({ revision: "11111111-1111-4111-8111-111111111111" }).success
+    ).toBe(true);
+    expect(parse({ revision: "not-a-revision" }).success).toBe(false);
+    expect(parse({ revision: null }).success).toBe(true);
+  });
 });
 
 describe("profileFormSchema", () => {
   const formValues = {
+    revision: null,
     displayName: "Master Arun Vel",
     homeCity: "Chennai",
     introduction: "",

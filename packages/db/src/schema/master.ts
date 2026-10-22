@@ -34,6 +34,11 @@ export const masterProfile = pgTable(
   "master_profile",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Optimistic concurrency token. Every save writes a new value and scopes
+     * its child writes to it, so a stale snapshot cannot apply.
+     */
+    revision: uuid("revision").defaultRandom().notNull(),
     userId: text("user_id")
       .notNull()
       .unique()

@@ -33,6 +33,7 @@ const signedIn = appRouter.createCaller({
 });
 
 const profileInput = {
+  revision: null,
   displayName: "Master Arun Vel",
   homeCity: "Chennai",
   introduction: null,

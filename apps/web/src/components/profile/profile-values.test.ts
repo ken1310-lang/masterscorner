@@ -4,6 +4,8 @@ import type { MasterProfilePayload } from "@my-better-t-app/api/master-profile";
 
 import { initialProfileValues, profileValuesToInput } from "./profile-values";
 
+const REVISION = "11111111-1111-4111-8111-111111111111";
+
 const emptyPayload: MasterProfilePayload = {
   locations: [],
   martialArts: [],
@@ -24,6 +26,7 @@ const savedPayload: MasterProfilePayload = {
     homeCity: "Chennai",
     id: "profile-1",
     introduction: "Traditional Silambam training.",
+    revision: REVISION,
     yearsTeaching: 18,
   },
 };
@@ -31,6 +34,7 @@ const savedPayload: MasterProfilePayload = {
 describe("profile form values", () => {
   test("starts a new profile from the account name and one empty art", () => {
     expect(initialProfileValues("Master Arun Vel", emptyPayload)).toEqual({
+      revision: null,
       displayName: "Master Arun Vel",
       homeCity: "",
       introduction: "",
@@ -42,6 +46,7 @@ describe("profile form values", () => {
 
   test("keeps saved ids, order and the year as text", () => {
     expect(initialProfileValues("Account name", savedPayload)).toEqual({
+      revision: REVISION,
       displayName: "Master Arun Vel",
       homeCity: "Chennai",
       introduction: "Traditional Silambam training.",
@@ -59,6 +64,7 @@ describe("profile form values", () => {
 
   test("turns a blank year into null and keeps existing row ids", () => {
     const input = profileValuesToInput({
+      revision: REVISION,
       displayName: "Master Arun Vel",
       homeCity: "",
       introduction: "",
@@ -68,6 +74,7 @@ describe("profile form values", () => {
     });
 
     expect(input).toEqual({
+      revision: REVISION,
       displayName: "Master Arun Vel",
       homeCity: "",
       introduction: "",
@@ -79,6 +86,7 @@ describe("profile form values", () => {
 
   test("converts a typed year to a number", () => {
     const input = profileValuesToInput({
+      revision: REVISION,
       displayName: "Master Arun Vel",
       homeCity: "",
       introduction: "",

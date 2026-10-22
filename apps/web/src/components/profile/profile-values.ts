@@ -15,6 +15,7 @@ export interface ProfileFormValues {
   introduction: string;
   locations: ProfileFormRow[];
   martialArts: ProfileFormRow[];
+  revision: string | null;
   yearsTeaching: string;
 }
 
@@ -27,6 +28,7 @@ export function initialProfileValues(
   const arts = payload.martialArts.map(({ id, name }) => ({ id, name }));
 
   return {
+    revision: payload.profile?.revision ?? null,
     displayName: payload.profile?.displayName ?? accountName,
     homeCity: payload.profile?.homeCity ?? "",
     introduction: payload.profile?.introduction ?? "",
@@ -46,6 +48,7 @@ export function profileValuesToInput(
   const yearsTeaching = values.yearsTeaching.trim();
 
   return {
+    revision: values.revision,
     displayName: values.displayName,
     homeCity: values.homeCity,
     introduction: values.introduction,

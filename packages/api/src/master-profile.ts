@@ -69,6 +69,7 @@ const childSchema = (label: string, max: number) =>
  * location a class may already reference.
  */
 export const saveProfileInputSchema = z.object({
+  revision: z.uuid("Invalid profile revision").nullable(),
   displayName: requiredName("Display name", MAX_DISPLAY_NAME),
   yearsTeaching: z
     .number()
@@ -91,6 +92,7 @@ export const saveProfileInputSchema = z.object({
 
 /** The browser form keeps the year as typed text and validates it here. */
 export const profileFormSchema = z.object({
+  revision: z.uuid("Invalid profile revision").nullable(),
   displayName: requiredName("Display name", MAX_DISPLAY_NAME),
   yearsTeaching: z
     .string()
@@ -171,6 +173,7 @@ export interface MasterProfileSummary {
   homeCity: string | null;
   id: string;
   introduction: string | null;
+  revision: string;
   yearsTeaching: number | null;
 }
 
