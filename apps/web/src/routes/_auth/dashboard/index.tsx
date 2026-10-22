@@ -45,8 +45,9 @@ function Overview() {
         <article className="rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-extrabold text-base">Next step</h2>
           <p className="mt-2 text-muted-text text-sm leading-relaxed">
-            Your master profile will appear on the public site once the profile
-            module ships. Nothing has been published yet.
+            Your master profile holds the identity, martial arts and teaching
+            locations used by the public listing and Pro Site. Nothing is
+            published yet.
           </p>
           <Link
             className="mt-4 inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"

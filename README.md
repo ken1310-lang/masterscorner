@@ -190,7 +190,7 @@ Development values must never reach production, so production has its own entry 
 bun run deploy:production
 ```
 
-`packages/infra/src/deploy-production.ts` rejects forwarded arguments before loading the environment, runs `guard-production.ts`, and only then starts `alchemy deploy --stage production` with the checked environment. The production command accepts no arguments: do not append `--env-file`, `--stage` or another stack path. Export production values in the shell instead. Alchemy 2 beta.83 prefers that inherited environment over its default `.env` fallback; the stack declares no `secrets` override. This guarantee depends on that configuration: changing secret providers or CLI flags requires reviewing the guard against the new value source ([Alchemy precedence](https://alchemy.run/environments/secret-providers/)). The guard refuses to continue when:
+`packages/infra/src/deploy-production.ts` rejects forwarded arguments before loading the environment, runs `guard-production.ts`, verifies that the target database can read `master_profile.revision`, and only then starts `alchemy deploy --stage production` with the checked environment. The production command accepts no arguments: do not append `--env-file`, `--stage` or another stack path. Export production values in the shell instead. Alchemy 2 beta.83 prefers that inherited environment over its default `.env` fallback; the stack declares no `secrets` override. This guarantee depends on that configuration: changing secret providers or CLI flags requires reviewing the guard against the new value source ([Alchemy precedence](https://alchemy.run/environments/secret-providers/)). The guard refuses to continue when:
 
 - `NODE_ENV` is not `production` — production deploys take their values from the deploy environment, never from a development shell;
 - `NEON_BRANCH` is missing or names a branch other than `production` — the marker `neon env pull` writes is the only signal that says where the values came from, so the guard fails closed instead of guessing;
@@ -198,7 +198,8 @@ bun run deploy:production
 - `AWS_ENDPOINT_URL_S3` is unset — `neon.ts` declares the media bucket, so the production branch must supply its endpoint;
 - `DATABASE_URL` names the same endpoint as the value in `apps/server/.env`, including Neon's pooled/direct hostname aliases, which is the development branch;
 - `BETTER_AUTH_SECRET` is still the value in `apps/server/.env` — production must sign its own sessions, never the development secret;
-- `CORS_ORIGIN` is still the value in `apps/server/.env` — otherwise the API trusts the development origin and the deployed web app is locked out.
+- `CORS_ORIGIN` is still the value in `apps/server/.env` — otherwise the API trusts the development origin and the deployed web app is locked out;
+- the database cannot answer the profile revision read — `master_profile.revision` is required by every profile request, so the deploy refuses until `bun run db:migrate` has applied the reviewed migration to the production branch.
 
 Each refusal prints what to do next. Supply the production branch's values to the deploy process itself — never pull them into `apps/server/.env`, which stays the development file: doing that points `bun run dev` at production *and* makes the guard's own comparison meaningless.
 
