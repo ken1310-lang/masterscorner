@@ -10,7 +10,9 @@ import type { BatchItem } from "drizzle-orm/batch";
 
 import { protectedProcedure, router } from "../index";
 import {
+  type MasterProfileChild,
   type MasterProfilePayload,
+  type MasterProfileSummary,
   planProfileChildren,
   saveProfileInputSchema,
 } from "../master-profile";
@@ -57,6 +59,26 @@ function isUniqueViolation(error: unknown) {
 const profileIdForRevision = (userId: string, revision: string) =>
   sql`(select ${masterProfile.id} from ${masterProfile} where ${masterProfile.userId} = ${userId} and ${masterProfile.revision} = ${revision})`;
 
+function toProfilePayload(
+  profile: MasterProfileSummary,
+  martialArts: MasterProfileChild[],
+  locations: MasterProfileChild[]
+): MasterProfilePayload {
+  return {
+    locations: locations.map(({ id, name, position }) => ({
+      id,
+      name,
+      position,
+    })),
+    martialArts: martialArts.map(({ id, name, position }) => ({
+      id,
+      name,
+      position,
+    })),
+    profile,
+  };
+}
+
 async function loadProfile(
   db: Database,
   userId: string
@@ -73,18 +95,8 @@ async function loadProfile(
     return { locations: [], martialArts: [], profile: null };
   }
 
-  return {
-    locations: profile.locations.map(({ id, name, position }) => ({
-      id,
-      name,
-      position,
-    })),
-    martialArts: profile.martialArts.map(({ id, name, position }) => ({
-      id,
-      name,
-      position,
-    })),
-    profile: {
+  return toProfilePayload(
+    {
       displayName: profile.displayName,
       homeCity: profile.homeCity,
       id: profile.id,
@@ -92,7 +104,9 @@ async function loadProfile(
       revision: profile.revision,
       yearsTeaching: profile.yearsTeaching,
     },
-  };
+    profile.martialArts,
+    profile.locations
+  );
 }
 
 export const masterRouter = router({
@@ -275,26 +289,73 @@ export const masterRouter = router({
         );
       }
 
+      // Read the rows back inside the same transaction so the response is this
+      // save's own writes, never a newer save that lands during a later reload.
+      statements.push(
+        ctx.db
+          .select({
+            displayName: masterProfile.displayName,
+            homeCity: masterProfile.homeCity,
+            id: masterProfile.id,
+            introduction: masterProfile.introduction,
+            revision: masterProfile.revision,
+            yearsTeaching: masterProfile.yearsTeaching,
+          })
+          .from(masterProfile)
+          .where(
+            and(
+              eq(masterProfile.userId, userId),
+              eq(masterProfile.revision, nextRevision)
+            )
+          )
+          .limit(1),
+        ctx.db
+          .select({
+            id: masterMartialArt.id,
+            name: masterMartialArt.name,
+            position: masterMartialArt.position,
+          })
+          .from(masterMartialArt)
+          .where(eq(masterMartialArt.profileId, profileId))
+          .orderBy(masterMartialArt.position),
+        ctx.db
+          .select({
+            id: masterLocation.id,
+            name: masterLocation.name,
+            position: masterLocation.position,
+          })
+          .from(masterLocation)
+          .where(eq(masterLocation.profileId, profileId))
+          .orderBy(masterLocation.position)
+      );
+
       const [first, ...rest] = statements;
       if (!first) {
         throw new Error("Profile save produced no statements");
       }
-      let written: { id: string }[];
+      let result: unknown[];
       try {
-        [written] = (await ctx.db.batch([first, ...rest])) as [
-          { id: string }[],
-          ...unknown[],
-        ];
+        result = await ctx.db.batch([first, ...rest]);
       } catch (error) {
         if (isUniqueViolation(error)) {
           throw profileConflict();
         }
         throw error;
       }
-      if (written.length === 0) {
+      // The batch preserves statement order; the three snapshot reads are
+      // appended last. Writes without RETURNING come back as raw result
+      // objects, so read the guard and the snapshot by position.
+      const [guardRows] = result;
+      const [profileRows, martialArts, locations] = result.slice(-3) as [
+        MasterProfileSummary[],
+        MasterProfileChild[],
+        MasterProfileChild[],
+      ];
+      const [profile] = profileRows;
+      if (!Array.isArray(guardRows) || guardRows.length === 0 || !profile) {
         throw profileConflict();
       }
 
-      return loadProfile(ctx.db, userId);
+      return toProfilePayload(profile, martialArts, locations);
     }),
 });

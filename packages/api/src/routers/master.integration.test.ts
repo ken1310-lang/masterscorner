@@ -180,6 +180,10 @@ describeDb("master profile database round trip", () => {
       winner.value.profile?.displayName === "Concurrent A"
         ? "Concurrent A"
         : "Concurrent B";
+    expect(winner.value.profile?.displayName).toBe(winningName);
+    expect(winner.value.martialArts).toEqual([
+      { id: keptArt.id, name: names[winningName], position: 0 },
+    ]);
     const final = await caller.master.getProfile();
     expect(final.profile?.displayName).toBe(winningName);
     expect(final.martialArts).toEqual([
