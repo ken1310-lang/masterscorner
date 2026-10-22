@@ -279,19 +279,22 @@ export const masterRouter = router({
       if (!first) {
         throw new Error("Profile save produced no statements");
       }
+      let written: { id: string }[];
       try {
-        await ctx.db.batch([first, ...rest]);
+        [written] = (await ctx.db.batch([first, ...rest])) as [
+          { id: string }[],
+          ...unknown[],
+        ];
       } catch (error) {
         if (isUniqueViolation(error)) {
           throw profileConflict();
         }
         throw error;
       }
-
-      const saved = await loadProfile(ctx.db, userId);
-      if (saved.profile?.revision !== nextRevision) {
+      if (written.length === 0) {
         throw profileConflict();
       }
-      return saved;
+
+      return loadProfile(ctx.db, userId);
     }),
 });
