@@ -27,20 +27,20 @@ function Profile() {
   if (profile.status === "pending") {
     return <Loader />;
   }
-  if (profile.isError) {
-    return (
-      <ConsoleEmptyState title="Profile could not load">
-        <p>{profile.error.message}</p>
-        <button
-          className="mt-3 min-h-11 font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
-          onClick={handleRetry}
-          type="button"
-        >
-          Try again
-        </button>
-      </ConsoleEmptyState>
-    );
+  if (profile.data !== undefined) {
+    return <ProfileForm accountName={user.name} payload={profile.data} />;
   }
 
-  return <ProfileForm accountName={user.name} payload={profile.data} />;
+  return (
+    <ConsoleEmptyState title="Profile could not load">
+      <p>{profile.error.message}</p>
+      <button
+        className="mt-3 min-h-11 font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
+        onClick={handleRetry}
+        type="button"
+      >
+        Try again
+      </button>
+    </ConsoleEmptyState>
+  );
 }
