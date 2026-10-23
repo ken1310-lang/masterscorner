@@ -114,12 +114,12 @@ States:
 - Loading: breadcrumb and section skeletons with `aria-busy`; no fabricated profile.
 - Error without data: `Profile could not load` with Retry.
 - Refresh error with cached data: retry banner above the existing profile.
-- Unknown or malformed slug, or a profile that no longer exists: the existing not-found content inside the marketplace layout, with no profile sections.
+- Unknown or malformed slug, or a profile that no longer exists: the existing not-found content inside the marketplace layout, with no profile sections. A path that fails the public input schema (empty after trimming or over 200 characters) is classified as not found before the query, so it never shows a retryable load error.
 - Long names, arts, class names and location names wrap without horizontal page scroll.
 
 ### 3.5 Freshness
 
-Profile saves and class save/status/remove mutations invalidate both `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. The profile page therefore reflects edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
+Profile saves, profile-photo upload/removal and class save/status/remove mutations invalidate both `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. The profile page therefore reflects edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
 
 ## 4. Commands and structure
 
@@ -170,8 +170,8 @@ Use existing semantic Tailwind roles (`bg-surface-alt`, `bg-card`, `text-muted-t
 
 - Small: slug generation strips diacritics, collapses separators, caps the name, falls back to `master`, preserves the UUID and parses bare/renamed slugs; malformed slugs return null; input accepts a 200-character slug and rejects an empty one.
 - Contract (live): full profile returns ordered arts/locations, current active/full classes with sorted schedules, fee only when stored, photo URL from a seeded media row, and no paused class; minimal profile returns null/empty optional fields without error; unknown and malformed slugs return null; an old slug still resolves after a display-name change; payload keys exclude email, userId, revision, objectKey and paused fields.
-- UI: browser check at 1440 and 760 px for a full profile and a minimal profile; unknown slug shows the not-found content; no horizontal page scroll; no rating, verification, trial, enquiry or Pro Site action; keyboard-focus the breadcrumb and registry link.
-- Freshness: a profile save and a class save invalidate the public profile prefix (focused web test).
+- UI: browser check at 1440 and 760 px for a full profile and a minimal profile; unknown slug shows the not-found content; a 201-character malformed slug shows not-found without a load error, retry or profile query; no horizontal page scroll; no rating, verification, trial, enquiry or Pro Site action; keyboard-focus the breadcrumb and registry link.
+- Freshness: a profile save, photo upload/removal and class save invalidate the public directory and profile prefixes; failed photo writes leave them fresh.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
 ## 7. Success criteria

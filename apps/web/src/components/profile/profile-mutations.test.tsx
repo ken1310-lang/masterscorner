@@ -617,4 +617,47 @@ describe("public directory freshness", () => {
       ).toBe(true)
     );
   });
+
+  test("successful photo upload invalidates the public profile", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    const reader = choosePhoto(view.container);
+    await settle(() => reader.succeed());
+    const upload = await view.request("media.upload");
+    await settle(() => upload.resolve(initialPayload()));
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+  });
+
+  test("successful photo removal invalidates the public profile", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    await clickButton(view, "Remove photo");
+    const remove = await view.request("media.remove");
+    await settle(() => remove.resolve(initialPayload()));
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+  });
+
+  test("failed photo upload leaves the public profile fresh", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    const reader = choosePhoto(view.container);
+    await settle(() => reader.succeed());
+    const upload = await view.request("media.upload");
+    await settle(() => upload.reject("Upload failed"));
+    await view.findByText("Upload failed");
+    expect(
+      view.queryClient.getQueryState(view.directoryProfileQueryKey)
+        ?.isInvalidated
+    ).toBe(false);
+  });
 });

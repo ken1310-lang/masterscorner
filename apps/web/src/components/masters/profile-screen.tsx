@@ -1,3 +1,4 @@
+import { directoryMasterProfileInputSchema } from "@my-better-t-app/api/directory";
 import { useQuery } from "@tanstack/react-query";
 
 import { ShellContainer } from "@/components/shell/container";
@@ -89,6 +90,14 @@ function RefreshBanner({ onRetry }: { onRetry: () => void }) {
 }
 
 export function MasterProfileScreen({ slug }: { slug: string }) {
+  const input = directoryMasterProfileInputSchema.safeParse({ slug });
+  if (!input.success) {
+    return <ProfileNotFound />;
+  }
+  return <MasterProfileQueryScreen slug={input.data.slug} />;
+}
+
+function MasterProfileQueryScreen({ slug }: { slug: string }) {
   const trpc = useTRPC();
   const profileQuery = useQuery(
     trpc.directory.masterProfile.queryOptions({ slug })

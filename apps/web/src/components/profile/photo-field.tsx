@@ -135,6 +135,14 @@ export function PhotoField({
     [queryClient, trpc.master.getProfile]
   );
 
+  const invalidatePublicProfile = useCallback(
+    () =>
+      queryClient.invalidateQueries({
+        queryKey: trpc.directory.masterProfile.queryKey(),
+      }),
+    [queryClient, trpc.directory.masterProfile]
+  );
+
   const uploadImage = useCallback(
     async (
       contentType: MediaImageType,
@@ -163,11 +171,16 @@ export function PhotoField({
           { queryKey, exact: true },
           { silent: true }
         );
-        if (isCurrentSession()) {
-          applyPhoto(saved);
-          toast.success(photo ? "Photo replaced" : "Photo added");
-          setStatus("idle");
+        if (!isCurrentSession()) {
+          return;
         }
+        applyPhoto(saved);
+        await invalidatePublicProfile();
+        if (!isCurrentSession()) {
+          return;
+        }
+        toast.success(photo ? "Photo replaced" : "Photo added");
+        setStatus("idle");
       } catch (uploadError) {
         if (isCurrentSession()) {
           fail(
@@ -178,7 +191,15 @@ export function PhotoField({
         }
       }
     },
-    [applyPhoto, fail, photo, queryClient, trpc.master.getProfile, upload]
+    [
+      applyPhoto,
+      fail,
+      invalidatePublicProfile,
+      photo,
+      queryClient,
+      trpc.master.getProfile,
+      upload,
+    ]
   );
 
   const uploadPhoto = useCallback(
@@ -241,11 +262,16 @@ export function PhotoField({
         { queryKey, exact: true },
         { silent: true }
       );
-      if (isCurrentSession()) {
-        applyPhoto(saved);
-        toast.success("Photo removed");
-        setStatus("idle");
+      if (!isCurrentSession()) {
+        return;
       }
+      applyPhoto(saved);
+      await invalidatePublicProfile();
+      if (!isCurrentSession()) {
+        return;
+      }
+      toast.success("Photo removed");
+      setStatus("idle");
     } catch (removeError) {
       if (isCurrentSession()) {
         fail(
@@ -258,6 +284,7 @@ export function PhotoField({
   }, [
     applyPhoto,
     fail,
+    invalidatePublicProfile,
     queryClient,
     remove,
     sessionQueries,
