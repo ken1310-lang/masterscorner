@@ -11,7 +11,8 @@ import { LogoMark } from "./logo-mark";
  * prototype lists `Masters`, `Academies`, `Classes`, `Events` and
  * `Experience Card`; each is added here by the task that ships its route.
  */
-const navLinks: { to: "/" | "/classes"; label: string }[] = [
+const navLinks: { to: "/" | "/classes" | "/masters"; label: string }[] = [
+  { label: "Masters", to: "/masters" },
   { label: "Classes", to: "/classes" },
 ];
 

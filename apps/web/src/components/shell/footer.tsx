@@ -11,14 +11,17 @@ import { LogoMark } from "./logo-mark";
 const footerColumns: {
   heading: string;
   links: {
-    to: "/" | "/login" | "/dashboard" | "/classes";
+    to: "/" | "/login" | "/dashboard" | "/classes" | "/masters";
     label: string;
     search?: { form: "signin" };
   }[];
 }[] = [
   {
     heading: "Discover",
-    links: [{ to: "/classes", label: "Classes" }],
+    links: [
+      { to: "/masters", label: "Masters" },
+      { to: "/classes", label: "Classes" },
+    ],
   },
   {
     heading: "For masters",
