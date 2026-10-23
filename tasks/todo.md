@@ -146,7 +146,7 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 
 ## Phase 3 — Classes
 
-### [ ] 9. Class schema
+### [x] 9. Class schema — done; migration applied to development
 
 - **Description:** Classes owned by a master: martial art, audience, level, schedule rows, location reference, optional fee (amount plus period), status; with a migration (PRD §10.2, §19.3).
 - **Acceptance:** a class requires a location and at least one schedule row; fee is optional and stored as structured amount plus period; status supports active, paused and full; deleting a location that classes reference is refused.
@@ -154,6 +154,8 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 - **Deps:** 6
 - **Files:** `packages/db/src/schema/classes.ts`, `packages/db/src/schema/index.ts`, `packages/db/src/migrations/*`
 - **Scope:** Medium
+- **Status (2026-10-23): done on `task/9-class-schema`.** `docs/specs/SPEC-classes.md` is the module contract. `class-kinds.ts` owns the dependency-free vocabularies: audiences `children/adults/all`, levels `beginner/intermediate/advanced/all`, statuses `active/paused/full` and fee periods `session/week/month/term`. `master_class` requires a profile, martial art and location; profile deletes cascade, while referenced martial arts and locations are delete-restricted (PostgreSQL `restrict_violation` / `23001`). Fees are nullable together: a present amount is `numeric(10,2)` in INR and requires a period. `master_class_schedule` cascades with the class, stores ISO weekdays 1–7 and wall-clock `time(0)` values, rejects `end_time <= start_time`, and makes `(class_id, day_of_week, start_time)` unique. Relations return a class with `location`, `martialArt` and `schedules`. At least one schedule row remains the Task 10 write-contract invariant: PostgreSQL cannot express child cardinality without a deferred trigger, and the Neon HTTP write path must not depend on deferred transaction state.
+- **Verification (2026-10-23):** migration `20261023065616_charming_jean_grey` applied to the development branch over the direct connection; a second `db:generate` reports no schema changes. Unit schema suite 5/5, 56 assertions. Live PostgreSQL suite 4/4, 10 assertions: a class and two schedules round-trip through the relational query, deleting the class cascades its schedules, deleting a referenced location fails with `23001`, an amount without a period fails with `23514`, and duplicate or invalid slots fail with `23505`/`23514`. `bun run gates` 5/5; the gated database suite is skipped offline as intended.
 
 ### [ ] 10. Console classes CRUD
 
