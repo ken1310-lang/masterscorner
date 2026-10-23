@@ -218,6 +218,39 @@ describeDb("class schema database round trip", () => {
     );
   });
 
+  test("class inserts and deletes advance profile activity", async () => {
+    const { artId, classId, locationId, profileId } = await seed();
+    await resetActivity(classId, profileId);
+    const beforeInsert = await timestamps(classId, profileId);
+    const insertedClass = first(
+      await db
+        .insert(masterClass)
+        .values({
+          audience: "adults",
+          level: "beginner",
+          locationId,
+          martialArtId: artId,
+          name: "Second activity class",
+          profileId,
+        })
+        .returning({ id: masterClass.id })
+    );
+
+    const afterInsert = await timestamps(classId, profileId);
+    expect(afterInsert.profileUpdatedAt.getTime()).toBeGreaterThan(
+      beforeInsert.profileUpdatedAt.getTime()
+    );
+
+    await resetActivity(classId, profileId);
+    const beforeDelete = await timestamps(classId, profileId);
+    await db.delete(masterClass).where(eq(masterClass.id, insertedClass.id));
+
+    const afterDelete = await timestamps(classId, profileId);
+    expect(afterDelete.profileUpdatedAt.getTime()).toBeGreaterThan(
+      beforeDelete.profileUpdatedAt.getTime()
+    );
+  });
+
   test("opposite schedule moves do not deadlock", async () => {
     const {
       artId,
