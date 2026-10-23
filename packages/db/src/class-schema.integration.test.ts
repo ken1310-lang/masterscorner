@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { Pool, type PoolClient } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
 
 import { createDb } from "./index";
@@ -136,6 +137,24 @@ describeDb("class schema database round trip", () => {
     );
   }
 
+  async function waitForLockWait(
+    client: PoolClient,
+    pid: number,
+    attempt = 0
+  ): Promise<void> {
+    const { rows } = await client.query(
+      "select 1 from pg_locks where pid = $1 and not granted limit 1",
+      [pid]
+    );
+    if (rows.length > 0) {
+      return;
+    }
+    if (attempt >= 200) {
+      throw new Error(`Database backend ${pid} never waited for a class lock`);
+    }
+    return waitForLockWait(client, pid, attempt + 1);
+  }
+
   afterEach(async () => {
     await Promise.all(
       createdUsers
@@ -198,6 +217,134 @@ describeDb("class schema database round trip", () => {
       beforeScheduleDelete.profileUpdatedAt.getTime()
     );
   });
+
+  test("opposite schedule moves do not deadlock", async () => {
+    const {
+      artId,
+      classId: seededClassId,
+      locationId,
+      profileId,
+    } = await seed();
+    const secondClass = first(
+      await db
+        .insert(masterClass)
+        .values({
+          audience: "adults",
+          level: "beginner",
+          locationId,
+          martialArtId: artId,
+          name: "Second class",
+          profileId,
+        })
+        .returning({ id: masterClass.id })
+    );
+    const [lowClassId, highClassId] =
+      seededClassId < secondClass.id
+        ? [seededClassId, secondClass.id]
+        : [secondClass.id, seededClassId];
+
+    const lowSchedule = first(
+      await db
+        .insert(masterClassSchedule)
+        .values({
+          classId: lowClassId,
+          dayOfWeek: 5,
+          endTime: "09:00:00",
+          startTime: "08:00:00",
+        })
+        .returning({ id: masterClassSchedule.id })
+    );
+    const highSchedule = first(
+      await db
+        .insert(masterClassSchedule)
+        .values({
+          classId: highClassId,
+          dayOfWeek: 6,
+          endTime: "09:00:00",
+          startTime: "08:00:00",
+        })
+        .returning({ id: masterClassSchedule.id })
+    );
+
+    const pool = new Pool({ connectionString: databaseUrl ?? "", max: 4 });
+    const blocker = await pool.connect();
+    const highToLow = await pool.connect();
+    const lowToHigh = await pool.connect();
+
+    try {
+      // Hold the low class so both moves queue there first. The high-to-low
+      // move must reach the queue before the low-to-high move for the old
+      // new-then-old trigger order to form its cycle.
+      await blocker.query("BEGIN");
+      await blocker.query(
+        "SELECT 1 FROM master_class WHERE id = $1 FOR NO KEY UPDATE",
+        [lowClassId]
+      );
+
+      await highToLow.query("BEGIN");
+      const highToLowPid = first(
+        (await highToLow.query("select pg_backend_pid() as pid")).rows
+      ).pid as number;
+      const highToLowMove = highToLow.query(
+        "UPDATE master_class_schedule SET class_id = $1 WHERE id = $2",
+        [lowClassId, highSchedule.id]
+      );
+      await waitForLockWait(blocker, highToLowPid);
+
+      await lowToHigh.query("BEGIN");
+      const lowToHighPid = first(
+        (await lowToHigh.query("select pg_backend_pid() as pid")).rows
+      ).pid as number;
+      const lowToHighMove = lowToHigh.query(
+        "UPDATE master_class_schedule SET class_id = $1 WHERE id = $2",
+        [highClassId, lowSchedule.id]
+      );
+      await waitForLockWait(blocker, lowToHighPid);
+
+      await blocker.query("COMMIT");
+
+      const moveAndCommit = async (
+        client: PoolClient,
+        move: Promise<unknown>
+      ) => {
+        await move;
+        await client.query("COMMIT");
+      };
+      const results = await Promise.allSettled([
+        moveAndCommit(highToLow, highToLowMove),
+        moveAndCommit(lowToHigh, lowToHighMove),
+      ]);
+      expect(results.map((result) => result.status)).toEqual([
+        "fulfilled",
+        "fulfilled",
+      ]);
+
+      const movedLowSchedule = first(
+        await db
+          .select({ classId: masterClassSchedule.classId })
+          .from(masterClassSchedule)
+          .where(eq(masterClassSchedule.id, lowSchedule.id))
+      );
+      const movedHighSchedule = first(
+        await db
+          .select({ classId: masterClassSchedule.classId })
+          .from(masterClassSchedule)
+          .where(eq(masterClassSchedule.id, highSchedule.id))
+      );
+      expect(movedLowSchedule.classId).toBe(highClassId);
+      expect(movedHighSchedule.classId).toBe(lowClassId);
+    } finally {
+      await Promise.allSettled([
+        blocker.query("ROLLBACK"),
+        highToLow.query("ROLLBACK"),
+        lowToHigh.query("ROLLBACK"),
+      ]);
+      blocker.release();
+      highToLow.release();
+      lowToHigh.release();
+      await pool.end();
+    }
+  }, 30_000);
 
   test("reads a master's class with its weekly schedules", async () => {
     const { classId, profileId } = await seed();

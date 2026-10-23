@@ -77,6 +77,8 @@ A class references the profile, martial art and location by id. The foreign keys
 
 Profile activity includes classes and their schedules. `master_class_touch_profile` reuses `touch_master_profile`, so a class insert, edit or delete advances `master_profile.updated_at`. `master_class_schedule_touch_class` advances the parent class's `updated_at` on schedule inserts, edits and deletes; the class trigger then advances the profile. Both timestamps use `GREATEST(..., clock_timestamp())`, matching the existing monotonic profile trigger and avoiding stale writes under concurrency. Migration `20261023072509_touch_profile_on_class_change` installs the triggers.
 
+When an update moves a schedule between classes, the trigger acquires both class rows with `FOR NO KEY UPDATE` in UUID order before either update, matching `touch_master_profile`'s move handling. Migration `20261023073055_fix_schedule_move_lock_order` installs that order, so opposite-direction moves cannot form a lock cycle.
+
 ### 3.4 Query
 
 `createDb` exposes a class with its schedule rows:
