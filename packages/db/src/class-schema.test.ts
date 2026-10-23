@@ -116,6 +116,7 @@ describe("class schema", () => {
 
     const fee = checkSql(masterClass, "master_class_fee_check");
     expect(fee).toContain("is null");
+    expect(fee).toContain('"fee_amount" is not null');
     expect(fee).toContain("> 0");
     expect(fee).toContain("is not null");
     for (const period of CLASS_FEE_PERIODS) {

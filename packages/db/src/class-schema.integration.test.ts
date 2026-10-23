@@ -163,6 +163,20 @@ describeDb("class schema database round trip", () => {
         }),
       "23514"
     );
+
+    await expectDatabaseCode(
+      () =>
+        db.insert(masterClass).values({
+          audience: "adults",
+          feePeriod: "month",
+          level: "beginner",
+          locationId,
+          martialArtId: artId,
+          name: "Missing amount",
+          profileId,
+        }),
+      "23514"
+    );
   });
 
   test("rejects duplicate and invalid schedule slots", async () => {

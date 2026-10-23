@@ -95,7 +95,11 @@ export const masterClass = pgTable(
       "master_class_fee_check",
       sql`(
         (${table.feeAmount} is null and ${table.feePeriod} is null)
-        or (${table.feeAmount} > 0 and ${table.feePeriod} is not null)
+        or (
+          ${table.feeAmount} is not null
+          and ${table.feeAmount} > 0
+          and ${table.feePeriod} is not null
+        )
       )`
     ),
     check(
