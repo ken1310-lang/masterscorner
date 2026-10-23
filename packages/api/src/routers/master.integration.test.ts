@@ -130,6 +130,70 @@ describeDb("master profile database round trip", () => {
     ]);
   });
 
+  test.each(["temporary-looking names", "ordinary name swaps"] as const)(
+    "preserves martial-art names and ids with %s",
+    async (scenario) => {
+      const freshId = `round-trip-art-names-${crypto.randomUUID()}`;
+      const freshEmail = `${freshId}@example.com`;
+      const freshCaller = callerFor(db, freshId, freshEmail);
+      await db.insert(user).values({
+        email: freshEmail,
+        id: freshId,
+        name: "Art Names",
+      });
+
+      try {
+        const base = {
+          displayName: "Art Names Master",
+          homeCity: null,
+          introduction: null,
+          locations: [],
+          yearsTeaching: null,
+        };
+        let current = await freshCaller.master.saveProfile({
+          ...base,
+          martialArts: [{ name: "Silambam" }, { name: "Karate" }],
+          revision: null,
+        });
+        const [firstArt, secondArt] = current.martialArts;
+        if (!(firstArt && secondArt)) {
+          throw new Error("The first save did not return both martial arts");
+        }
+
+        const saveNames = async (firstName: string, secondName: string) => {
+          current = await freshCaller.master.saveProfile({
+            ...base,
+            martialArts: [
+              { id: firstArt.id, name: firstName },
+              { id: secondArt.id, name: secondName },
+            ],
+            revision: current.profile?.revision ?? null,
+          });
+          const expected = [
+            { id: firstArt.id, name: firstName, position: 0 },
+            { id: secondArt.id, name: secondName, position: 1 },
+          ];
+          expect(current.martialArts).toEqual(expected);
+          const reloaded = await freshCaller.master.getProfile();
+          expect(reloaded.martialArts).toEqual(expected);
+          expect(reloaded.profile?.revision).toBe(current.profile?.revision);
+        };
+        if (scenario === "ordinary name swaps") {
+          await saveNames("Karate", "Silambam");
+        } else {
+          const reservedName = `VACATED:${secondArt.id.toUpperCase()}`;
+          await saveNames(reservedName, "Boxing");
+          await saveNames(
+            reservedName,
+            `VaCaTeD:0:${firstArt.id.toUpperCase()}`
+          );
+        }
+      } finally {
+        await db.delete(user).where(eq(user.id, freshId));
+      }
+    }
+  );
+
   test("lets only one of two saves with the same revision commit", async () => {
     const current = await caller.master.getProfile();
     const [keptArt] = current.martialArts;

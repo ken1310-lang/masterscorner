@@ -56,6 +56,32 @@ function isUniqueViolation(error: unknown) {
   return error instanceof Error && DUPLICATE_KEY.test(error.message);
 }
 
+function selectTemporaryArtNamePrefix(
+  existing: readonly { name: string }[] | undefined,
+  submitted: readonly { name: string }[],
+  updates: readonly { id: string }[]
+) {
+  const occupiedArtNames = new Set(
+    [...(existing ?? []), ...submitted].map((row) =>
+      row.name.trim().toLowerCase()
+    )
+  );
+  let temporaryNamePrefix = "vacated:";
+  let suffix = 0;
+  // Each rejected prefix collides with a distinct occupied name, so at
+  // most occupiedArtNames.size retries are needed. UUIDs keep the
+  // temporary names distinct from each other.
+  while (
+    updates.some((row) =>
+      occupiedArtNames.has(`${temporaryNamePrefix}${row.id}`)
+    )
+  ) {
+    temporaryNamePrefix = `vacated:${suffix}:`;
+    suffix += 1;
+  }
+  return temporaryNamePrefix;
+}
+
 const profileIdForRevision = (userId: string, revision: string) =>
   sql`(select ${masterProfile.id} from ${masterProfile} where ${masterProfile.userId} = ${userId} and ${masterProfile.revision} = ${revision})`;
 
@@ -194,11 +220,16 @@ export const masterRouter = router({
       }
 
       if (artsPlan.updates.length > 0) {
+        const temporaryNamePrefix = selectTemporaryArtNamePrefix(
+          existing?.martialArts,
+          input.martialArts,
+          artsPlan.updates
+        );
         statements.push(
           ctx.db
             .update(masterMartialArt)
             .set({
-              name: sql`'vacated:' || ${masterMartialArt.id}::text`,
+              name: sql`${temporaryNamePrefix} || ${masterMartialArt.id}::text`,
               position: sql`${masterMartialArt.position} + ${VACATE_OFFSET}`,
             })
             .where(

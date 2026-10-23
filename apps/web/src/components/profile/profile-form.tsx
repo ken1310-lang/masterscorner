@@ -6,6 +6,7 @@ import {
 } from "@my-better-t-app/api/master-profile";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import type { FormEvent } from "react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -45,28 +46,27 @@ interface ProfileFormProps {
 export function ProfileForm({ accountName, payload }: ProfileFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { sessionQueries } = useRouter().options.context;
   const [formError, setFormError] = useState<string | null>(null);
 
-  const saveProfile = useMutation(
-    trpc.master.saveProfile.mutationOptions({
-      onError: (error) => {
-        setFormError(error.message);
-      },
-      onSuccess: (data) => {
-        queryClient.setQueryData(trpc.master.getProfile.queryKey(), data);
-        toast.success("Profile saved");
-      },
-    })
-  );
+  const saveProfile = useMutation(trpc.master.saveProfile.mutationOptions());
 
   const form = useForm({
     defaultValues: initialProfileValues(accountName, payload),
     onSubmit: async ({ formApi, value }) => {
       setFormError(null);
+      const isCurrentSession = sessionQueries.captureScope();
       const saved = await saveProfile
         .mutateAsync(profileValuesToInput(value))
-        .catch(() => null);
-      if (saved) {
+        .catch((error: Error) => {
+          if (isCurrentSession()) {
+            setFormError(error.message);
+          }
+          return null;
+        });
+      if (saved && isCurrentSession()) {
+        queryClient.setQueryData(trpc.master.getProfile.queryKey(), saved);
+        toast.success("Profile saved");
         formApi.reset(initialProfileValues(accountName, saved));
       }
     },

@@ -148,7 +148,11 @@ Each web router owns its QueryClient and session-cache lifecycle. Successful sig
 
 A client-side Better Auth session subscription also handles session loss and account changes outside those buttons, then revalidates routes. Refreshing the same account does not clear its cache. Cleanup intentionally clears the whole client cache rather than relying on every protected query being tagged correctly; public data refetches as needed. SSR requests keep separate clients and do not install the browser subscription.
 
-`apps/web/src/lib/session-query-cache.test.ts` covers account transitions, reentrant route entry during cancellation, and late responses, including fetchers that ignore abort signals.
+Profile saves capture the current session generation before sending the mutation. A response from an earlier generation cannot update the profile cache, reset the form or show save feedback—even after signing back into the same account. Background profile-refresh failures retain the mounted editor and unsaved changes; initial-load failures still show a retry screen.
+
+Martial-art renames use temporary names selected against both stored and submitted names before the transaction updates retained rows. This permits swaps and names resembling the temporary namespace without unique-index collisions.
+
+`apps/web/src/lib/session-query-cache.test.ts` covers account transitions, reentrant route entry during cancellation, late query responses (including fetchers that ignore abort signals), and pending mutations across account switches and re-login.
 
 ## Deployment
 
