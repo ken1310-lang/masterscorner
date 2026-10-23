@@ -172,6 +172,7 @@ async function setup() {
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   const queryKey = trpc.master.getProfile.queryKey();
   queryClient.setQueryData(queryKey, initialPayload());
+  const directoryClassesQueryKey = trpc.directory.classes.queryKey();
   const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
   const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
     slug: "profile-a",
@@ -205,6 +206,7 @@ async function setup() {
     ...view,
     queryClient,
     queryKey,
+    directoryClassesQueryKey,
     registryQueryKey,
     directoryProfileQueryKey,
     requests,
@@ -599,6 +601,11 @@ describe("public directory freshness", () => {
       totalPages: 0,
     });
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.directoryClassesQueryKey, {
+      classes: [],
+      locations: [],
+      martialArts: [],
+    });
     fireEvent.change(view.getByLabelText("Display name"), {
       target: { value: "Saved master" },
     });
@@ -613,6 +620,12 @@ describe("public directory freshness", () => {
     await waitFor(() =>
       expect(
         view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryClassesQueryKey)
           ?.isInvalidated
       ).toBe(true)
     );

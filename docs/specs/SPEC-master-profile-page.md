@@ -119,7 +119,7 @@ States:
 
 ### 3.5 Freshness
 
-Profile saves, profile-photo upload/removal and class save/status/remove mutations invalidate both `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. The profile page therefore reflects edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
+Profile saves and class save/status/remove mutations invalidate `directory.classes` as well as `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. Profile-photo upload/removal invalidates the master profile and registry prefixes; class rows contain no photo. Public pages therefore reflect edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
 
 ## 4. Commands and structure
 

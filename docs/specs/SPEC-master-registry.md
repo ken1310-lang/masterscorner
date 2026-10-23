@@ -95,7 +95,7 @@ Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class aud
 
 The query must not load every profile to filter or paginate in memory.
 
-Console profile saves, profile photo uploads/removals, and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. The prefix marks every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years, photo or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
+Console profile saves, profile photo uploads/removals, and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. Profile saves and class save/status/remove also invalidate `directory.classes`, whose rows carry the master display name and profile art/location names. The prefixes mark every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years, photo or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
 
 ### 3.3 Screen
 

@@ -25,7 +25,7 @@ export function HomeMasterCta() {
               to="/signup"
             >
               Create your master profile
-              <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" />
+              <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none" />
             </Link>
           </div>
         </div>

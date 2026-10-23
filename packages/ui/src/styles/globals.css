@@ -185,6 +185,12 @@
   }
 }
 
+/* SPEC-redesign §2: min(100% - 40px, 1240px), without inner padding. */
+@utility redesign-container {
+  width: min(100% - 40px, 1240px);
+  margin-inline: auto;
+}
+
 @keyframes redesign-word-in {
   from {
     opacity: 0;

@@ -54,18 +54,25 @@ export function ClassesScreen() {
   const setStatus = useMutation(trpc.classes.setStatus.mutationOptions());
   const removeClass = useMutation(trpc.classes.remove.mutationOptions());
   const queryKey = trpc.classes.list.queryKey();
+  const directoryClassesKey = trpc.directory.classes.queryKey();
   const directoryMastersKey = trpc.directory.masters.queryKey();
   const directoryMasterProfileKey = trpc.directory.masterProfile.queryKey();
 
   const invalidatePublicDirectory = useCallback(
     () =>
       Promise.all([
+        queryClient.invalidateQueries({ queryKey: directoryClassesKey }),
         queryClient.invalidateQueries({ queryKey: directoryMastersKey }),
         queryClient.invalidateQueries({
           queryKey: directoryMasterProfileKey,
         }),
       ]),
-    [directoryMasterProfileKey, directoryMastersKey, queryClient]
+    [
+      directoryClassesKey,
+      directoryMasterProfileKey,
+      directoryMastersKey,
+      queryClient,
+    ]
   );
 
   const handleRetry = useCallback(() => {
