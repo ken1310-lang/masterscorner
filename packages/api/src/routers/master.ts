@@ -29,6 +29,8 @@ const VACATE_OFFSET = 1_000_000;
 
 const PROFILE_CONFLICT_MESSAGE =
   "This profile changed in another session. Reload the page and save again.";
+const PROFILE_CHILD_IN_USE_MESSAGE =
+  "A class uses one of these martial arts or locations. Update the class first, then save the profile.";
 const DUPLICATE_KEY = /duplicate key value/i;
 
 function profileConflict() {
@@ -38,24 +40,36 @@ function profileConflict() {
   });
 }
 
-/** A concurrent first save hits the one-profile-per-user unique constraint. */
-function isUniqueViolation(error: unknown) {
+function hasDatabaseCode(error: unknown, code: string): boolean {
   if (!error || typeof error !== "object") {
     return false;
   }
-  if ("code" in error && error.code === "23505") {
+  if ("code" in error && error.code === code) {
     return true;
   }
-  if (
-    "cause" in error &&
-    error.cause &&
-    typeof error.cause === "object" &&
-    "code" in error.cause &&
-    error.cause.code === "23505"
-  ) {
-    return true;
+  return "cause" in error && hasDatabaseCode(error.cause, code);
+}
+
+/** A concurrent first save hits the one-profile-per-user unique constraint. */
+function isUniqueViolation(error: unknown) {
+  return (
+    hasDatabaseCode(error, "23505") ||
+    (error instanceof Error && DUPLICATE_KEY.test(error.message))
+  );
+}
+
+function profileSaveError(error: unknown): never {
+  if (isUniqueViolation(error)) {
+    throw profileConflict();
   }
-  return error instanceof Error && DUPLICATE_KEY.test(error.message);
+  if (hasDatabaseCode(error, "23001")) {
+    throw new TRPCError({
+      cause: error,
+      code: "CONFLICT",
+      message: PROFILE_CHILD_IN_USE_MESSAGE,
+    });
+  }
+  throw error;
 }
 
 function selectTemporaryArtNamePrefix(
@@ -392,10 +406,7 @@ export const masterRouter = router({
       try {
         result = await ctx.db.batch([first, ...rest]);
       } catch (error) {
-        if (isUniqueViolation(error)) {
-          throw profileConflict();
-        }
-        throw error;
+        profileSaveError(error);
       }
       // The batch preserves statement order; the four snapshot reads are
       // appended last. Writes without RETURNING come back as raw result

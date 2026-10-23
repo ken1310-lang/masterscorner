@@ -16,11 +16,13 @@ import {
   CLASS_AUDIENCES,
   CLASS_FEE_PERIODS,
   CLASS_LEVELS,
+  CLASS_RESUMABLE_STATUSES,
   CLASS_STATUSES,
   type ClassAudience,
   type ClassFeePeriod,
   type ClassLevel,
   type ClassStatus,
+  type ResumableClassStatus,
 } from "./class-kinds";
 import { masterLocation, masterMartialArt, masterProfile } from "./master";
 
@@ -28,11 +30,13 @@ export {
   CLASS_AUDIENCES,
   CLASS_FEE_PERIODS,
   CLASS_LEVELS,
+  CLASS_RESUMABLE_STATUSES,
   CLASS_STATUSES,
   type ClassAudience,
   type ClassFeePeriod,
   type ClassLevel,
   type ClassStatus,
+  type ResumableClassStatus,
 } from "./class-kinds";
 
 /** Constants only; this keeps the migration check in step with the types. */
@@ -43,6 +47,7 @@ function quotedList(values: readonly string[]) {
 const audienceList = quotedList(CLASS_AUDIENCES);
 const levelList = quotedList(CLASS_LEVELS);
 const statusList = quotedList(CLASS_STATUSES);
+const resumableStatusList = quotedList(CLASS_RESUMABLE_STATUSES);
 const feePeriodList = quotedList(CLASS_FEE_PERIODS);
 
 /**
@@ -67,6 +72,11 @@ export const masterClass = pgTable(
     audience: text("audience").$type<ClassAudience>().notNull(),
     level: text("level").$type<ClassLevel>().notNull(),
     status: text("status").$type<ClassStatus>().default("active").notNull(),
+    /**
+     * The status to restore when a paused class resumes. Pausing stores the
+     * previous active/full status here so a reload does not lose it.
+     */
+    pausedFromStatus: text("paused_from_status").$type<ResumableClassStatus>(),
     /** Exact INR amount with two decimal places; null means no fee is shown. */
     feeAmount: numeric("fee_amount", {
       mode: "number",
@@ -96,6 +106,16 @@ export const masterClass = pgTable(
     ),
     check("master_class_level_check", sql`${table.level} in (${levelList})`),
     check("master_class_status_check", sql`${table.status} in (${statusList})`),
+    check(
+      "master_class_paused_from_status_check",
+      sql`(
+        ${table.pausedFromStatus} is null
+        or (
+          ${table.pausedFromStatus} in (${resumableStatusList})
+          and ${table.status} = 'paused'
+        )
+      )`
+    ),
     check(
       "master_class_fee_check",
       sql`(
