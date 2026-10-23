@@ -173,6 +173,9 @@ async function setup() {
   const queryKey = trpc.master.getProfile.queryKey();
   queryClient.setQueryData(queryKey, initialPayload());
   const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
+  const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
+    slug: "profile-a",
+  });
 
   function Editor() {
     const profile = useQuery(trpc.master.getProfile.queryOptions());
@@ -203,6 +206,7 @@ async function setup() {
     queryClient,
     queryKey,
     registryQueryKey,
+    directoryProfileQueryKey,
     requests,
     sessionQueries,
     cached: () => queryClient.getQueryData<MasterProfilePayload>(queryKey),
@@ -582,8 +586,8 @@ describe("profile response slice ownership", () => {
   });
 });
 
-describe("public registry freshness", () => {
-  test("successful profile save invalidates every registry page", async () => {
+describe("public directory freshness", () => {
+  test("successful profile save invalidates every public page variant", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
@@ -594,6 +598,7 @@ describe("public registry freshness", () => {
       total: 0,
       totalPages: 0,
     });
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
     fireEvent.change(view.getByLabelText("Display name"), {
       target: { value: "Saved master" },
     });
@@ -603,6 +608,12 @@ describe("public registry freshness", () => {
     await waitFor(() =>
       expect(
         view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
       ).toBe(true)
     );
   });

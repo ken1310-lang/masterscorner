@@ -15,20 +15,26 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { CLASS_AUDIENCES, type ClassAudience } from "../classes";
+import { CLASS_AUDIENCES, type ClassAudience, toTimeInput } from "../classes";
 import {
   DIRECTORY_CLASS_STATUSES,
   DIRECTORY_MASTER_PAGE_SIZE,
   type DirectoryClassesPayload,
   type DirectoryFilterOption,
+  type DirectoryMasterClassView,
+  type DirectoryMasterProfilePayload,
   type DirectoryMastersPayload,
   type DirectoryMasterView,
   directoryClassFiltersSchema,
   directoryMasterFiltersSchema,
+  directoryMasterProfileInputSchema,
+  masterProfileSlug,
   nextSessionStart,
   normalizeDirectoryFilter,
+  profileIdFromSlug,
 } from "../directory";
 import { publicProcedure, router } from "../index";
+import { toMediaViews } from "../media";
 
 interface FilterGroup extends DirectoryFilterOption {
   ids: string[];
@@ -311,6 +317,7 @@ export const directoryRouter = router({
         displayName: row.displayName,
         id: row.id,
         martialArts: artNames.get(row.id) ?? [],
+        slug: masterProfileSlug(row.displayName, row.id),
         yearsTeaching: row.yearsTeaching,
       }));
 
@@ -324,4 +331,94 @@ export const directoryRouter = router({
         totalPages,
       };
     }),
+  masterProfile: publicProcedure
+    .input(directoryMasterProfileInputSchema)
+    .query(
+      async ({ ctx, input }): Promise<DirectoryMasterProfilePayload | null> => {
+        const profileId = profileIdFromSlug(input.slug);
+        if (!profileId) {
+          return null;
+        }
+
+        const profile = await ctx.db.query.masterProfile.findFirst({
+          where: { id: profileId },
+          with: {
+            locations: { orderBy: { position: "asc" } },
+            martialArts: { orderBy: { position: "asc" } },
+            media: { orderBy: { createdAt: "desc" } },
+          },
+        });
+        if (!profile) {
+          return null;
+        }
+
+        const classRows = await ctx.db.query.masterClass.findMany({
+          where: {
+            profileId: profile.id,
+            status: { in: [...DIRECTORY_CLASS_STATUSES] },
+          },
+          with: {
+            location: true,
+            martialArt: true,
+            schedules: true,
+          },
+        });
+
+        const classes: DirectoryMasterClassView[] = classRows
+          .flatMap((row) => {
+            if (row.status !== "active" && row.status !== "full") {
+              return [];
+            }
+            return [
+              {
+                audience: row.audience,
+                feeAmount: row.feeAmount,
+                feePeriod: row.feePeriod,
+                id: row.id,
+                level: row.level,
+                location: { id: row.location.id, name: row.location.name },
+                martialArt: {
+                  id: row.martialArt.id,
+                  name: row.martialArt.name,
+                },
+                name: row.name,
+                schedules: [...row.schedules]
+                  .sort(
+                    (left, right) =>
+                      left.dayOfWeek - right.dayOfWeek ||
+                      left.startTime.localeCompare(right.startTime)
+                  )
+                  .map((schedule) => ({
+                    dayOfWeek: schedule.dayOfWeek,
+                    endTime: toTimeInput(schedule.endTime),
+                    startTime: toTimeInput(schedule.startTime),
+                  })),
+                status: row.status,
+              },
+            ];
+          })
+          .sort(
+            (left, right) =>
+              left.name.localeCompare(right.name) ||
+              left.id.localeCompare(right.id)
+          );
+
+        const photo = toMediaViews(
+          profile.media,
+          ctx.mediaStorage.publicUrl
+        ).find((item) => item.kind === "profile_photo");
+
+        return {
+          classes,
+          displayName: profile.displayName,
+          homeCity: profile.homeCity,
+          introduction: profile.introduction,
+          locations: profile.locations.map(({ id, name }) => ({ id, name })),
+          martialArts: profile.martialArts.map(({ name }) => name),
+          photoUrl: photo?.url ?? null,
+          slug: masterProfileSlug(profile.displayName, profile.id),
+          yearsTeaching: profile.yearsTeaching,
+        };
+      }
+    ),
 });

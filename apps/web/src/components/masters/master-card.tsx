@@ -1,8 +1,9 @@
 import type { DirectoryMasterView } from "@my-better-t-app/api/directory";
+import { Link } from "@tanstack/react-router";
 
 import { AUDIENCE_LABELS } from "@/components/classes/class-values";
 
-/** Prototype card minus photo, rating, badge, fee and profile action. */
+/** Registry card with no fabricated trust signal or price. */
 export function MasterCard({ master }: { master: DirectoryMasterView }) {
   const arts = master.martialArts.join(" & ");
   const years =
@@ -44,6 +45,14 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
           ))}
         </ul>
       ) : null}
+
+      <Link
+        className="mt-auto inline-flex min-h-9 items-center self-start pt-5 font-extrabold text-accent-text text-xs underline-offset-4 hover:underline"
+        params={{ slug: master.slug }}
+        to="/masters/$slug"
+      >
+        View profile
+      </Link>
     </article>
   );
 }

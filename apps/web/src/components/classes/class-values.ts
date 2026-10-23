@@ -150,14 +150,21 @@ export function formatFee(
   return period ? `${formatted}/${FEE_PERIOD_LABELS[period]}` : formatted;
 }
 
-function formatSlot(schedule: ClassScheduleView) {
+function formatSlot(
+  schedule: Pick<ClassScheduleView, "dayOfWeek" | "endTime" | "startTime">
+) {
   const day = WEEKDAY_BY_NUMBER.get(schedule.dayOfWeek);
   return `${day?.short ?? "?"} ${toTimeInput(schedule.startTime)}–${toTimeInput(
     schedule.endTime
   )}`;
 }
 
-export function formatSchedules(schedules: readonly ClassScheduleView[]) {
+export function formatSchedules(
+  schedules: readonly Pick<
+    ClassScheduleView,
+    "dayOfWeek" | "endTime" | "startTime"
+  >[]
+) {
   if (schedules.length === 0) {
     return "No schedule";
   }

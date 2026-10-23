@@ -51,6 +51,7 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
 
   const saveProfile = useMutation(trpc.master.saveProfile.mutationOptions());
   const directoryMastersKey = trpc.directory.masters.queryKey();
+  const directoryMasterProfileKey = trpc.directory.masterProfile.queryKey();
 
   const form = useForm({
     defaultValues: initialProfileValues(accountName, payload),
@@ -83,9 +84,14 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
         queryClient.setQueryData<MasterProfilePayload>(queryKey, (current) =>
           current ? { ...saved, media: current.media } : undefined
         );
-        await queryClient.invalidateQueries({
-          queryKey: directoryMastersKey,
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: directoryMastersKey,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: directoryMasterProfileKey,
+          }),
+        ]);
         if (!isCurrentSession()) {
           return;
         }

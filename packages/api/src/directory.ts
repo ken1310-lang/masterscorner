@@ -18,6 +18,32 @@ export function normalizeDirectoryFilter(value: string) {
   return value.trim().toLowerCase();
 }
 
+const MAX_SLUG_NAME = 60;
+const UUID_TAIL =
+  /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/**
+ * A stable public identity for a profile that has no stored slug column. The
+ * readable prefix follows the current display name; the UUID suffix is the
+ * identity, so renamed profiles keep resolving from an older link.
+ */
+export function masterProfileSlug(displayName: string, id: string) {
+  const name = displayName
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, MAX_SLUG_NAME)
+    .replace(/-+$/g, "");
+  return `${name || "master"}-${id.toLowerCase()}`;
+}
+
+/** Returns the public profile UUID embedded in a slug, or null. */
+export function profileIdFromSlug(slug: string) {
+  return UUID_TAIL.exec(slug.trim())?.[1]?.toLowerCase() ?? null;
+}
+
 /**
  * A stored name is validated before normalization, and lowercasing can expand
  * one UTF-16 code unit into two (`İ` -> `i` + combining dot). The filter value
@@ -57,6 +83,21 @@ export const directoryMasterFiltersSchema = z
   })
   .optional();
 
+export const MAX_MASTER_PROFILE_SLUG = 200;
+
+/** Malformed slugs reach the query and return null, so an invalid URL is a
+ * normal not-found page rather than a validation error. */
+export const directoryMasterProfileInputSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(1, "A profile slug is required")
+    .max(
+      MAX_MASTER_PROFILE_SLUG,
+      `A profile slug must be ${MAX_MASTER_PROFILE_SLUG} characters or fewer`
+    ),
+});
+
 export interface DirectoryFilterOption {
   /** The canonical display name. */
   name: string;
@@ -94,6 +135,43 @@ export interface DirectoryMasterView {
   id: string;
   /** Every martial art in profile order. */
   martialArts: string[];
+  /** Stable name-plus-UUID public route segment. */
+  slug: string;
+  yearsTeaching: number | null;
+}
+
+export interface DirectoryMasterProfileSchedule {
+  dayOfWeek: number;
+  endTime: string;
+  startTime: string;
+}
+
+export interface DirectoryMasterClassView {
+  audience: ClassAudience;
+  feeAmount: number | null;
+  feePeriod: ClassFeePeriod | null;
+  id: string;
+  level: ClassLevel;
+  location: { id: string; name: string };
+  martialArt: { id: string; name: string };
+  name: string;
+  schedules: DirectoryMasterProfileSchedule[];
+  status: DirectoryClassStatus;
+}
+
+export interface DirectoryMasterProfilePayload {
+  /** Current classes only, ordered by name then id. */
+  classes: DirectoryMasterClassView[];
+  displayName: string;
+  homeCity: string | null;
+  introduction: string | null;
+  /** Profile order; a location may have no current class. */
+  locations: { id: string; name: string }[];
+  /** Profile order. */
+  martialArts: string[];
+  /** Current profile photo URL, or null. */
+  photoUrl: string | null;
+  slug: string;
   yearsTeaching: number | null;
 }
 

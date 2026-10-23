@@ -18,7 +18,7 @@ Success: `/classes` lists only classes that exist in the development database, e
 
 ### 2.2 Out of scope
 
-- Master registry, master profile, home and For Masters pages (Tasks 12-15). Task 12 is specified in `SPEC-master-registry.md`; the remaining pages stay out of this spec.
+- Master registry, master profile, home and For Masters pages (Tasks 12-15). Task 12 is specified in `SPEC-master-registry.md`; Task 13 is specified in `SPEC-master-profile-page.md`; the remaining pages stay out of this spec.
 - Booking, enquiries, trials, payments, reviews, ratings, verification and academy entities (later phases; ADR-002).
 - Class detail pages, maps, distance filtering, duration and currency switching.
 - Native parity.
@@ -88,7 +88,7 @@ The router reads distinct used child rows over the eligible status set, groups t
 
 `/classes` is a marketplace route under `_marketplace`, so it uses the existing header, footer and skip link. The hero says "Find a class that fits your week" and describes real master-owned classes. The filter bar has labelled selects for martial art, location and audience plus a visible "Clear filters" action when any filter is active. Selecting a filter updates the URL using the search keys `art`, `location` and `audience`; the `art` and `location` values are normalized shared names rather than one master's child UUID. Reloading or sharing the URL restores the filters. The query is server-side filtered.
 
-The result list uses the prototype's table styling with columns Class, Master, Location, Next session and Fee. There is no Book column. Class and master are plain text until the master profile route ships. A `Full` class shows a text status badge; active classes do not need one. Fee renders only when stored; never "Not set" on the public page. Below the `md` breakpoint the rows become compact labelled blocks without horizontal page scroll; the desktop header is hidden from view but the list keeps a useful accessible name.
+The result list uses the prototype's table styling with columns Class, Master, Location, Next session and Fee. There is no Book column. Class and master are plain text; profile navigation is provided by the registry card rather than class rows. A `Full` class shows a text status badge; active classes do not need one. Fee renders only when stored; never "Not set" on the public page. Below the `md` breakpoint the rows become compact labelled blocks without horizontal page scroll; the desktop header is hidden from view but the list keeps a useful accessible name.
 
 States:
 
