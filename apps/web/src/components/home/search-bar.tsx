@@ -62,7 +62,7 @@ export function HomeSearchBar({
     >
       <Field id="home-search-art" label="Martial art">
         <select
-          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy outline-none"
+          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy focus-visible:outline-2 focus-visible:outline-brand-strong focus-visible:outline-offset-2"
           id="home-search-art"
           onChange={handleArt}
           value={art}
@@ -79,7 +79,7 @@ export function HomeSearchBar({
       <Divider />
       <Field id="home-search-location" label="Location">
         <select
-          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy outline-none"
+          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy focus-visible:outline-2 focus-visible:outline-brand-strong focus-visible:outline-offset-2"
           id="home-search-location"
           onChange={handleLocation}
           value={location}
@@ -96,7 +96,7 @@ export function HomeSearchBar({
       <Divider />
       <Field id="home-search-audience" label="Audience">
         <select
-          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy outline-none"
+          className="w-full appearance-none bg-transparent font-medium text-[16px] text-navy focus-visible:outline-2 focus-visible:outline-brand-strong focus-visible:outline-offset-2"
           id="home-search-audience"
           onChange={handleAudience}
           value={audience}

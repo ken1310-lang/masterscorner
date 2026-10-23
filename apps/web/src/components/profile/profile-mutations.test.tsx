@@ -618,9 +618,18 @@ describe("public directory freshness", () => {
     );
   });
 
-  test("successful photo upload invalidates the public profile", async () => {
+  test("successful photo upload invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     const reader = choosePhoto(view.container);
     await settle(() => reader.succeed());
     const upload = await view.request("media.upload");
@@ -631,11 +640,25 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 
-  test("successful photo removal invalidates the public profile", async () => {
+  test("successful photo removal invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     await clickButton(view, "Remove photo");
     const remove = await view.request("media.remove");
     await settle(() => remove.resolve(initialPayload()));
@@ -645,11 +668,25 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 
-  test("failed photo upload leaves the public profile fresh", async () => {
+  test("failed photo upload leaves the public profile and registry fresh", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     const reader = choosePhoto(view.container);
     await settle(() => reader.succeed());
     const upload = await view.request("media.upload");
@@ -658,6 +695,9 @@ describe("public directory freshness", () => {
     expect(
       view.queryClient.getQueryState(view.directoryProfileQueryKey)
         ?.isInvalidated
+    ).toBe(false);
+    expect(
+      view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
     ).toBe(false);
   });
 });
