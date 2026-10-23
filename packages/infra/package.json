@@ -20,6 +20,7 @@
     "@my-better-t-app/db": "workspace:*",
     "@types/bun": "catalog:",
     "alchemy": "2.0.0-beta.83",
+    "dotenv": "^17.4.2",
     "effect": "4.0.5",
     "typescript": "^6.0.3",
     "varlock": "catalog:"
