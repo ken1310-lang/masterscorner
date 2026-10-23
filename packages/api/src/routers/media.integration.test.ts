@@ -223,13 +223,47 @@ describeDb("media procedures database round trip", () => {
       throw new Error("The media test account has no profile");
     }
 
+    // Force both uploads to finish writing their objects before either batch
+    // starts. Without serialization, both would read the same previous row.
+    const bothArrived = Promise.withResolvers<void>();
+    let arrivals = 0;
+    const concurrentStorage: MediaStorage = {
+      deleteObject: (key) => {
+        deletes.push(key);
+        return Promise.resolve();
+      },
+      publicUrl: (key) => `https://cdn.example/media/${key}`,
+      putObject: async (key, _body, contentType) => {
+        puts.push({ contentType, key });
+        arrivals += 1;
+        if (arrivals === 2) {
+          bothArrived.resolve();
+        }
+        await bothArrived.promise;
+      },
+    };
+    const concurrentCaller = appRouter.createCaller({
+      db,
+      mediaRateLimit: allowAll,
+      mediaStorage: concurrentStorage,
+      session: {
+        session: { id: `media-session-${userId}` },
+        user: {
+          accountType: "master",
+          email,
+          id: userId,
+          name: "Media Round Trip",
+        },
+      } as never,
+    });
+
     await Promise.all([
-      caller.media.upload({
+      concurrentCaller.media.upload({
         contentType: "image/png",
         data: PNG,
         kind: "profile_photo",
       }),
-      caller.media.upload({
+      concurrentCaller.media.upload({
         contentType: "image/png",
         data: PNG,
         kind: "profile_photo",
