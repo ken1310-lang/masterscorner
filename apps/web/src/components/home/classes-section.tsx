@@ -25,8 +25,8 @@ function ClassesSkeleton() {
       <span className="sr-only">Loading classes</span>
       {SKELETONS.map((item) => (
         <div className="border-hairline border-t py-6" key={item}>
-          <div className="h-5 w-1/2 animate-pulse rounded bg-sand" />
-          <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-sand" />
+          <div className="h-5 w-1/2 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+          <div className="mt-2 h-4 w-2/3 animate-pulse rounded bg-sand motion-reduce:animate-none" />
         </div>
       ))}
     </div>
@@ -35,7 +35,7 @@ function ClassesSkeleton() {
 
 function ClassesError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mt-10 rounded-[24px] bg-sand px-6 py-10 sm:px-8">
+    <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-10">
       <p className="font-semibold text-[20px]">Classes could not load</p>
       <p className="mt-2 max-w-[60ch] text-ink-muted">
         The class request failed. Try again.

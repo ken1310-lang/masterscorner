@@ -19,9 +19,9 @@ function MastersSkeleton() {
     >
       {SKELETONS.map((item) => (
         <div key={item}>
-          <div className="aspect-[4/5] animate-pulse rounded-[24px] bg-sand" />
-          <div className="mt-5 h-6 w-3/4 animate-pulse rounded bg-sand" />
-          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-sand" />
+          <div className="aspect-[4/5] animate-pulse rounded-[24px] bg-sand motion-reduce:animate-none" />
+          <div className="mt-5 h-6 w-3/4 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-sand motion-reduce:animate-none" />
         </div>
       ))}
     </div>
@@ -30,7 +30,7 @@ function MastersSkeleton() {
 
 function MastersError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mt-10 rounded-[24px] bg-sand px-6 py-10 sm:px-8">
+    <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-10">
       <p className="font-semibold text-[20px]">Masters could not load</p>
       <p className="mt-2 max-w-[60ch] text-ink-muted">
         The directory request failed. Try again.
