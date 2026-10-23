@@ -55,6 +55,18 @@ export function ClassesScreen() {
   const removeClass = useMutation(trpc.classes.remove.mutationOptions());
   const queryKey = trpc.classes.list.queryKey();
   const directoryMastersKey = trpc.directory.masters.queryKey();
+  const directoryMasterProfileKey = trpc.directory.masterProfile.queryKey();
+
+  const invalidatePublicDirectory = useCallback(
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: directoryMastersKey }),
+        queryClient.invalidateQueries({
+          queryKey: directoryMasterProfileKey,
+        }),
+      ]),
+    [directoryMasterProfileKey, directoryMastersKey, queryClient]
+  );
 
   const handleRetry = useCallback(() => {
     classesQuery.refetch();
@@ -94,14 +106,20 @@ export function ClassesScreen() {
       queryClient.setQueryData<ClassesPayload>(queryKey, (current) =>
         current ? upsertClass(current, saved) : current
       );
-      await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+      await invalidatePublicDirectory();
       if (!isCurrentSession()) {
         return;
       }
       toast.success(input.id ? "Class updated" : "Class added");
       setEditor(null);
     },
-    [directoryMastersKey, queryClient, queryKey, saveClass, sessionQueries]
+    [
+      invalidatePublicDirectory,
+      queryClient,
+      queryKey,
+      saveClass,
+      sessionQueries,
+    ]
   );
 
   const handleToggleStatus = useCallback(
@@ -140,7 +158,7 @@ export function ClassesScreen() {
               }
             : current
         );
-        await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+        await invalidatePublicDirectory();
         if (!isCurrentSession()) {
           return;
         }
@@ -159,7 +177,13 @@ export function ClassesScreen() {
         setStatusPendingId(null);
       }
     },
-    [directoryMastersKey, queryClient, queryKey, sessionQueries, setStatus]
+    [
+      invalidatePublicDirectory,
+      queryClient,
+      queryKey,
+      sessionQueries,
+      setStatus,
+    ]
   );
 
   const handleRemove = useCallback(
@@ -188,7 +212,7 @@ export function ClassesScreen() {
               }
             : current
         );
-        await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+        await invalidatePublicDirectory();
         if (!isCurrentSession()) {
           return;
         }
@@ -202,7 +226,13 @@ export function ClassesScreen() {
         setDeletePendingId(null);
       }
     },
-    [directoryMastersKey, queryClient, queryKey, removeClass, sessionQueries]
+    [
+      invalidatePublicDirectory,
+      queryClient,
+      queryKey,
+      removeClass,
+      sessionQueries,
+    ]
   );
 
   if (classesQuery.status === "pending") {

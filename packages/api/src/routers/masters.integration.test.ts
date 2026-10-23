@@ -3,7 +3,7 @@ import { createDb } from "@my-better-t-app/db";
 import { user } from "@my-better-t-app/db/schema/auth";
 import { inArray } from "drizzle-orm";
 
-import { normalizeDirectoryFilter } from "../directory";
+import { masterProfileSlug, normalizeDirectoryFilter } from "../directory";
 import type { MediaRateLimit, MediaStorage } from "../media";
 import { appRouter } from "./index";
 
@@ -307,8 +307,12 @@ describeDb("public master registry database contract", () => {
       "displayName",
       "id",
       "martialArts",
+      "slug",
       "yearsTeaching",
     ]);
+    expect(first?.slug).toBe(
+      masterProfileSlug(first?.displayName ?? "", first?.id ?? "")
+    );
     const serialized = JSON.stringify(payload);
     expect(serialized).not.toContain("@example.com");
     expect(serialized).not.toContain(privateIntroduction);

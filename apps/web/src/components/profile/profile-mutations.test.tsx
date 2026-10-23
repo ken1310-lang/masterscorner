@@ -173,6 +173,9 @@ async function setup() {
   const queryKey = trpc.master.getProfile.queryKey();
   queryClient.setQueryData(queryKey, initialPayload());
   const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
+  const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
+    slug: "profile-a",
+  });
 
   function Editor() {
     const profile = useQuery(trpc.master.getProfile.queryOptions());
@@ -203,6 +206,7 @@ async function setup() {
     queryClient,
     queryKey,
     registryQueryKey,
+    directoryProfileQueryKey,
     requests,
     sessionQueries,
     cached: () => queryClient.getQueryData<MasterProfilePayload>(queryKey),
@@ -582,8 +586,8 @@ describe("profile response slice ownership", () => {
   });
 });
 
-describe("public registry freshness", () => {
-  test("successful profile save invalidates every registry page", async () => {
+describe("public directory freshness", () => {
+  test("successful profile save invalidates every public page variant", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
@@ -594,6 +598,7 @@ describe("public registry freshness", () => {
       total: 0,
       totalPages: 0,
     });
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
     fireEvent.change(view.getByLabelText("Display name"), {
       target: { value: "Saved master" },
     });
@@ -605,5 +610,54 @@ describe("public registry freshness", () => {
         view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+  });
+
+  test("successful photo upload invalidates the public profile", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    const reader = choosePhoto(view.container);
+    await settle(() => reader.succeed());
+    const upload = await view.request("media.upload");
+    await settle(() => upload.resolve(initialPayload()));
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+  });
+
+  test("successful photo removal invalidates the public profile", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    await clickButton(view, "Remove photo");
+    const remove = await view.request("media.remove");
+    await settle(() => remove.resolve(initialPayload()));
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryProfileQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+  });
+
+  test("failed photo upload leaves the public profile fresh", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    const reader = choosePhoto(view.container);
+    await settle(() => reader.succeed());
+    const upload = await view.request("media.upload");
+    await settle(() => upload.reject("Upload failed"));
+    await view.findByText("Upload failed");
+    expect(
+      view.queryClient.getQueryState(view.directoryProfileQueryKey)
+        ?.isInvalidated
+    ).toBe(false);
   });
 });

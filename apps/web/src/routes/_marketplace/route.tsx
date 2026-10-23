@@ -15,13 +15,13 @@ export const Route = createFileRoute("/_marketplace")({
 
 function MarketplaceLayout() {
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <Header />
-      <main id="main" tabIndex={-1}>
+      <main className="flex-1" id="main" tabIndex={-1}>
         <Outlet />
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

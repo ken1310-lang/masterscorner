@@ -3,11 +3,77 @@ import { describe, expect, test } from "bun:test";
 import {
   directoryClassFiltersSchema,
   directoryMasterFiltersSchema,
+  directoryMasterProfileInputSchema,
   MAX_DIRECTORY_MARTIAL_ART_FILTER,
+  masterProfileSlug,
   nextSessionStart,
   normalizeDirectoryFilter,
+  profileIdFromSlug,
 } from "./directory";
 import { MAX_MARTIAL_ART_NAME } from "./master-profile";
+
+const PROFILE_ID = "550e8400-e29b-41d4-a716-446655440000";
+
+describe("master profile slug", () => {
+  test("builds a readable name with an immutable UUID suffix", () => {
+    expect(masterProfileSlug("Master Arun Vel", PROFILE_ID)).toBe(
+      `master-arun-vel-${PROFILE_ID}`
+    );
+  });
+
+  test("strips diacritics and collapses separators", () => {
+    expect(masterProfileSlug("  José   Núñez  ", PROFILE_ID)).toBe(
+      `jose-nunez-${PROFILE_ID}`
+    );
+    expect(masterProfileSlug("Master / Arun -- Vel", PROFILE_ID)).toBe(
+      `master-arun-vel-${PROFILE_ID}`
+    );
+  });
+
+  test("falls back for a non-ASCII name and caps the name part", () => {
+    expect(masterProfileSlug("அருண்", PROFILE_ID)).toBe(`master-${PROFILE_ID}`);
+    expect(masterProfileSlug("a".repeat(80), PROFILE_ID)).toBe(
+      `${"a".repeat(60)}-${PROFILE_ID}`
+    );
+  });
+
+  test("does not leave a trailing hyphen after capping", () => {
+    const name = `${"a".repeat(59)} b`;
+    expect(masterProfileSlug(name, PROFILE_ID)).toBe(
+      `${"a".repeat(59)}-${PROFILE_ID}`
+    );
+  });
+
+  test("resolves bare and renamed slugs by their UUID suffix", () => {
+    expect(profileIdFromSlug(PROFILE_ID)).toBe(PROFILE_ID);
+    expect(profileIdFromSlug(`renamed-master-${PROFILE_ID}`)).toBe(PROFILE_ID);
+    expect(profileIdFromSlug(`master-${PROFILE_ID.toUpperCase()}`)).toBe(
+      PROFILE_ID
+    );
+  });
+
+  test("rejects malformed slugs", () => {
+    expect(profileIdFromSlug("")).toBeNull();
+    expect(profileIdFromSlug("master-arun-vel")).toBeNull();
+    expect(profileIdFromSlug(`master-${PROFILE_ID}-extra`)).toBeNull();
+    expect(profileIdFromSlug(`master-${PROFILE_ID.slice(0, -1)}`)).toBeNull();
+  });
+
+  test("validates the public input without rejecting malformed lookups", () => {
+    expect(
+      directoryMasterProfileInputSchema.parse({ slug: `master-${PROFILE_ID}` })
+    ).toEqual({ slug: `master-${PROFILE_ID}` });
+    expect(
+      directoryMasterProfileInputSchema.parse({ slug: "x".repeat(200) })
+    ).toEqual({ slug: "x".repeat(200) });
+    expect(() =>
+      directoryMasterProfileInputSchema.parse({ slug: "" })
+    ).toThrow();
+    expect(() =>
+      directoryMasterProfileInputSchema.parse({ slug: "x".repeat(201) })
+    ).toThrow();
+  });
+});
 
 const friday = new Date("2026-10-23T12:00:00.000Z"); // Fri 17:30 IST
 

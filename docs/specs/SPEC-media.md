@@ -94,7 +94,7 @@ The profile revision is deliberately untouched by media writes, so a photo opera
 - Hint: formats and the 5 MiB cap. Server messages surface inline with `role="alert"`.
 - States: idle, reading, uploading, error; `aria-busy` while uploading. `Save changes` and the photo controls are disabled together while the profile form submits.
 - Without a profile row, controls are disabled and explain "Save your profile once to add a photo."
-- Success merges the photo slice into the existing cached `master.getProfile` payload, scoped through `sessionQueries.captureScope()`. Missing cache entries are not recreated from delayed responses. File reads and query cancellation recheck the scope before sending the mutation; upload/remove also check it before cache writes and feedback, including A → B → A transitions.
+- Success merges the photo slice into the existing cached `master.getProfile` payload, scoped through `sessionQueries.captureScope()`. After the private cache update and the same scope check, it invalidates the `directory.masterProfile` query prefix so a cached public profile reads the new or removed URL inside the 60-second freshness window; failed or superseded writes do not invalidate it. Missing cache entries are not recreated from delayed responses. File reads and query cancellation recheck the scope before sending the mutation; upload/remove also check it before cache writes and feedback, including A → B → A transitions.
 - Remove is available only when a photo exists and returns to the initials preview.
 
 ## 7. Commands
