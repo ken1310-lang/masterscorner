@@ -92,6 +92,8 @@ Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class aud
 
 The query must not load every profile to filter or paginate in memory.
 
+Console profile saves and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. The prefix marks every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
+
 ### 3.3 Screen
 
 `/masters` is a marketplace route under `_marketplace`, sharing the existing header, footer and skip link. The hero contains the kicker `Master Registry`, the heading `Find a martial arts master`, and a sentence describing real master profiles. The filter bar has labelled selects for martial art, location and audience plus a visible `Clear filters` action when any filter is active. Selecting a filter writes `art`, `location` and `audience` to the URL and resets `page`; selecting a page writes `page`. Reloading or sharing restores both.
@@ -175,6 +177,7 @@ Use the existing `publicProcedure`, Drizzle relational/data reads, TanStack Quer
 - Small: master filter schema accepts normalized art/location names and page numbers; rejects page 0 and invalid audience; inherited length limits remain enforced.
 - Contract: anonymous caller sees stored masters ordered by experience with nulls last and stable id tie-breaks; first and last pages contain no duplicates or omissions; page beyond the end clamps; unknown filters return `total: 0`; shared art/location names resolve all profiles; audience matches current classes only, excludes paused classes, and leaves classless masters listed without tags; payload contains no email, user id, revision, fee or introduction.
 - UI: browser check at 1440, 980, 760 and 520 px with seeded masters; inspect filter controls, cards, tags, pagination, filter reset, first/last page and empty state; confirm no horizontal page scroll, no rating/badge/fee/action, and keyboard-usable controls.
+- Freshness: a profile save invalidates a non-default registry page key; a browser walkthrough changes years and class state, then returns inside the 60-second window and observes the new card position/tag without a manual reload.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
 ## 7. Success criteria
