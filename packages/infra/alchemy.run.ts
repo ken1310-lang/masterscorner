@@ -8,7 +8,11 @@ import { assertDevelopmentBranch } from "./src/dev-guard";
 
 assertDevelopmentBranch({
   ALCHEMY_DEV: process.env.ALCHEMY_DEV,
+  AWS_ENDPOINT_URL_S3: process.env.AWS_ENDPOINT_URL_S3,
+  DATABASE_URL: process.env.DATABASE_URL,
   NEON_BRANCH: process.env.NEON_BRANCH,
+  NEON_DEVELOPMENT_DATABASE_HOST: process.env.NEON_DEVELOPMENT_DATABASE_HOST,
+  NEON_DEVELOPMENT_STORAGE_HOST: process.env.NEON_DEVELOPMENT_STORAGE_HOST,
 });
 
 /**

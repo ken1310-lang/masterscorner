@@ -214,6 +214,51 @@ describeDb("media procedures database round trip", () => {
     expect((await caller.master.getProfile()).media).toEqual([]);
   });
 
+  test("serializes concurrent replacements into one row and one object", async () => {
+    await caller.media.remove({ kind: "profile_photo" }).catch(() => undefined);
+    const putsBefore = puts.length;
+    const deletesBefore = deletes.length;
+    const profileId = (await caller.master.getProfile()).profile?.id;
+    if (!profileId) {
+      throw new Error("The media test account has no profile");
+    }
+
+    await Promise.all([
+      caller.media.upload({
+        contentType: "image/png",
+        data: PNG,
+        kind: "profile_photo",
+      }),
+      caller.media.upload({
+        contentType: "image/png",
+        data: PNG,
+        kind: "profile_photo",
+      }),
+    ]);
+
+    const newKeys = puts.slice(putsBefore).map((row) => row.key);
+    expect(newKeys).toHaveLength(2);
+    const rows = await db
+      .select({ objectKey: media.objectKey })
+      .from(media)
+      .where(eq(media.profileId, profileId));
+    expect(rows).toHaveLength(1);
+    const currentKey = rows[0]?.objectKey;
+    if (!currentKey) {
+      throw new Error("The concurrent uploads left no current object");
+    }
+    expect(newKeys).toContain(currentKey);
+    const replacedKey = newKeys.find((key) => key !== currentKey);
+    if (!replacedKey) {
+      throw new Error("The losing upload's object key was not recorded");
+    }
+    expect(deletes.slice(deletesBefore)).toContain(replacedKey);
+
+    const reloaded = await caller.master.getProfile();
+    expect(reloaded.media).toHaveLength(1);
+    expect(reloaded.media[0]?.url).toContain(currentKey);
+  });
+
   test("does not expose or remove another master's media", async () => {
     const ownerId = `media-owner-${crypto.randomUUID()}`;
     const intruderId = `media-intruder-${crypto.randomUUID()}`;

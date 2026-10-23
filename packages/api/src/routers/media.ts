@@ -1,6 +1,6 @@
 import { media } from "@my-better-t-app/db/schema/master";
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 import { protectedProcedure, router } from "../index";
@@ -115,13 +115,6 @@ export const mediaRouter = router({
         });
       }
 
-      const previous = await ctx.db
-        .select({ id: media.id, objectKey: media.objectKey })
-        .from(media)
-        .where(
-          and(eq(media.profileId, profile.id), eq(media.kind, input.kind))
-        );
-
       const id = crypto.randomUUID();
       const objectKey = mediaObjectKey(profile.id, input.contentType, id);
       try {
@@ -130,7 +123,29 @@ export const mediaRouter = router({
         storageUnavailable(error);
       }
 
+      /**
+       * Replacements for one profile and kind serialize on an advisory lock
+       * held for the batch's transaction. The previous rows are read only
+       * after the lock is held, and every row of that kind is deleted before
+       * the insert, so two overlapping uploads cannot leave a hidden row (and
+       * its object) behind. A failed insert rolls the delete back.
+       */
+      const lockKey = `media-replace:${profile.id}:${input.kind}`;
       const statements: BatchItem<"pg">[] = [
+        ctx.db.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`
+        ),
+        ctx.db
+          .select({ id: media.id, objectKey: media.objectKey })
+          .from(media)
+          .where(
+            and(eq(media.profileId, profile.id), eq(media.kind, input.kind))
+          ),
+        ctx.db
+          .delete(media)
+          .where(
+            and(eq(media.profileId, profile.id), eq(media.kind, input.kind))
+          ),
         ctx.db.insert(media).values({
           byteSize: bytes.length,
           contentType: input.contentType,
@@ -140,34 +155,24 @@ export const mediaRouter = router({
           profileId: profile.id,
         }),
       ];
-      if (previous.length > 0) {
-        // New object first, then remove the rows it replaces in the same
-        // transaction. A failure leaves the old image intact.
-        statements.push(
-          ctx.db.delete(media).where(
-            and(
-              eq(media.profileId, profile.id),
-              eq(media.kind, input.kind),
-              inArray(
-                media.id,
-                previous.map((row) => row.id)
-              )
-            )
-          )
-        );
-      }
       const [first, ...rest] = statements;
       if (!first) {
         throw new Error("Media upload produced no statements");
       }
+      let result: unknown[];
       try {
-        await ctx.db.batch([first, ...rest]);
+        result = await ctx.db.batch([first, ...rest]);
       } catch (error) {
         await ctx.mediaStorage.deleteObject(objectKey).catch(() => undefined);
         throw error;
       }
+      const previous = result[1] as
+        | { id: string; objectKey: string }[]
+        | undefined;
       await Promise.allSettled(
-        previous.map((row) => ctx.mediaStorage.deleteObject(row.objectKey))
+        (previous ?? []).map((row) =>
+          ctx.mediaStorage.deleteObject(row.objectKey)
+        )
       );
 
       return loadProfile(ctx.db, userId, ctx.mediaStorage);
