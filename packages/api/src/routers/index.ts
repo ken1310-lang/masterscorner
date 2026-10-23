@@ -1,8 +1,10 @@
 import { protectedProcedure, publicProcedure, router } from "../index";
+import { classesRouter } from "./classes";
 import { masterRouter } from "./master";
 import { mediaRouter } from "./media";
 
 export const appRouter = router({
+  classes: classesRouter,
   healthCheck: publicProcedure.query(() => "OK"),
   master: masterRouter,
   media: mediaRouter,
