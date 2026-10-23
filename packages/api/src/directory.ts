@@ -7,18 +7,33 @@ import {
   type ClassLevel,
   type ClassScheduleView,
 } from "./classes";
+import { MAX_LOCATION_NAME, MAX_MARTIAL_ART_NAME } from "./master-profile";
 
 /** Paused classes are not current; full classes still run. */
 export const DIRECTORY_CLASS_STATUSES = ["active", "full"] as const;
 export type DirectoryClassStatus = (typeof DIRECTORY_CLASS_STATUSES)[number];
 
+const sharedFilter = z.string().trim().min(1);
+
 export const directoryClassFiltersSchema = z
   .object({
     audience: z.enum(CLASS_AUDIENCES).optional(),
-    locationId: z.uuid("Invalid location").optional(),
-    martialArtId: z.uuid("Invalid martial art").optional(),
+    location: sharedFilter.max(MAX_LOCATION_NAME).optional(),
+    martialArt: sharedFilter.max(MAX_MARTIAL_ART_NAME).optional(),
   })
   .optional();
+
+/** Matches the profile's normalized child-name uniqueness (`lower(btrim(name))`). */
+export function normalizeDirectoryFilter(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export interface DirectoryFilterOption {
+  /** The canonical display name. */
+  name: string;
+  /** Normalized shared identity used by the URL and query. */
+  value: string;
+}
 
 export interface DirectoryClassView {
   audience: ClassAudience;
@@ -37,8 +52,8 @@ export interface DirectoryClassView {
 
 export interface DirectoryClassesPayload {
   classes: DirectoryClassView[];
-  locations: { id: string; name: string }[];
-  martialArts: { id: string; name: string }[];
+  locations: DirectoryFilterOption[];
+  martialArts: DirectoryFilterOption[];
 }
 
 const INDIA_OFFSET_MINUTES = 5 * 60 + 30;

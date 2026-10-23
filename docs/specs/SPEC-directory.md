@@ -37,17 +37,22 @@ Success: `/classes` lists only classes that exist in the development database, e
 
 ```ts
 interface DirectoryClassFilters {
-  martialArtId?: string; // uuid
-  locationId?: string;   // uuid
+  martialArt?: string; // normalized shared discipline name
+  location?: string;   // normalized shared location name
   audience?: "children" | "adults" | "all";
 }
 ```
 
-Filters compose with AND. An unknown id is a valid input that returns no rows; it is not an error. Empty strings are normalized to `undefined` by the route before the query is sent. The query includes classes whose status is `active` or `full`; `paused` classes are not current. Classes without at least one schedule are incomplete and are not returned.
+Filters compose with AND. Martial arts and locations are child rows of individual master profiles, so their UUIDs are not public identities: two masters teaching Karate own two different art rows. The directory groups child rows by normalized name (`lower(btrim(name))`), exposes one option per normalized name, and resolves a selection to every matching child id across masters. The filter value is that normalized name. An unknown name is a valid input that returns no rows; it is not an error. Empty strings are normalized to `undefined` by the route before the query is sent. The query includes classes whose status is `active` or `full`; `paused` classes are not current. Classes without at least one schedule are incomplete and are not returned.
 
 The response:
 
 ```ts
+interface DirectoryFilterOption {
+  name: string;  // canonical display name
+  value: string; // normalized shared identity used by the URL and query
+}
+
 interface DirectoryClassView {
   id: string;
   name: string;
@@ -64,8 +69,8 @@ interface DirectoryClassView {
 
 interface DirectoryClassesPayload {
   classes: DirectoryClassView[]; // nextSessionAt asc, then name, then id
-  martialArts: ClassOption[];    // all eligible classes, name asc
-  locations: ClassOption[];      // all eligible classes, name asc
+  martialArts: DirectoryFilterOption[]; // global, name asc
+  locations: DirectoryFilterOption[];   // global, name asc
 }
 ```
 
@@ -75,13 +80,13 @@ Next session is the next weekly start at or after the current India wall-clock m
 
 ### 3.2 Shared browser contract
 
-`packages/api/src/directory.ts` owns the Zod filter schema, the response types and the next-session calculation. It imports the dependency-free class vocabulary, not Drizzle. `packages/api/src/routers/directory.ts` owns the database query and maps rows to the shared view.
+`packages/api/src/directory.ts` owns the Zod filter schema, the response types, the name normalizer and the next-session calculation. It imports the dependency-free class vocabulary, not Drizzle. `packages/api/src/routers/directory.ts` owns the database query and maps rows to the shared view.
 
-The router uses the relational query with the class profile, martial art, location and schedules. It derives filter options with distinct reads over the same eligible status set, then reads the filtered rows. It does not load all classes into memory to filter them.
+The router reads distinct used child rows over the eligible status set, groups them by normalized name, and exposes one option per group. It then resolves the selected names to all matching child ids and applies those ids to the relational class read. It does not load all classes into memory to filter them.
 
 ### 3.3 Screen
 
-`/classes` is a marketplace route under `_marketplace`, so it uses the existing header, footer and skip link. The hero says "Find a class that fits your week" and describes real master-owned classes. The filter bar has labelled selects for martial art, location and audience plus a visible "Clear filters" action when any filter is active. Selecting a filter updates the URL using the search keys `art`, `location` and `audience`; reloading or sharing the URL restores the filters. The query is server-side filtered.
+`/classes` is a marketplace route under `_marketplace`, so it uses the existing header, footer and skip link. The hero says "Find a class that fits your week" and describes real master-owned classes. The filter bar has labelled selects for martial art, location and audience plus a visible "Clear filters" action when any filter is active. Selecting a filter updates the URL using the search keys `art`, `location` and `audience`; the `art` and `location` values are normalized shared names rather than one master's child UUID. Reloading or sharing the URL restores the filters. The query is server-side filtered.
 
 The result list uses the prototype's table styling with columns Class, Master, Location, Next session and Fee. There is no Book column. Class and master are plain text until the master profile route ships. A `Full` class shows a text status badge; active classes do not need one. Fee renders only when stored; never "Not set" on the public page. Below the `md` breakpoint the rows become compact labelled blocks without horizontal page scroll; the desktop header is hidden from view but the list keeps a useful accessible name.
 
@@ -118,13 +123,19 @@ Full gates:               bun run gates
 ## 5. Code style
 
 ```ts
+const sharedFilter = z.string().trim().min(1);
+
 export const directoryClassFiltersSchema = z
   .object({
     audience: z.enum(CLASS_AUDIENCES).optional(),
-    locationId: z.uuid().optional(),
-    martialArtId: z.uuid().optional(),
+    location: sharedFilter.max(MAX_LOCATION_NAME).optional(),
+    martialArt: sharedFilter.max(MAX_MARTIAL_ART_NAME).optional(),
   })
   .optional();
+
+export function normalizeDirectoryFilter(value: string) {
+  return value.trim().toLowerCase();
+}
 
 export function nextSessionStart(
   schedules: readonly Pick<ClassScheduleView, "dayOfWeek" | "startTime">[],
@@ -138,10 +149,10 @@ Use the existing tRPC `publicProcedure`, Drizzle relational reads, TanStack Quer
 
 ## 6. Testing strategy
 
-- Small: next-session calculation at exact start, before/after a slot, week rollover and no schedules; filter-schema rejects an invalid audience and accepts an unknown uuid.
-- Contract: anonymous caller receives only active/full classes from two masters; each filter narrows the set and combined filters compose; paused and profile-less data do not appear; no account email or revision is present in the payload.
-- Runtime: seed two masters with classes across arts, locations and audiences; verify URL filters, counts, empty states and the absence of Book.
-- UI: browser check at 1440, 980, 760 and 520 px; keyboard-select each filter; confirm no horizontal page scroll and the header `Classes` link is active.
+- Small: next-session calculation at exact start, before/after a slot, week rollover and no schedules; filter-schema trims and normalizes shared names, and rejects an invalid audience or empty name.
+- Contract: anonymous caller receives only active/full classes from two masters that share the same art and location names; one grouped option resolves both masters; each filter narrows the set and combined filters compose; paused and profile-less data do not appear; no account email or revision is present in the payload. Fixtures use unique shared names so unrelated development rows cannot change an exact assertion.
+- Runtime: seed two masters with the same art and location names and classes across audiences; verify URL filters, counts, empty states and the absence of Book.
+- UI: browser check at 1440, 980, 760 and 520 px; select each filter; confirm no horizontal page scroll and the header `Classes` link is active.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
 ## 7. Success criteria

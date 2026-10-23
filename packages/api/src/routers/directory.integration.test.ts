@@ -4,6 +4,7 @@ import { user } from "@my-better-t-app/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 import type { MasterClassView } from "../classes";
+import { normalizeDirectoryFilter } from "../directory";
 import type { MediaRateLimit, MediaStorage } from "../media";
 import { appRouter } from "./index";
 
@@ -21,9 +22,13 @@ const describeDb = databaseUrl ? describe : describe.skip;
 
 describeDb("public directory database contract", () => {
   const db = createDb({ DATABASE_URL: databaseUrl ?? "" });
-  const suffix = crypto.randomUUID();
+  const suffix = crypto.randomUUID().slice(0, 8);
   const masterAId = `directory-a-${suffix}`;
   const masterBId = `directory-b-${suffix}`;
+  const artName = `Karate ${suffix}`;
+  const locationName = `Velachery ${suffix}`;
+  const artValue = normalizeDirectoryFilter(artName);
+  const locationValue = normalizeDirectoryFilter(locationName);
   const callerFor = (id: string, email = `${id}@example.com`) =>
     appRouter.createCaller({
       db,
@@ -58,21 +63,16 @@ describeDb("public directory database contract", () => {
   let childrenB: MasterClassView;
   let adultsB: MasterClassView;
 
-  async function createMaster(
-    id: string,
-    displayName: string,
-    artName: string,
-    city: string
-  ) {
+  async function createMaster(id: string, displayName: string) {
     await db
       .insert(user)
       .values({ email: `${id}@example.com`, id, name: displayName });
     const caller = callerFor(id);
     const payload = await caller.master.saveProfile({
       displayName,
-      homeCity: city,
+      homeCity: "Chennai",
       introduction: null,
-      locations: [{ name: city }],
+      locations: [{ name: locationName }],
       martialArts: [{ name: artName }],
       revision: null,
       yearsTeaching: 12,
@@ -87,20 +87,10 @@ describeDb("public directory database contract", () => {
   }
 
   beforeAll(async () => {
-    const masterA = await createMaster(
-      masterAId,
-      "Arun Vel",
-      "Silambam",
-      "Nanganallur"
-    );
+    const masterA = await createMaster(masterAId, "Arun Vel");
     artA = masterA.art;
     locationA = masterA.location;
-    const masterB = await createMaster(
-      masterBId,
-      "Meera Rao",
-      "Karate",
-      "Velachery"
-    );
+    const masterB = await createMaster(masterBId, "Meera Rao");
     artB = masterB.art;
     locationB = masterB.location;
 
@@ -111,7 +101,7 @@ describeDb("public directory database contract", () => {
       level: "beginner",
       locationId: locationA.id,
       martialArtId: artA.id,
-      name: "Silambam Foundation",
+      name: `Silambam Foundation ${suffix}`,
       schedules: [
         { dayOfWeek: 1, endTime: "19:00", startTime: "18:00" },
         { dayOfWeek: 6, endTime: "10:00", startTime: "09:00" },
@@ -125,7 +115,7 @@ describeDb("public directory database contract", () => {
       level: "beginner",
       locationId: locationA.id,
       martialArtId: artA.id,
-      name: "Young Silambam",
+      name: `Young Silambam ${suffix}`,
       schedules: [{ dayOfWeek: 7, endTime: "09:00", startTime: "08:00" }],
       status: "full",
     });
@@ -136,7 +126,7 @@ describeDb("public directory database contract", () => {
       level: "beginner",
       locationId: locationA.id,
       martialArtId: artA.id,
-      name: "Paused Silambam",
+      name: `Paused Silambam ${suffix}`,
       schedules: [{ dayOfWeek: 2, endTime: "19:00", startTime: "18:00" }],
       status: "paused",
     });
@@ -147,7 +137,7 @@ describeDb("public directory database contract", () => {
       level: "beginner",
       locationId: locationB.id,
       martialArtId: artB.id,
-      name: "Kids Karate",
+      name: `Kids Karate ${suffix}`,
       schedules: [{ dayOfWeek: 7, endTime: "09:30", startTime: "08:30" }],
       status: "active",
     });
@@ -158,7 +148,7 @@ describeDb("public directory database contract", () => {
       level: "intermediate",
       locationId: locationB.id,
       martialArtId: artB.id,
-      name: "Adult Karate",
+      name: `Adult Karate ${suffix}`,
       schedules: [{ dayOfWeek: 3, endTime: "20:00", startTime: "19:00" }],
       status: "active",
     });
@@ -169,8 +159,11 @@ describeDb("public directory database contract", () => {
     await db.delete(user).where(eq(user.id, masterBId));
   });
 
-  test("returns published classes from every master without account data", async () => {
-    const payload = await anonymous.directory.classes();
+  test("groups one shared art and location across two masters", async () => {
+    const payload = await anonymous.directory.classes({
+      location: locationName,
+      martialArt: artName,
+    });
 
     expect(payload.classes.map((item) => item.id).sort()).toEqual(
       [activeA.id, fullA.id, childrenB.id, adultsB.id].sort()
@@ -179,6 +172,18 @@ describeDb("public directory database contract", () => {
     expect(payload.classes.find((item) => item.id === fullA.id)?.status).toBe(
       "full"
     );
+    expect(
+      payload.martialArts.filter((item) => item.value === artValue)
+    ).toHaveLength(1);
+    expect(
+      payload.locations.filter((item) => item.value === locationValue)
+    ).toHaveLength(1);
+    expect(
+      payload.martialArts.find((item) => item.value === artValue)?.name
+    ).toBe(artName);
+    expect(
+      payload.locations.find((item) => item.value === locationValue)?.name
+    ).toBe(locationName);
 
     const times = payload.classes.map((item) => item.nextSessionAt);
     expect([...times].sort()).toEqual(times);
@@ -190,61 +195,39 @@ describeDb("public directory database contract", () => {
       expect(item).not.toHaveProperty("profileId");
       expect(item).not.toHaveProperty("email");
     }
-    expect(payload.martialArts.map((item) => item.name).sort()).toEqual([
-      "Karate",
-      "Silambam",
-    ]);
-    expect(payload.locations.map((item) => item.name).sort()).toEqual([
-      "Nanganallur",
-      "Velachery",
-    ]);
   });
 
-  test("composes filters and keeps filter options global", async () => {
+  test("composes shared-name filters and includes both masters", async () => {
     const children = await anonymous.directory.classes({
       audience: "children",
+      location: locationName,
+      martialArt: artName,
     });
     expect(children.classes.map((item) => item.id).sort()).toEqual(
       [fullA.id, childrenB.id].sort()
     );
     expect(children.classes.map((item) => item.id)).not.toContain(pausedA.id);
-    expect(children.martialArts.map((item) => item.name).sort()).toEqual([
-      "Karate",
-      "Silambam",
-    ]);
 
-    const masterA = await anonymous.directory.classes({
-      martialArtId: artA.id,
+    const uppercase = await anonymous.directory.classes({
+      martialArt: artName.toUpperCase(),
     });
-    expect(masterA.classes.map((item) => item.id).sort()).toEqual(
-      [activeA.id, fullA.id].sort()
+    expect(uppercase.classes.map((item) => item.id).sort()).toEqual(
+      [activeA.id, fullA.id, childrenB.id, adultsB.id].sort()
     );
 
-    const velachery = await anonymous.directory.classes({
-      locationId: locationB.id,
+    const byLocation = await anonymous.directory.classes({
+      location: locationName,
     });
-    expect(velachery.classes.map((item) => item.id).sort()).toEqual(
-      [childrenB.id, adultsB.id].sort()
+    expect(byLocation.classes.map((item) => item.id).sort()).toEqual(
+      [activeA.id, fullA.id, childrenB.id, adultsB.id].sort()
     );
-
-    const composed = await anonymous.directory.classes({
-      audience: "adults",
-      locationId: locationB.id,
-    });
-    expect(composed.classes.map((item) => item.id)).toEqual([adultsB.id]);
 
     const noMatch = await anonymous.directory.classes({
-      locationId: locationB.id,
-      martialArtId: artA.id,
+      martialArt: `Unknown ${suffix}`,
     });
     expect(noMatch.classes).toEqual([]);
-  });
-
-  test("returns no rows for an unknown but valid id", async () => {
-    const payload = await anonymous.directory.classes({
-      martialArtId: "f9f7c6b0-4e7b-4e0a-8d62-5d3f8a3f2b1a",
-    });
-    expect(payload.classes).toEqual([]);
-    expect(payload.martialArts.length).toBe(2);
+    expect(
+      noMatch.martialArts.filter((item) => item.value === artValue)
+    ).toHaveLength(1);
   });
 });

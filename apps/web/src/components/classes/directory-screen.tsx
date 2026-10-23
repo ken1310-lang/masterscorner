@@ -34,11 +34,11 @@ function filterNames(
 ) {
   return [
     filters.art
-      ? (payload?.martialArts.find((item) => item.id === filters.art)?.name ??
-        "selected martial art")
+      ? (payload?.martialArts.find((item) => item.value === filters.art)
+          ?.name ?? "selected martial art")
       : null,
     filters.location
-      ? (payload?.locations.find((item) => item.id === filters.location)
+      ? (payload?.locations.find((item) => item.value === filters.location)
           ?.name ?? "selected location")
       : null,
     filters.audience ? AUDIENCE_LABELS[filters.audience] : null,
@@ -167,12 +167,13 @@ function DirectoryFiltersBar({
   const labelClass =
     "flex min-w-0 flex-col gap-1 font-extrabold text-[10px] text-muted-text uppercase tracking-[.1em]";
   const unknownArt =
-    filters.art && !payload.martialArts.some((item) => item.id === filters.art)
+    filters.art &&
+    !payload.martialArts.some((item) => item.value === filters.art)
       ? filters.art
       : undefined;
   const unknownLocation =
     filters.location &&
-    !payload.locations.some((item) => item.id === filters.location)
+    !payload.locations.some((item) => item.value === filters.location)
       ? filters.location
       : undefined;
 
@@ -203,7 +204,7 @@ function DirectoryFiltersBar({
             <option value={unknownArt}>Selected martial art</option>
           ) : null}
           {payload.martialArts.map((item) => (
-            <option key={item.id} value={item.id}>
+            <option key={item.value} value={item.value}>
               {item.name}
             </option>
           ))}
@@ -223,7 +224,7 @@ function DirectoryFiltersBar({
             <option value={unknownLocation}>Selected location</option>
           ) : null}
           {payload.locations.map((item) => (
-            <option key={item.id} value={item.id}>
+            <option key={item.value} value={item.value}>
               {item.name}
             </option>
           ))}
@@ -346,8 +347,8 @@ export function DirectoryScreen({
   const trpc = useTRPC();
   const classesQuery = useQuery({
     ...trpc.directory.classes.queryOptions({
-      ...(filters.art ? { martialArtId: filters.art } : {}),
-      ...(filters.location ? { locationId: filters.location } : {}),
+      ...(filters.art ? { martialArt: filters.art } : {}),
+      ...(filters.location ? { location: filters.location } : {}),
       ...(filters.audience ? { audience: filters.audience } : {}),
     }),
     placeholderData: keepPreviousData,

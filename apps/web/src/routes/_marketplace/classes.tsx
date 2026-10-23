@@ -1,4 +1,5 @@
 import { CLASS_AUDIENCES } from "@my-better-t-app/api/classes";
+import { normalizeDirectoryFilter } from "@my-better-t-app/api/directory";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -8,10 +9,19 @@ import {
   DirectoryScreen,
 } from "@/components/classes/directory-screen";
 
+const sharedFilter = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .transform(normalizeDirectoryFilter)
+  .optional()
+  .catch(undefined);
+
 const directorySearchSchema = z.object({
-  art: z.uuid().optional().catch(undefined),
+  art: sharedFilter,
   audience: z.enum(CLASS_AUDIENCES).optional().catch(undefined),
-  location: z.uuid().optional().catch(undefined),
+  location: sharedFilter,
 });
 
 export const Route = createFileRoute("/_marketplace/classes")({

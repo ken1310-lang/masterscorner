@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { directoryClassFiltersSchema, nextSessionStart } from "./directory";
+import {
+  directoryClassFiltersSchema,
+  nextSessionStart,
+  normalizeDirectoryFilter,
+} from "./directory";
 
 const friday = new Date("2026-10-23T12:00:00.000Z"); // Fri 17:30 IST
 
@@ -64,26 +68,31 @@ describe("directoryClassFiltersSchema", () => {
     expect(directoryClassFiltersSchema.parse({})).toEqual({});
   });
 
-  test("accepts a valid audience and ids", () => {
+  test("accepts shared names and trims them", () => {
     expect(
       directoryClassFiltersSchema.parse({
         audience: "children",
-        locationId: "f9f7c6b0-4e7b-4e0a-8d62-5d3f8a3f2b1a",
-        martialArtId: "0e5a2f4c-6b30-4e89-9c50-8e8a7f6d5c4b",
+        location: " Velachery ",
+        martialArt: " Karate ",
       })
     ).toEqual({
       audience: "children",
-      locationId: "f9f7c6b0-4e7b-4e0a-8d62-5d3f8a3f2b1a",
-      martialArtId: "0e5a2f4c-6b30-4e89-9c50-8e8a7f6d5c4b",
+      location: "Velachery",
+      martialArt: "Karate",
     });
   });
 
-  test("rejects an unknown audience and malformed ids", () => {
+  test("normalizes shared names for matching", () => {
+    expect(normalizeDirectoryFilter("  Karate  ")).toBe("karate");
+    expect(normalizeDirectoryFilter("VELACHERY")).toBe("velachery");
+  });
+
+  test("rejects an unknown audience and empty names", () => {
     expect(() =>
       directoryClassFiltersSchema.parse({ audience: "teens" })
     ).toThrow();
     expect(() =>
-      directoryClassFiltersSchema.parse({ martialArtId: "not-a-uuid" })
+      directoryClassFiltersSchema.parse({ martialArt: "   " })
     ).toThrow();
   });
 });
