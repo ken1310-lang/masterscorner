@@ -177,14 +177,17 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 
 ## Phase 4 — Directory
 
-### [ ] 11. Public class listing
+### [x] 11. Public class listing — done on `task/11-public-directory`
 
 - **Description:** `/classes` built from real classes: class name, art, master, location, next session, fee, filters for art, location and audience, and an honest empty state (PRD §10).
 - **Acceptance:** the listing shows only real classes; filters compose and adjust the query; a search with no matches explains what is missing instead of showing invented rows; no Book action is rendered (deviation D3).
 - **Verify:** seed the development environment with classes across two masters; browser check that filters change results; contract test for the filter query.
 - **Deps:** 9, 10
-- **Files:** `packages/api/src/routers/directory.ts`, `apps/web/src/routes/classes.tsx`, `apps/web/src/components/classes/class-row.tsx`
+- **Files:** `packages/api/src/routers/directory.ts`, `packages/api/src/directory.ts`, `apps/web/src/routes/_marketplace/classes.tsx`, `apps/web/src/components/classes/{directory-screen,class-row,directory-values}.tsx`
 - **Scope:** Medium
+- **Status (2026-10-23):** `directory.classes` is a public query over classes owned by real profiles. It returns `active` and `full` classes with their master display name, martial art, location, weekly next session, optional fee and status; paused classes and classes without schedules are omitted. Martial-art and location options are grouped by normalized shared name across masters, and selecting one resolves every matching child id, so two masters teaching Karate yield one option and both masters' classes. Filters compose on the server. Filter values are normalized before length validation; the shared limits are twice the profile maxima so Unicode lowercase expansion cannot invalidate a value generated from a valid name. Next session is computed in the API from stored wall-clock slots against Asia/Kolkata and returned as a UTC instant. The browser renders the prototype's registry hero and class table, stores normalized filter names in the URL (`art`, `location`, `audience`), keeps previous results while a filter query loads, and shows distinct loading, refresh-error, filtered-empty and directory-empty states. No Book action, rating, review, verification badge or invented fee is rendered.
+- **Verification (2026-10-23):** `bun run gates` 5/5; web suite 51/51 with 195 assertions; API suite 51 pass / 30 skipped; live `bun run test:db` 23/23 with 161 assertions. The directory suite uses unique shared art and location names so unrelated development rows cannot contaminate exact assertions; it covers anonymous access, active/full inclusion, paused exclusion, two masters with identical names, one grouped option resolving both, each filter alone and composed, case normalization, no-match, and absence of account fields. Pure tests cover next-session rollover, name normalization, 120-character ASCII art values, and an 80-character `İ` name whose normalized value is 160 characters. Browser walkthrough at 1440 px with four published classes from two masters sharing `Karate` and `Velachery`: one option per shared name, Karate filter 4, location filter 4, children filter 2 across both masters, paused absent, reload restored filters, unknown name showed the filtered-empty state, no Book text, and the seed-free reload showed the honest empty state. Direct 90- and 120-character art URLs showed the filtered-empty state with no load error. The same screen's 980, 760 and 520 px layouts were verified earlier with no horizontal overflow. Temporary accounts and classes were deleted.
+- **Stack:** Task 10 merged into `development` as `b456ccc`; PR #24 targets `development` and contains only this task.
 
 ### [ ] 12. Master registry
 

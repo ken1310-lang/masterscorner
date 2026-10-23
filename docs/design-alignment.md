@@ -154,7 +154,7 @@ These map onto Tailwind v4 theme tokens in `packages/ui/src/styles/globals.css`;
 | Student account area (Phase 3) | Absent | `/masters/$slug` and the booking screens |
 | Admin screens (Phase 2) | Absent | Console patterns |
 
-The console classes screen was designed and implemented in Task 10; `docs/specs/SPEC-classes.md` §5 records its layout, states, responsive rules and confirmation flow.
+The console classes screen was designed and implemented in Task 10; `docs/specs/SPEC-classes.md` §5 records its layout, states, responsive rules and confirmation flow. The public class filter bar and empty/error states were implemented in Task 11; `docs/specs/SPEC-directory.md` §3.3 records the public route contract.
 
 ## 8. Deviation register ("pixel-perfect" exceptions)
 

@@ -11,7 +11,9 @@ import { LogoMark } from "./logo-mark";
  * prototype lists `Masters`, `Academies`, `Classes`, `Events` and
  * `Experience Card`; each is added here by the task that ships its route.
  */
-const navLinks: { to: "/"; label: string }[] = [];
+const navLinks: { to: "/" | "/classes"; label: string }[] = [
+  { label: "Classes", to: "/classes" },
+];
 
 const navLinkClass =
   "inline-flex min-h-11 items-center whitespace-nowrap text-sm leading-normal text-[#3f4b63] hover:text-navy lg:block lg:min-h-[auto] lg:whitespace-normal";
@@ -50,7 +52,15 @@ export function Header() {
             className="lg:[&::-webkit-scrollbar]:initial order-3 flex w-full gap-[18px] overflow-x-auto [scrollbar-width:none] lg:order-none lg:ml-auto lg:w-auto lg:gap-[23px] lg:overflow-visible lg:[scrollbar-width:auto] [&::-webkit-scrollbar]:hidden"
           >
             {navLinks.map((link) => (
-              <Link className={navLinkClass} key={link.to} to={link.to}>
+              <Link
+                activeProps={{
+                  "aria-current": "page",
+                  className: cn(navLinkClass, "font-extrabold text-navy"),
+                }}
+                className={navLinkClass}
+                key={link.to}
+                to={link.to}
+              >
                 {link.label}
               </Link>
             ))}
