@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 import { ConsolePageHeader } from "@/components/console/page-header";
 import { useTRPC } from "@/utils/trpc";
-
+import { PhotoField } from "./photo-field";
 import { fieldErrorMessages, ProfileField } from "./profile-field";
 import { ProfileAddButton, ProfileNameRow } from "./profile-name-row";
 import { initialProfileValues, profileValuesToInput } from "./profile-values";
@@ -178,6 +178,13 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
                   </form.Field>
                 </div>
               </section>
+
+              <PhotoField
+                accountName={accountName}
+                disabled={isSubmittingState.isSubmitting}
+                hasProfile={payload.profile !== null}
+                media={payload.media}
+              />
 
               <section className={sectionClassName}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">

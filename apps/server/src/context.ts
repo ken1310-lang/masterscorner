@@ -1,6 +1,11 @@
 import type { Context as ApiContext } from "@my-better-t-app/api/context";
 import type { Context as HonoContext } from "hono";
-import { createAuth, getDb } from "./services";
+import {
+  createAuth,
+  getDb,
+  getMediaRateLimit,
+  getMediaStorage,
+} from "./services";
 
 export interface CreateContextOptions {
   context: HonoContext;
@@ -15,6 +20,8 @@ export async function createContext({
   });
   return {
     db,
+    mediaRateLimit: getMediaRateLimit(),
+    mediaStorage: getMediaStorage(),
     session,
   };
 }

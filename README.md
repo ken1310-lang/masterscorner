@@ -39,7 +39,9 @@ neon deploy                                        # applies neon.ts: the media 
 neon env pull --file apps/server/.env              # DATABASE_URL, DATABASE_URL_UNPOOLED, AWS_*
 ```
 
-`neon.ts` declares object storage (`media`), so every branch gets its own bucket and branch-scoped S3 credentials. `neon status` prints the branch's live configuration and `neon config plan` diffs it against `neon.ts` without applying anything.
+`neon.ts` declares object storage (`media`), so every branch gets its own bucket and endpoint. Storage credentials are project-wide on this platform, so each Worker's `AWS_ENDPOINT_URL_S3` is the isolation boundary (ADR-004 revision, 2026-10-23). `neon status` prints the branch's live configuration and `neon config plan` diffs it against `neon.ts` without applying anything.
+
+`NEON_DEVELOPMENT_DATABASE_HOST` and `NEON_DEVELOPMENT_STORAGE_HOST` pin the development endpoints. The `alchemy dev` guard refuses to start unless `DATABASE_URL` and `AWS_ENDPOINT_URL_S3` match them, so copied production values cannot pass on the `NEON_BRANCH` label alone.
 
 `neon deploy` applies the policy to the **pinned** branch only. Only `production` (the default branch) and `development` are exempt; every other branch is treated as a throwaway with a 7-day TTL and the cheapest compute, and that includes branches that already exist — so a preview cannot outlive its purpose. Changing a branch that already exists needs `neon deploy --update-existing`; without the flag the CLI prints the difference and stops.
 

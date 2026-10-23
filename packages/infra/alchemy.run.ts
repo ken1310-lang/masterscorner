@@ -4,6 +4,17 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
+import { assertDevelopmentBranch } from "./src/dev-guard";
+
+assertDevelopmentBranch({
+  ALCHEMY_DEV: process.env.ALCHEMY_DEV,
+  AWS_ENDPOINT_URL_S3: process.env.AWS_ENDPOINT_URL_S3,
+  DATABASE_URL: process.env.DATABASE_URL,
+  NEON_BRANCH: process.env.NEON_BRANCH,
+  NEON_DEVELOPMENT_DATABASE_HOST: process.env.NEON_DEVELOPMENT_DATABASE_HOST,
+  NEON_DEVELOPMENT_STORAGE_HOST: process.env.NEON_DEVELOPMENT_STORAGE_HOST,
+});
+
 /**
  * Production-only Worker names. Other stages keep Alchemy's generated names,
  * so an unguarded dev-stage deploy cannot take over the production Workers.
@@ -34,6 +45,12 @@ export const server = Cloudflare.Worker("server", {
     AWS_ENDPOINT_URL_S3: Config.String("AWS_ENDPOINT_URL_S3"),
     AWS_REGION: Config.String("AWS_REGION"),
     AWS_SECRET_ACCESS_KEY: Config.Redacted("AWS_SECRET_ACCESS_KEY"),
+    // Upload abuse guard (SPEC-media §4): ten uploads per minute per account,
+    // per Cloudflare location. The binding is platform state, not a secret.
+    MEDIA_UPLOAD_RATE_LIMIT: Cloudflare.RateLimit("MEDIA_UPLOAD_RATE_LIMIT", {
+      namespaceId: 1001,
+      simple: { limit: 10, period: 60 },
+    }),
   },
   dev: {
     port: 3000,

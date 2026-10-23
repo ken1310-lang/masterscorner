@@ -9,6 +9,7 @@ const REVISION = "11111111-1111-4111-8111-111111111111";
 const emptyPayload: MasterProfilePayload = {
   locations: [],
   martialArts: [],
+  media: [],
   profile: null,
 };
 
@@ -21,6 +22,7 @@ const savedPayload: MasterProfilePayload = {
     { id: "art-1", name: "Silambam", position: 0 },
     { id: "art-2", name: "Karate", position: 1 },
   ],
+  media: [],
   profile: {
     displayName: "Master Arun Vel",
     homeCity: "Chennai",

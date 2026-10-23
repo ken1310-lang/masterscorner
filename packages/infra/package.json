@@ -7,7 +7,7 @@
     "deploy": "alchemy deploy",
     "deploy:production": "bun --no-env-file ./src/deploy-production.ts",
     "destroy": "alchemy destroy",
-    "dev": "alchemy dev",
+    "dev": "bun --env-file=../../apps/server/.env alchemy dev",
     "test": "bun test"
   },
   "dependencies": {

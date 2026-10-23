@@ -14,7 +14,7 @@ No code is written until each module's spec is written, reviewed and approved, p
 
 - **Stack is the existing template, unchanged in shape.** TanStack Start web app, Hono on Cloudflare Workers, tRPC router in `packages/api`, Better Auth in `packages/auth`, Drizzle on Neon HTTP in `packages/db`, Alchemy deployment in `packages/infra`. See `AGENTS.md`.
 - **Environments and migrations** — ADR-001: development and production, each on its own Neon branch; versioned migrations only; expand/contract.
-- **Infrastructure decisions closed before building** — ADR-004: media in Neon Object Storage on an `aws-ap-southeast-1` project, branch-scoped with the database; Pro Site served at a path address and switched to the `{slug}.masterscorner.in` subdomain when the zone check passes; per-PR preview environments deferred; no UI regression suite in the first release.
+- **Infrastructure decisions closed before building** — ADR-004: media in Neon Object Storage on an `aws-ap-southeast-1` project, with bucket views and endpoints branching with the database (credentials are project-wide; the endpoint is the isolation boundary); Pro Site served at a path address and switched to the `{slug}.masterscorner.in` subdomain when the zone check passes; per-PR preview environments deferred; no UI regression suite in the first release.
 - **MVP scope** — ADR-002: masters only (no academy entity), web only (Expo untouched), no verification badge, no contact or trial CTAs, Pro Site free.
 - **Design** — ADR-003: `masterscorner.html` is the visual source of truth; its tokens become Tailwind v4 theme tokens in `packages/ui/src/styles/globals.css`; screens are ported route by route; deviations are exactly the register in `docs/design-alignment.md` §8.
 - **Data access** stays factory-based (`createDb(env)`, `createAuth(env, db)`, per-request context with `session`); no module-level singletons.
@@ -61,7 +61,7 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 - [ ] Task 6: Profile schema — profile, teaching locations and media references, with migration.
 - [ ] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
-- [ ] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
+- [x] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
 
 ### Checkpoint C
 
