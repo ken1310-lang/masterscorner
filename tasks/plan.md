@@ -61,7 +61,7 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 - [ ] Task 6: Profile schema — profile, teaching locations and media references, with migration.
 - [ ] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
-- [ ] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
+- [x] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
 
 ### Checkpoint C
 

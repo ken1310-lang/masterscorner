@@ -6,7 +6,7 @@ Accepted — decided on 2026-10-20 under the owner's instruction to close the fl
 
 Revised on 2026-10-20: decision 1 changed from Cloudflare R2 to Neon Object Storage at the owner's instruction. The owner's requirement ("images saved in Neon storage") is satisfied by Neon's S3-compatible object storage, not by storing image bytes in Postgres rows; the rejection of the latter is part of the decision below.
 
-Revised on 2026-10-23: verification showed that storage credentials are project-wide, not branch-scoped. Every bucket is still branch-specific and served from that branch's endpoint, but the same credential can call another branch's endpoint. Isolation therefore comes from each Worker carrying its own branch endpoint, not from credential enforcement. The decision to use Neon Object Storage is unchanged; the isolation claim and the related verification are corrected below.
+Revised on 2026-10-23: verification showed that storage credentials are project-wide, not branch-scoped. Every bucket is still branch-specific and served from that branch's endpoint, but the same credential can call another branch's endpoint. Isolation therefore comes from each Worker carrying its own branch endpoint, not from credential enforcement. The owner accepted endpoint-scoped isolation for the release on 2026-10-23. The decision to use Neon Object Storage is unchanged; the isolation claim and the related verification are corrected below.
 
 ## Date
 

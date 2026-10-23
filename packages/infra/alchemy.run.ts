@@ -4,6 +4,13 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
+import { assertDevelopmentBranch } from "./src/dev-guard";
+
+assertDevelopmentBranch({
+  ALCHEMY_DEV: process.env.ALCHEMY_DEV,
+  NEON_BRANCH: process.env.NEON_BRANCH,
+});
+
 /**
  * Production-only Worker names. Other stages keep Alchemy's generated names,
  * so an unguarded dev-stage deploy cannot take over the production Workers.
