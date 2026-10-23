@@ -154,6 +154,8 @@ These map onto Tailwind v4 theme tokens in `packages/ui/src/styles/globals.css`;
 | Student account area (Phase 3) | Absent | `/masters/$slug` and the booking screens |
 | Admin screens (Phase 2) | Absent | Console patterns |
 
+The console classes screen was designed and implemented in Task 10; `docs/specs/SPEC-classes.md` §5 records its layout, states, responsive rules and confirmation flow.
+
 ## 8. Deviation register ("pixel-perfect" exceptions)
 
 Pixel fidelity applies to layout, spacing, type scale, colour tokens and component structure. The following deviations are required for correctness and are the only allowed differences at MVP. Every deviation below was confirmed by the owner on 2026-10-20 as part of the strict first-release scope:
