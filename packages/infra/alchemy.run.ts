@@ -5,6 +5,7 @@ import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
 import { assertDevelopmentBranch } from "./src/dev-guard";
+import { workerName } from "./src/worker-name";
 
 assertDevelopmentBranch({
   ALCHEMY_DEV: process.env.ALCHEMY_DEV,
@@ -14,16 +15,6 @@ assertDevelopmentBranch({
   NEON_DEVELOPMENT_DATABASE_HOST: process.env.NEON_DEVELOPMENT_DATABASE_HOST,
   NEON_DEVELOPMENT_STORAGE_HOST: process.env.NEON_DEVELOPMENT_STORAGE_HOST,
 });
-
-/**
- * Production-only Worker names. Other stages keep Alchemy's generated names,
- * so an unguarded dev-stage deploy cannot take over the production Workers.
- * The guarded production deploy requires NODE_ENV=production.
- */
-const workerName = (role: "server" | "web") =>
-  process.env.NODE_ENV === "production"
-    ? `masterscorner-${role}-production`
-    : undefined;
 
 export const server = Cloudflare.Worker("server", {
   name: workerName("server"),

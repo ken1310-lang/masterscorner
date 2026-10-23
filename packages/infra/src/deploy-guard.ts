@@ -12,9 +12,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { canonicalDatabaseHost } from "@my-better-t-app/db/connection";
-
-/** `KEY=value`, with optional `export` and optional quotes around the value. */
-const DOTENV_ENTRY = /^\s*(?:export\s+)?([A-Za-z0-9_]+)\s*=\s*(.*)$/;
+import { parse as parseDotenv } from "dotenv";
 
 export interface DeployTarget {
   /** `BETTER_AUTH_SECRET` the Worker would receive. */
@@ -106,10 +104,5 @@ export function readDotenvValue(path: string, key: string): string | undefined {
   if (!existsSync(path)) {
     return undefined;
   }
-  const entry = readFileSync(path, "utf8")
-    .split("\n")
-    .map((line) => DOTENV_ENTRY.exec(line))
-    .find((match) => match?.[1] === key);
-  const value = entry?.[2]?.trim().replace(/^["']|["']$/g, "");
-  return value || undefined;
+  return parseDotenv(readFileSync(path, "utf8"))[key] || undefined;
 }
