@@ -56,18 +56,42 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
     onSubmit: async ({ formApi, value }) => {
       setFormError(null);
       const isCurrentSession = sessionQueries.captureScope();
-      const saved = await saveProfile
-        .mutateAsync(profileValuesToInput(value))
-        .catch((error: Error) => {
-          if (isCurrentSession()) {
-            setFormError(error.message);
-          }
-          return null;
-        });
-      if (saved && isCurrentSession()) {
-        queryClient.setQueryData(trpc.master.getProfile.queryKey(), saved);
+      const queryKey = trpc.master.getProfile.queryKey();
+      try {
+        await queryClient.cancelQueries(
+          { queryKey, exact: true },
+          { silent: true }
+        );
+        if (!isCurrentSession()) {
+          return;
+        }
+        const saved = await saveProfile.mutateAsync(
+          profileValuesToInput(value)
+        );
+        if (!isCurrentSession()) {
+          return;
+        }
+        // A focus/reconnect refetch may have started while the save was pending.
+        await queryClient.cancelQueries(
+          { queryKey, exact: true },
+          { silent: true }
+        );
+        if (!isCurrentSession()) {
+          return;
+        }
+        queryClient.setQueryData<MasterProfilePayload>(queryKey, (current) =>
+          current ? { ...saved, media: current.media } : undefined
+        );
         toast.success("Profile saved");
         formApi.reset(initialProfileValues(accountName, saved));
+      } catch (error) {
+        if (isCurrentSession()) {
+          setFormError(
+            error instanceof Error
+              ? error.message
+              : "The profile could not be saved. Try again."
+          );
+        }
       }
     },
     validators: { onSubmit: profileFormSchema },

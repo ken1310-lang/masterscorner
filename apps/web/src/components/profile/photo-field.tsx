@@ -1,3 +1,4 @@
+import type { MasterProfilePayload } from "@my-better-t-app/api/master-profile";
 import {
   MEDIA_IMAGE_TYPES,
   MEDIA_MAX_BYTES,
@@ -64,6 +65,30 @@ function initialsFor(name: string) {
   return initials || "MC";
 }
 
+function mergePhotoMedia(
+  current: readonly MediaView[],
+  saved: readonly MediaView[]
+): MediaView[] {
+  const merged = new Map<string, MediaView>();
+  // The photo mutation owns only profile_photo rows. A response may carry a
+  // different logo replaced elsewhere; seeding it beside the cached logo would
+  // leave two ids of the same kind. Keep the cached logo until a profile read
+  // adopts the server's current row.
+  for (const item of current) {
+    if (item.kind !== "profile_photo") {
+      merged.set(item.id, item);
+    }
+  }
+  for (const item of saved) {
+    if (item.kind === "profile_photo") {
+      merged.set(item.id, item);
+    }
+  }
+  return [...merged.values()].sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt)
+  );
+}
+
 interface PhotoFieldProps {
   accountName: string;
   disabled: boolean;
@@ -94,35 +119,52 @@ export function PhotoField({
     setStatus("idle");
   }, []);
 
-  const uploadPhoto = useCallback(
-    async (file: File) => {
-      setError(null);
-      const problem = fileProblem(file);
-      if (problem) {
-        fail(problem);
-        return;
-      }
+  const applyPhoto = useCallback(
+    (saved: MasterProfilePayload) => {
+      queryClient.setQueryData<MasterProfilePayload>(
+        trpc.master.getProfile.queryKey(),
+        (current) =>
+          current
+            ? {
+                ...current,
+                media: mergePhotoMedia(current.media, saved.media),
+              }
+            : undefined
+      );
+    },
+    [queryClient, trpc.master.getProfile]
+  );
 
-      const contentType = file.type as MediaImageType;
-      const isCurrentSession = sessionQueries.captureScope();
-      setStatus("reading");
-      let data: string;
-      try {
-        data = await readBase64(file);
-      } catch {
-        fail("The image could not be read. Choose the file again.");
-        return;
-      }
-
+  const uploadImage = useCallback(
+    async (
+      contentType: MediaImageType,
+      data: string,
+      isCurrentSession: () => boolean
+    ) => {
       setStatus("uploading");
       try {
+        const queryKey = trpc.master.getProfile.queryKey();
+        await queryClient.cancelQueries(
+          { queryKey, exact: true },
+          { silent: true }
+        );
+        if (!isCurrentSession()) {
+          return;
+        }
         const saved = await upload.mutateAsync({
           contentType,
           data,
           kind: "profile_photo",
         });
+        if (!isCurrentSession()) {
+          return;
+        }
+        await queryClient.cancelQueries(
+          { queryKey, exact: true },
+          { silent: true }
+        );
         if (isCurrentSession()) {
-          queryClient.setQueryData(trpc.master.getProfile.queryKey(), saved);
+          applyPhoto(saved);
           toast.success(photo ? "Photo replaced" : "Photo added");
           setStatus("idle");
         }
@@ -136,7 +178,35 @@ export function PhotoField({
         }
       }
     },
-    [fail, photo, queryClient, sessionQueries, trpc.master.getProfile, upload]
+    [applyPhoto, fail, photo, queryClient, trpc.master.getProfile, upload]
+  );
+
+  const uploadPhoto = useCallback(
+    async (file: File) => {
+      setError(null);
+      const problem = fileProblem(file);
+      if (problem) {
+        fail(problem);
+        return;
+      }
+
+      const isCurrentSession = sessionQueries.captureScope();
+      setStatus("reading");
+      let data: string;
+      try {
+        data = await readBase64(file);
+      } catch {
+        if (isCurrentSession()) {
+          fail("The image could not be read. Choose the file again.");
+        }
+        return;
+      }
+      if (!isCurrentSession()) {
+        return;
+      }
+      await uploadImage(file.type as MediaImageType, data, isCurrentSession);
+    },
+    [fail, sessionQueries, uploadImage]
   );
 
   const handleFile = useCallback(
@@ -155,9 +225,24 @@ export function PhotoField({
     const isCurrentSession = sessionQueries.captureScope();
     setStatus("removing");
     try {
+      const queryKey = trpc.master.getProfile.queryKey();
+      await queryClient.cancelQueries(
+        { queryKey, exact: true },
+        { silent: true }
+      );
+      if (!isCurrentSession()) {
+        return;
+      }
       const saved = await remove.mutateAsync({ kind: "profile_photo" });
+      if (!isCurrentSession()) {
+        return;
+      }
+      await queryClient.cancelQueries(
+        { queryKey, exact: true },
+        { silent: true }
+      );
       if (isCurrentSession()) {
-        queryClient.setQueryData(trpc.master.getProfile.queryKey(), saved);
+        applyPhoto(saved);
         toast.success("Photo removed");
         setStatus("idle");
       }
@@ -170,7 +255,14 @@ export function PhotoField({
         );
       }
     }
-  }, [fail, queryClient, remove, sessionQueries, trpc.master.getProfile]);
+  }, [
+    applyPhoto,
+    fail,
+    queryClient,
+    remove,
+    sessionQueries,
+    trpc.master.getProfile,
+  ]);
 
   return (
     <section

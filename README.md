@@ -152,6 +152,8 @@ A client-side Better Auth session subscription also handles session loss and acc
 
 Profile saves capture the current session generation before sending the mutation. A response from an earlier generation cannot update the profile cache, reset the form or show save feedback—even after signing back into the same account. Background profile-refresh failures retain the mounted editor and unsaved changes; initial-load failures still show a retry screen.
 
+Profile and photo mutations cancel exact profile refreshes before sending and applying results. Their cache writes merge only owned fields: profile saves preserve cached media; photo changes preserve profile fields, children, revision and site-logo entries. Media carries its creation timestamp, so the merged list remains newest-first even when responses arrive out of order. A FileReader completion rechecks the session generation before sending bytes, preventing a file chosen under one account from being uploaded under another. See `docs/specs/SPEC-master-profile.md` and `docs/specs/SPEC-media.md`.
+
 Martial-art renames use temporary names selected against both stored and submitted names before the transaction updates retained rows. This permits swaps and names resembling the temporary namespace without unique-index collisions.
 
 `apps/web/src/lib/session-query-cache.test.ts` covers account transitions, reentrant route entry during cancellation, late query responses (including fetchers that ignore abort signals), and pending mutations across account switches and re-login.
@@ -188,6 +190,8 @@ Deploys are staged and default to a personal `dev_<username>` stage:
 cd packages/infra && bunx alchemy deploy
 ```
 
+Stable `masterscorner-{server,web}-production` names are selected only by the resolved Alchemy `production` stage. `NODE_ENV=production` alone does not select those names; personal stages retain Alchemy-generated names. The production wrapper still requires production environment values separately.
+
 ### Production deploys are guarded
 
 Development values must never reach production, so production has its own entry point:
@@ -208,6 +212,8 @@ bun run deploy:production
 - the database cannot answer the profile revision read — `master_profile.revision` is required by every profile request, so the deploy refuses until `bun run db:migrate` has applied the reviewed migration to the production branch.
 
 Each refusal prints what to do next. Supply the production branch's values to the deploy process itself — never pull them into `apps/server/.env`, which stays the development file: doing that points `bun run dev` at production *and* makes the guard's own comparison meaningless.
+
+Development-file comparisons use `dotenv.parse`, including quoted values, inline comments and duplicate-key last-wins semantics. The parser does not load or overwrite the deployment process environment.
 
 The load order is verified: an exported shell variable wins over `packages/infra/.env`, which wins over the development values that `packages/infra/.env.schema` imports from `apps/server/.env`. So a production deploy looks like this (POSIX shell; any shell works as long as the variables are exported):
 

@@ -25,8 +25,8 @@ function Overview() {
         title={`Welcome, ${user.name}.`}
       />
 
-      <div className="grid gap-4 md:grid-cols-[1.2fr_.8fr]">
-        <article className="rounded-[14px] border border-line bg-card p-5">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
+        <article className="min-w-0 rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-extrabold text-base">Your account</h2>
           <dl className="mt-3 text-sm">
             <div className="flex items-center justify-between gap-4 border-line border-t py-3">
@@ -35,7 +35,7 @@ function Overview() {
             </div>
             <div className="flex items-center justify-between gap-4 border-line border-t py-3">
               <dt className="shrink-0 text-muted-text">Email</dt>
-              <dd className="min-w-0 truncate text-right font-extrabold">
+              <dd className="min-w-0 text-right font-extrabold [overflow-wrap:anywhere]">
                 {user.email}
               </dd>
             </div>

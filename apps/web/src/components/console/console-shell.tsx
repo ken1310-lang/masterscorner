@@ -62,8 +62,8 @@ export function ConsoleShell({ children, user }: ConsoleShellProps) {
   return (
     <>
       <SkipLink />
-      <div className="min-h-dvh bg-surface-alt md:grid md:grid-cols-[250px_1fr]">
-        <aside className="flex flex-col bg-navy p-4 text-white md:sticky md:top-0 md:h-dvh md:p-[25px_20px]">
+      <div className="min-h-dvh bg-surface-alt md:grid md:grid-cols-[250px_minmax(0,1fr)]">
+        <aside className="on-navy flex min-w-0 flex-col bg-navy p-4 text-white md:sticky md:top-0 md:h-dvh md:p-[25px_20px]">
           <Link
             aria-label="MastersCorner home"
             className="inline-flex w-fit items-center gap-2.5 whitespace-nowrap px-1.5 font-extrabold text-[17px] tracking-[-0.03em] sm:text-xl"
@@ -87,7 +87,7 @@ export function ConsoleShell({ children, user }: ConsoleShellProps) {
 
           <nav
             aria-label="Console"
-            className="flex gap-1.5 overflow-x-auto md:flex-col md:overflow-visible"
+            className="-m-1 flex gap-1.5 overflow-x-auto p-1 md:flex-col md:overflow-visible"
           >
             {navItems.map((item) => (
               <Link

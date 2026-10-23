@@ -46,6 +46,12 @@
     "postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./apps/native/ && varlock codegen --path ./packages/db/",
     "test": "turbo run test"
   },
+  "overrides": {
+    "@hono/node-server": "1.19.17",
+    "hono": "4.13.13",
+    "lodash": "4.18.1",
+    "valibot": "1.4.2"
+  },
   "dependencies": {
     "zod": "catalog:"
   },

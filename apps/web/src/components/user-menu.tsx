@@ -32,14 +32,24 @@ export default function UserMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" />}>
-        {session.user.name}
+      <DropdownMenuTrigger
+        render={
+          <Button
+            className="min-w-0 max-w-[min(12rem,50vw)] shrink"
+            variant="outline"
+          />
+        }
+        title={session.user.name}
+      >
+        <span className="min-w-0 truncate">{session.user.name}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-card">
+      <DropdownMenuContent className="max-w-[calc(100vw-2rem)] bg-card">
         <DropdownMenuGroup>
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+          <DropdownMenuItem className="whitespace-normal [overflow-wrap:anywhere]">
+            {session.user.email}
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               authClient.signOut({
