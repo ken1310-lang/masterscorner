@@ -13,14 +13,14 @@ interface LogoMarkProps {
 export function LogoMark({ inverse = false, className }: LogoMarkProps) {
   const bar = cn(
     "absolute block h-4 w-1 rounded-[3px]",
-    inverse ? "bg-navy" : "bg-paper"
+    inverse ? "bg-navy" : "bg-canvas"
   );
 
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "relative block size-[31px] shrink-0 rounded-[9px]",
+        "relative block size-8 shrink-0 rounded-[9px]",
         inverse ? "bg-white" : "bg-navy",
         className
       )}

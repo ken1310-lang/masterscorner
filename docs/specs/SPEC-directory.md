@@ -78,6 +78,8 @@ Filter options are global to the eligible directory, not narrowed by the active 
 
 Next session is the next weekly start at or after the current India wall-clock minute. The database stores wall-clock times without zones; the first release is India-only, so the contract applies `Asia/Kolkata` (UTC+05:30, no DST) and returns a UTC ISO instant. A schedule that started earlier today belongs to next week; a schedule starting later today is today. The API owns this calculation so the label does not depend on the visitor's device timezone.
 
+Public class rows contain the master display name and the profile's martial-art and location names, so class save/status/remove, profile save, and profile child renames must invalidate `directory.classes` as well as `directory.masters` and `directory.masterProfile`. The invalidation runs after the successful response and the identity-scope check; failed or superseded writes do not invalidate public data.
+
 ### 3.2 Shared browser contract
 
 `packages/api/src/directory.ts` owns the Zod filter schema, the response types, the name normalizer and the next-session calculation. It imports the dependency-free class vocabulary, not Drizzle. `packages/api/src/routers/directory.ts` owns the database query and maps rows to the shared view.

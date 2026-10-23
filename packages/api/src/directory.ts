@@ -135,6 +135,8 @@ export interface DirectoryMasterView {
   id: string;
   /** Every martial art in profile order. */
   martialArts: string[];
+  /** Current profile photo URL, or null. */
+  photoUrl: string | null;
   /** Stable name-plus-UUID public route segment. */
   slug: string;
   yearsTeaching: number | null;

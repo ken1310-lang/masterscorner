@@ -94,7 +94,7 @@ Only the listed fields cross the boundary. No account email or user id, profile 
 1. Resolve the slug's UUID and read the profile with ordered martial arts, ordered locations and media rows.
 2. Read current classes for that profile with their martial-art, location and schedules, then map only public fields.
 
-The query must not read another profile or all profiles. The registry query adds `slug` to each card view; it does not add profile links before the route exists.
+The query must not read another profile or all profiles. The registry query adds `slug` and the current photo URL to each card view, and every card links to this route.
 
 ### 3.4 Screen
 
@@ -119,7 +119,7 @@ States:
 
 ### 3.5 Freshness
 
-Profile saves, profile-photo upload/removal and class save/status/remove mutations invalidate both `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. The profile page therefore reflects edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
+Profile saves and class save/status/remove mutations invalidate `directory.classes` as well as `directory.masters` and `directory.masterProfile` query prefixes after the existing identity-scope check. Profile-photo upload/removal invalidates the master profile and registry prefixes; class rows contain no photo. Public pages therefore reflect edits inside the 60-second freshness window; failed or superseded writes do not invalidate public data.
 
 ## 4. Commands and structure
 

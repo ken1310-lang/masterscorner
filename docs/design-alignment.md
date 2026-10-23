@@ -1,6 +1,8 @@
 # MastersCorner — Design ↔ PRD Alignment
 
-**Status:** Ready for review
+> **Superseded for ported screens:** ADR-005 and `docs/specs/SPEC-redesign.md` make the Magic Patterns OS the visual source for the redesign. This document remains the contract for screens not yet ported and as the historical deviation register.
+
+**Status:** Historical for ported screens; current for unported screens
 **Date:** 2026-10-20
 **Sources**
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted in principle — pixel-perfect fidelity against the prototype is an owner requirement; the porting mechanism below (tokens, no mock CSS, real assets) is confirmed with the first UI PR.
+Accepted in principle — pixel-perfect fidelity against the prototype is an owner requirement; the porting mechanism below (tokens, no mock CSS, real assets) is confirmed with the first UI PR. **Superseded for ported screens on 2026-10-23 by `ADR-005-magic-patterns-redesign.md`:** the Magic Patterns OS is now the visual source for the rebrand; this ADR remains the contract for unported screens.
 
 ## Date
 

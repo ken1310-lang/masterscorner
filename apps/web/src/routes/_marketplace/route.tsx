@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { Footer } from "@/components/shell/footer";
 import { Header, SkipLink } from "@/components/shell/header";
+import { MobileNav, MobileNavSpacer } from "@/components/shell/mobile-nav";
 import { NotFoundContent } from "@/routes/not-found";
 
 export const Route = createFileRoute("/_marketplace")({
@@ -18,10 +19,12 @@ function MarketplaceLayout() {
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <Header />
-      <main className="flex-1" id="main" tabIndex={-1}>
+      <main className="flex-1 outline-none" id="main" tabIndex={-1}>
         <Outlet />
       </main>
       <Footer />
+      <MobileNavSpacer />
+      <MobileNav />
     </div>
   );
 }

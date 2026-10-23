@@ -137,10 +137,15 @@ export function PhotoField({
 
   const invalidatePublicProfile = useCallback(
     () =>
-      queryClient.invalidateQueries({
-        queryKey: trpc.directory.masterProfile.queryKey(),
-      }),
-    [queryClient, trpc.directory.masterProfile]
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: trpc.directory.masterProfile.queryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: trpc.directory.masters.queryKey(),
+        }),
+      ]),
+    [queryClient, trpc.directory.masterProfile, trpc.directory.masters]
   );
 
   const uploadImage = useCallback(
