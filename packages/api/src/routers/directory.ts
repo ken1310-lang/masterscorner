@@ -1,8 +1,10 @@
+import type { Database } from "@my-better-t-app/db";
 import { masterClass } from "@my-better-t-app/db/schema/classes";
 import {
   masterLocation,
   masterMartialArt,
   masterProfile,
+  media,
 } from "@my-better-t-app/db/schema/master";
 import {
   and,
@@ -61,6 +63,43 @@ function groupFilterOptions(
     }
   }
   return [...groups.values()];
+}
+
+async function profilePhotoUrls(
+  db: Database,
+  ids: readonly string[],
+  publicUrl: (key: string) => string
+) {
+  const urls = new Map<string, string>();
+  if (ids.length === 0) {
+    return urls;
+  }
+  const rows = await db
+    .select({
+      createdAt: media.createdAt,
+      id: media.id,
+      kind: media.kind,
+      objectKey: media.objectKey,
+      profileId: media.profileId,
+    })
+    .from(media)
+    .where(inArray(media.profileId, [...ids]));
+
+  const grouped = new Map<string, typeof rows>();
+  for (const row of rows) {
+    const values = grouped.get(row.profileId) ?? [];
+    values.push(row);
+    grouped.set(row.profileId, values);
+  }
+  for (const [profileId, profileMedia] of grouped) {
+    const photo = toMediaViews(profileMedia, publicUrl).find(
+      (item) => item.kind === "profile_photo"
+    );
+    if (photo) {
+      urls.set(profileId, photo.url);
+    }
+  }
+  return urls;
 }
 
 export const directoryRouter = router({
@@ -260,7 +299,7 @@ export const directoryRouter = router({
         .offset((page - 1) * DIRECTORY_MASTER_PAGE_SIZE);
 
       const ids = rows.map((row) => row.id);
-      const [artRows, audienceRows] = ids.length
+      const [artRows, audienceRows, photoUrls] = ids.length
         ? await Promise.all([
             ctx.db
               .select({
@@ -286,8 +325,9 @@ export const directoryRouter = router({
                 )
               )
               .orderBy(asc(masterClass.profileId), asc(masterClass.audience)),
+            profilePhotoUrls(ctx.db, ids, ctx.mediaStorage.publicUrl),
           ])
-        : [[], []];
+        : [[], [], new Map<string, string>()];
 
       const artNames = new Map<string, string[]>();
       for (const row of artRows) {
@@ -317,6 +357,7 @@ export const directoryRouter = router({
         displayName: row.displayName,
         id: row.id,
         martialArts: artNames.get(row.id) ?? [],
+        photoUrl: photoUrls.get(row.id) ?? null,
         slug: masterProfileSlug(row.displayName, row.id),
         yearsTeaching: row.yearsTeaching,
       }));

@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { Footer } from "@/components/shell/footer";
 import { Header, SkipLink } from "@/components/shell/header";
+import { MobileNav, MobileNavSpacer } from "@/components/shell/mobile-nav";
 import { NotFoundContent } from "@/routes/not-found";
 
 export const Route = createFileRoute("/_marketplace")({
@@ -22,6 +23,8 @@ function MarketplaceLayout() {
         <Outlet />
       </main>
       <Footer />
+      <MobileNavSpacer />
+      <MobileNav />
     </div>
   );
 }
