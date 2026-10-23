@@ -10,6 +10,8 @@ Deliver the first release defined in PRD §30: a master creates an account, publ
 
 No code is written until each module's spec is written, reviewed and approved, per `spec-driven-development`. Specs live in `docs/specs/SPEC-<module-id>.md` for the module ids in PRD §39; `docs/specs/SPEC-platform.md` is the first. This document sequences the modules; it is not a substitute for module specs.
 
+Audit correction (2026-10-23): the master-profile specification was missing when Tasks 6–7 shipped. `docs/specs/SPEC-master-profile.md` now records the implemented contract retrospectively; it is not evidence of pre-implementation approval. The specification-first rule above remains mandatory for future modules. `tasks/todo.md` is the delivery-status authority; the task index below is synchronized with its accepted scope amendments.
+
 ## Architecture Decisions
 
 - **Stack is the existing template, unchanged in shape.** TanStack Start web app, Hono on Cloudflare Workers, tRPC router in `packages/api`, Better Auth in `packages/auth`, Drizzle on Neon HTTP in `packages/db`, Alchemy deployment in `packages/infra`. See `AGENTS.md`.
@@ -29,18 +31,18 @@ No code is written until each module's spec is written, reviewed and approved, p
 | Runtime | `bun run dev` against the development database branch | Every slice, with real sign-up, profile and class data |
 | UI | Browser check of the ported screen | Each screen at 1440, 980, 760 and 520 px against the prototype plus `docs/design-alignment.md` §8 |
 | Schema | `bun run db:generate` + `bun run db:migrate` | Every migration, applied to the development branch before the PR merges |
-| Object storage | Upload through the console, then read the object back from the branch endpoint | Every media change; confirms the key on the row resolves and the development object is not reachable with production credentials |
+| Object storage | Upload through the console, then read the object back from the branch endpoint | Every media change; confirms the key resolves on the configured branch endpoint. Credentials are project-wide; credential-denial isolation was superseded by ADR-004's owner-accepted endpoint boundary. |
 | Repository | `bun run check-types`, `bun run check`, `bun run build` | Every PR |
 
-There is no test runner, no CI and no git hooks in the repository today; Task 2 adds the test task and the workflow so these gates exist before feature work starts.
+Task 2 added the test runner and CI workflow. Local `bun run gates` is the current merge gate; hosted CI execution and required-check enforcement remain blocked/deferred as recorded in `tasks/todo.md`.
 
 ## Task List
 
 ### Phase 0: Platform (PR 1-3)
 
 - [x] Task 1: Environments and database branches — Neon project in `aws-ap-southeast-1` with `development` and `production` branches and the media bucket declared on each (`neon.ts`); dev/prod configuration, per-environment secrets, README setup; development runs locally (`bun run dev`: API on 3000, web on 3001) against the development branch, and production is the only deployed environment — one Alchemy stack deploying the API Worker (Hono) and the web Worker (TanStack Start); preview environments deferred (ADR-004).
-- [ ] Task 2: Test and CI wiring — `test` task in `turbo.json`, `bun:test` in the packages, workflow running check-types/check/build/test on every PR.
-- [ ] Task 3: Web shell and design tokens — palette, type scale and breakpoints from the prototype into `packages/ui/src/styles/globals.css`; self-hosted Outfit/Manrope; the pathless `_marketplace` layout with container, header and footer; not-found and error screens.
+- [x] Task 2: Test and CI wiring — runner and workflow implemented; hosted red→green and branch protection remain deferred to `Last` in `tasks/todo.md`.
+- [x] Task 3: Web shell and design tokens — centralized tokens, real fonts, marketplace shell and root error/not-found screens.
 
 ### Checkpoint A
 
@@ -50,8 +52,8 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 1: Identity (PR 4-5)
 
-- [ ] Task 4: Master account and auth — account type/role on the user record, sign-up and sign-in through Better Auth, password reset, email verification configuration.
-- [ ] Task 5: Auth screens and guards — sign-up, sign-in and reset screens ported from the prototype's auth layout; protected console routes.
+- [~] Task 4: Master account and auth — account type, sign-up/sign-in and session boundary implemented; password reset and email verification remain owner-deferred pending provider/sender setup.
+- [x] Task 5: Auth screens and guards — sign-up/sign-in and protected console routes; reset UI belongs to the deferred Task 4 email follow-up.
 
 ### Checkpoint B
 
@@ -59,8 +61,8 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 2: Master profile and media (PR 6-8)
 
-- [ ] Task 6: Profile schema — profile, teaching locations and media references, with migration.
-- [ ] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
+- [x] Task 6: Profile schema — profile, teaching locations and media references, with versioned migrations.
+- [x] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
 - [x] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
 
 ### Checkpoint C

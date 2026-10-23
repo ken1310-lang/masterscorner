@@ -61,7 +61,7 @@ Procedures, both `protectedProcedure`:
 | `media.upload` | `{ kind, contentType, data }` where `data` is base64 without a data-URL prefix | `MasterProfilePayload` (same shape as `master.saveProfile`) | `UNAUTHORIZED`, `BAD_REQUEST` (malformed/oversized/mismatched bytes), `TOO_MANY_REQUESTS`, `PRECONDITION_FAILED` (no profile yet), `SERVICE_UNAVAILABLE` (storage refused) |
 | `media.remove` | `{ kind }` | `MasterProfilePayload` | `UNAUTHORIZED`, `NOT_FOUND` (no current asset), `PRECONDITION_FAILED` |
 
-`MasterProfilePayload` gains `media: MediaView[]`, ordered newest first. `getProfile` and `saveProfile` both return the current assets; a profile save cannot drop a just-uploaded photo from the client cache.
+`MasterProfilePayload` gains `media: MediaView[]`, ordered newest first. `getProfile` and `saveProfile` return media alongside profile data. Client cache writers merge only their owned slice: profile saves update profile/children and retain cached media; photo operations update `profile_photo` entries and retain profile/children and other media kinds. Delayed unrelated snapshots therefore cannot erase newer results.
 
 Bytes are decoded and sniffed server-side. JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`) and WebP (`RIFF` + `WEBP`) signatures must match the declared `contentType`; anything else is rejected before storage is touched.
 
@@ -76,14 +76,14 @@ Bytes are decoded and sniffed server-side. JPEG (`FF D8 FF`), PNG (`89 50 4E 47 
 
 ## 5. Data flow
 
-1. The browser checks `file.size` and `file.type`, reads the file as a data URL, strips the prefix and calls `media.upload`.
+1. The browser checks `file.size` and `file.type`, captures the current session generation, reads the file as a data URL, strips the prefix, rechecks the generation and calls `media.upload` only if still current.
 2. The procedure checks the rate limiter, decodes base64, enforces the 5 MiB cap, sniffs the bytes and looks up the caller's profile.
-3. It writes the new object, then in one Neon HTTP batch inserts the new row, deletes the previous row of that kind for the profile, and reads the profile/children/media snapshot back.
-4. If the batch fails, the new object is deleted best-effort and the error surfaces. If it succeeds, the previous object is deleted best-effort.
-5. `media.remove` deletes the row(s) of that kind for the caller's profile, reads the snapshot back, then deletes the objects best-effort.
-6. Reads never touch storage; the URL is computed from the stored key.
+3. It writes the new object, then runs one Neon HTTP transaction: acquire a transaction-held advisory lock for the profile/kind, read all previous rows under that lock, delete those rows, and insert the replacement. Overlapping replacements cannot leave two current rows.
+4. If the batch fails, the new object is deleted best-effort and the error surfaces; the transaction restores the previous rows. If it succeeds, the previous objects are deleted best-effort.
+5. `media.remove` selects the caller's current rows, deletes those selected rows, then deletes their objects best-effort. Upload/remove return a fresh profile read after mutation and cleanup, not a transaction-local snapshot; intervening committed changes may be reflected.
+6. Reads never touch storage; the URL is computed from the stored key. Only profile saves promise their own transactional response snapshot.
 
-The profile revision is deliberately untouched by media writes: the profile form stays saveable while a photo upload completes. The existing `touch_master_profile` trigger still bumps `updated_at`.
+The profile revision is deliberately untouched by media writes, so a photo operation cannot make a profile save stale. The existing `touch_master_profile` trigger still bumps `updated_at`. The browser cancels exact profile queries before each mutation and before applying its result, then merges only the mutation's owned cache slice; every asynchronous continuation checks the captured session generation.
 
 ## 6. Console UI
 
@@ -93,7 +93,7 @@ The profile revision is deliberately untouched by media writes: the profile form
 - Hint: formats and the 5 MiB cap. Server messages surface inline with `role="alert"`.
 - States: idle, reading, uploading, error; `aria-busy` while uploading. `Save changes` and the photo controls are disabled together while the profile form submits.
 - Without a profile row, controls are disabled and explain "Save your profile once to add a photo."
-- Success replaces the cached `master.getProfile` payload, scoped through `sessionQueries.captureScope()` so a response from a superseded account cannot write cache. Same guard on remove.
+- Success merges the photo slice into the existing cached `master.getProfile` payload, scoped through `sessionQueries.captureScope()`. Missing cache entries are not recreated from delayed responses. File reads and query cancellation recheck the scope before sending the mutation; upload/remove also check it before cache writes and feedback, including A → B → A transitions.
 - Remove is available only when a photo exists and returns to the initials preview.
 
 ## 7. Commands
