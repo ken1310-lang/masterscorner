@@ -13,6 +13,7 @@ import { ShellContainer } from "@/components/shell/container";
 import { useTRPC } from "@/utils/trpc";
 import { ClassRow } from "./class-row";
 import { AUDIENCE_LABELS } from "./class-values";
+import { nextSessionRefetchInterval } from "./directory-values";
 
 export interface DirectoryFilters {
   art?: string;
@@ -352,6 +353,10 @@ export function DirectoryScreen({
       ...(filters.audience ? { audience: filters.audience } : {}),
     }),
     placeholderData: keepPreviousData,
+    refetchInterval: (query) =>
+      query.state.status === "error"
+        ? false
+        : nextSessionRefetchInterval(query.state.data),
   });
   const payload = classesQuery.data;
   const hasFilters = Boolean(

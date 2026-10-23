@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 
+import { nextSessionRefetchInterval } from "@/components/classes/directory-values";
 import { useTRPC } from "@/utils/trpc";
 
 import { HomeClassesSection } from "./classes-section";
@@ -16,7 +17,13 @@ export function HomeScreen() {
   const mastersQuery = useQuery(
     trpc.directory.masters.queryOptions({ page: 1 })
   );
-  const classesQuery = useQuery(trpc.directory.classes.queryOptions());
+  const classesQuery = useQuery({
+    ...trpc.directory.classes.queryOptions(),
+    refetchInterval: (query) =>
+      query.state.status === "error"
+        ? false
+        : nextSessionRefetchInterval(query.state.data),
+  });
 
   const handleSearch = useCallback(
     (filters: HomeSearchFilters) => {

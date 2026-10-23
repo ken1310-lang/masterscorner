@@ -70,6 +70,7 @@ The OS sample data is not a contract. `data.ts`, the sample master names, review
 - Search on Home writes `art`, `location` and `audience` to `/masters` using the existing normalized filter values. Options come from the directory query, not hardcoded lists.
 - Header, footer, bottom navigation and console rail expose only live routes and respect the authenticated session state.
 - Reduced motion disables word cycling and hover/entry transforms; focus rings stay visible; all controls are keyboard reachable.
+- Full classes remain visibly labeled as full in every class list. Cached directory data stays visible on refresh failure with a persistent retry, and public class queries refresh at the nearest next-session boundary.
 - The old `shell-container` and old tokens remain for unported routes. A ported route uses `redesign-container`, `bg-canvas`, `bg-sand`, the existing `text-navy`/`text-ink`/`text-ink-muted` aliases (OS ink/ink-2/muted), `border-hairline` (OS line), `brand-*` (OS accent-*), and the new breakpoints. These aliases already carry the OS values; the redesign does not duplicate equivalent tokens.
 
 ## 5. Feature modules (committed after the visual foundation)

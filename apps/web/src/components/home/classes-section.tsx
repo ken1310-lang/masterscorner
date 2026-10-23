@@ -6,6 +6,7 @@ import { formatFee } from "@/components/classes/class-values";
 import { formatNextSession } from "@/components/classes/directory-values";
 import { RedesignContainer } from "@/components/shell/container";
 
+import { HomeRefreshBanner } from "./home-refresh-banner";
 import { SectionHead } from "./section-head";
 
 const SKELETONS = ["one", "two", "three", "four"] as const;
@@ -17,6 +18,14 @@ function ClassFee({ item }: { item: DirectoryClassView }) {
     );
   }
   return <>{formatFee(item.feeAmount, item.feePeriod)}</>;
+}
+
+function FullBadge() {
+  return (
+    <span className="inline-flex shrink-0 rounded-[5px] bg-[#f3e8e9] px-2 py-0.5 font-extrabold text-[10px] text-brand-strong uppercase tracking-[.08em]">
+      Full
+    </span>
+  );
 }
 
 function ClassesSkeleton() {
@@ -76,9 +85,17 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
       <ul className="mt-10 rx-md:hidden border-navy border-t">
         {classes.slice(0, 4).map((item) => (
           <li className="border-hairline border-b py-5" key={item.id}>
-            <p className="font-semibold text-[18px] text-navy tracking-[-0.015em]">
-              {item.name}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-semibold text-[18px] text-navy tracking-[-0.015em]">
+                {item.name}
+              </p>
+              {item.status === "full" ? (
+                <>
+                  <span className="sr-only">, </span>
+                  <FullBadge />
+                </>
+              ) : null}
+            </div>
             <p className="mt-0.5 text-[14px] text-ink">
               {item.master.displayName} · {item.location.name}
             </p>
@@ -112,7 +129,15 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
           {classes.slice(0, 4).map((item) => (
             <tr className="border-hairline border-b" key={item.id}>
               <td className="py-6 pr-4 font-semibold rx-lg:text-[20px] text-[18px] text-navy tracking-[-0.015em]">
-                {item.name}
+                <span className="flex flex-wrap items-center gap-2">
+                  {item.name}
+                  {item.status === "full" ? (
+                    <>
+                      <span className="sr-only">, </span>
+                      <FullBadge />
+                    </>
+                  ) : null}
+                </span>
               </td>
               <td className="py-6 pr-4 rx-lg:text-[16px] text-[15px] text-ink">
                 {item.master.displayName}
@@ -164,6 +189,12 @@ export function HomeClassesSection({
           link={{ label: "View all classes", to: "/classes" }}
           title="Classes this week"
         />
+        {isError && classes !== undefined ? (
+          <HomeRefreshBanner
+            message="Classes could not refresh."
+            onRetry={onRetry}
+          />
+        ) : null}
         {content}
       </RedesignContainer>
     </section>

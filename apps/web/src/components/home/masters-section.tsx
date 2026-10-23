@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { MasterCard } from "@/components/masters/master-card";
 import { RedesignContainer } from "@/components/shell/container";
 
+import { HomeRefreshBanner } from "./home-refresh-banner";
 import { SectionHead } from "./section-head";
 
 const SKELETONS = ["one", "two", "three"] as const;
@@ -105,6 +106,12 @@ export function HomeMastersSection({
           link={{ label: "View all masters", to: "/masters" }}
           title="Masters worth discovering"
         />
+        {isError && masters !== undefined ? (
+          <HomeRefreshBanner
+            message="Masters could not refresh."
+            onRetry={onRetry}
+          />
+        ) : null}
         {content}
       </RedesignContainer>
     </section>
