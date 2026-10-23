@@ -4,6 +4,7 @@ const WORDS = ["silambam", "karate", "kalari", "boxing", "MMA", "kids"];
 
 export function HomeWordCycle() {
   const [index, setIndex] = useState(0);
+  const [leaving, setLeaving] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
@@ -16,13 +17,23 @@ export function HomeWordCycle() {
 
   useEffect(() => {
     if (reduceMotion) {
+      setLeaving(false);
       return;
     }
-    const id = window.setInterval(
-      () => setIndex((current) => (current + 1) % WORDS.length),
-      2400
-    );
-    return () => window.clearInterval(id);
+    let exitTimer: number | undefined;
+    const id = window.setInterval(() => {
+      setLeaving(true);
+      exitTimer = window.setTimeout(() => {
+        setIndex((current) => (current + 1) % WORDS.length);
+        setLeaving(false);
+      }, 260);
+    }, 2400);
+    return () => {
+      window.clearInterval(id);
+      if (exitTimer !== undefined) {
+        window.clearTimeout(exitTimer);
+      }
+    };
   }, [reduceMotion]);
 
   const word = WORDS[index] ?? WORDS[0];
@@ -35,7 +46,9 @@ export function HomeWordCycle() {
       <span className="sr-only">martial arts</span>
       <span
         aria-hidden="true"
-        className="redesign-word-enter absolute inset-0 block text-center font-black rx-lg:text-[168px] rx-sm:text-[112px] text-[62px] text-navy leading-none tracking-[-0.055em]"
+        className={`absolute inset-0 block text-center font-black rx-lg:text-[168px] rx-sm:text-[112px] text-[62px] text-navy leading-none tracking-[-0.055em] ${
+          leaving ? "redesign-word-exit" : "redesign-word-enter"
+        }`}
         key={word}
       >
         {word}
