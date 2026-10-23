@@ -12,7 +12,8 @@
     "db:migrate:deploy": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "test": "bun test --pass-with-no-tests"
+    "test": "bun test --pass-with-no-tests",
+    "test:db": "bun --env-file=../../apps/server/.env test src/class-schema.test.ts src/class-schema.integration.test.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

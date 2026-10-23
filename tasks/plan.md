@@ -71,7 +71,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Phase 3: Classes (PR 9-10)
 
-- [ ] Task 9: Class schema — martial art, audience, level, schedule rows, location reference, optional fee, status; migration.
+- [x] Task 9: Class schema — martial art, audience, level, schedule rows, location reference, optional fee, status; migration.
 - [ ] Task 10: Console classes CRUD — create, edit, pause, remove; validation that a class has a location and at least one schedule row.
 
 ### Checkpoint D
