@@ -95,7 +95,7 @@ Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class aud
 
 The query must not load every profile to filter or paginate in memory.
 
-Console profile saves and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. The prefix marks every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
+Console profile saves, profile photo uploads/removals, and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. The prefix marks every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years, photo or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
 
 ### 3.3 Screen
 
@@ -107,7 +107,7 @@ The result header shows the real count (`6 masters`, `1 master`) and `Sorted by 
 - display name;
 - all martial arts in profile order, joined for the subtitle;
 - `homeCity` when supplied;
-- `yearsTeaching` when supplied, as `18 years`;
+- `yearsTeaching` when supplied, as `18 years teaching`;
 - audience tags using the class labels;
 - the whole card is a link to `/masters/$slug`.
 

@@ -14,7 +14,7 @@ function MastersSkeleton() {
     <div
       aria-busy="true"
       aria-label="Loading featured masters"
-      className="mt-10 grid grid-cols-1 rx-lg:grid-cols-3 rx-sm:grid-cols-2 rx-lg:gap-8 gap-x-6 gap-y-10"
+      className="mt-10 rx-md:mt-12 grid grid-cols-1 rx-lg:grid-cols-3 rx-sm:grid-cols-2 rx-lg:gap-8 gap-x-6 gap-y-10"
       role="status"
     >
       {SKELETONS.map((item) => (
@@ -30,8 +30,10 @@ function MastersSkeleton() {
 
 function MastersError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-10">
-      <p className="font-semibold text-[20px]">Masters could not load</p>
+    <div className="mt-10 rx-md:mt-12 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-10">
+      <p className="font-semibold text-[20px] text-navy">
+        Masters could not load
+      </p>
       <p className="mt-2 max-w-[60ch] text-ink-muted">
         The directory request failed. Try again.
       </p>
@@ -48,8 +50,8 @@ function MastersError({ onRetry }: { onRetry: () => void }) {
 
 function MastersEmpty() {
   return (
-    <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16 text-center">
-      <p className="font-semibold text-[20px]">No masters yet</p>
+    <div className="mt-10 rx-md:mt-12 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16 text-center">
+      <p className="font-semibold text-[20px] text-navy">No masters yet</p>
       <p className="mx-auto mt-2 max-w-[52ch] text-ink-muted">
         Master profiles appear here once a master publishes one.
       </p>
@@ -65,7 +67,7 @@ function MastersEmpty() {
 
 function MastersGrid({ masters }: { masters: DirectoryMasterView[] }) {
   return (
-    <div className="mt-10 grid grid-cols-1 rx-lg:grid-cols-3 rx-sm:grid-cols-2 rx-lg:gap-8 gap-x-6 gap-y-10">
+    <div className="mt-10 rx-md:mt-12 grid grid-cols-1 rx-lg:grid-cols-3 rx-sm:grid-cols-2 rx-lg:gap-8 gap-x-6 gap-y-10">
       {masters.slice(0, 3).map((master) => (
         <MasterCard key={master.id} master={master} />
       ))}

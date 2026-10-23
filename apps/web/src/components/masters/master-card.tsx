@@ -22,11 +22,11 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
       ? null
       : `${master.yearsTeaching} ${
           master.yearsTeaching === 1 ? "year" : "years"
-        }`;
+        } teaching`;
   const audiences = master.audiences.map(
     (audience) => AUDIENCE_LABELS[audience]
   );
-  const meta = [master.city, years, ...audiences]
+  const meta = [master.city, years, audiences.join(", ")]
     .filter((item): item is string => Boolean(item))
     .join(" · ");
 
@@ -58,7 +58,7 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
       <div className="flex flex-col pt-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="break-words font-semibold rx-sm:text-[24px] text-[22px] leading-tight tracking-[-0.02em] group-hover:underline group-hover:underline-offset-4">
+            <h3 className="break-words font-semibold rx-sm:text-[24px] text-[22px] text-navy leading-tight tracking-[-0.02em] group-hover:underline group-hover:underline-offset-4">
               {master.displayName}
             </h3>
             {arts ? (

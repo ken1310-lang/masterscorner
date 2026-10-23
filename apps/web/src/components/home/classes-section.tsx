@@ -36,7 +36,9 @@ function ClassesSkeleton() {
 function ClassesError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-10">
-      <p className="font-semibold text-[20px]">Classes could not load</p>
+      <p className="font-semibold text-[20px] text-navy">
+        Classes could not load
+      </p>
       <p className="mt-2 max-w-[60ch] text-ink-muted">
         The class request failed. Try again.
       </p>
@@ -54,7 +56,7 @@ function ClassesError({ onRetry }: { onRetry: () => void }) {
 function ClassesEmpty() {
   return (
     <div className="mt-10 rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16 text-center">
-      <p className="font-semibold text-[20px]">No classes yet</p>
+      <p className="font-semibold text-[20px] text-navy">No classes yet</p>
       <p className="mx-auto mt-2 max-w-[52ch] text-ink-muted">
         When a master publishes a weekly schedule, it appears here.
       </p>
@@ -74,7 +76,7 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
       <ul className="mt-10 rx-md:hidden border-navy border-t">
         {classes.slice(0, 4).map((item) => (
           <li className="border-hairline border-b py-5" key={item.id}>
-            <p className="font-semibold text-[18px] tracking-[-0.015em]">
+            <p className="font-semibold text-[18px] text-navy tracking-[-0.015em]">
               {item.name}
             </p>
             <p className="mt-0.5 text-[14px] text-ink">
@@ -109,7 +111,7 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
         <tbody>
           {classes.slice(0, 4).map((item) => (
             <tr className="border-hairline border-b" key={item.id}>
-              <td className="py-6 pr-4 font-semibold rx-lg:text-[20px] text-[18px] tracking-[-0.015em]">
+              <td className="py-6 pr-4 font-semibold rx-lg:text-[20px] text-[18px] text-navy tracking-[-0.015em]">
                 {item.name}
               </td>
               <td className="py-6 pr-4 rx-lg:text-[16px] text-[15px] text-ink">

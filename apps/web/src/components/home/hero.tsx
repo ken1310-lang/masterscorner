@@ -53,21 +53,22 @@ export function HomeHero({
   return (
     <section className="relative overflow-hidden bg-canvas">
       <RedesignContainer className="relative rx-xl:h-[760px]">
-        {tiles.map((tile) => (
+        {tiles.map((tile, index) => (
           <img
             alt={tile.alt}
-            className={`absolute rx-xl:block hidden rounded-[22px] object-cover ${tile.className}`}
+            className={`redesign-image-enter absolute rx-xl:block hidden rounded-[22px] object-cover ${tile.className}`}
             height={440}
             key={tile.src}
             loading="lazy"
             src={tile.src}
+            style={{ animationDelay: `${index * 50}ms` }}
             width={440}
           />
         ))}
 
         <div className="relative z-10 flex h-full flex-col items-center pt-10 rx-sm:pt-16 rx-xl:pt-[132px] pb-10 rx-md:pb-14 rx-xl:pb-0 text-center">
           <h1 className="flex w-full flex-col items-center">
-            <span className="font-bold rx-lg:text-[52px] rx-sm:text-[42px] text-[30px] leading-none tracking-[-0.03em]">
+            <span className="font-bold rx-lg:text-[52px] rx-sm:text-[42px] text-[30px] text-navy leading-none tracking-[-0.03em]">
               One network for
             </span>
             <HomeWordCycle />

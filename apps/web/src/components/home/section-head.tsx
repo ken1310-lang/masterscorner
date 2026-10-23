@@ -13,7 +13,7 @@ export function SectionHead({
   return (
     <div className="flex rx-md:flex-row flex-col rx-md:items-end rx-md:justify-between gap-6 rx-md:gap-12">
       <div className="max-w-[640px]">
-        <h2 className="font-bold rx-lg:text-[52px] rx-sm:text-[42px] text-[34px] leading-[1.02] tracking-[-0.035em]">
+        <h2 className="font-bold rx-lg:text-[52px] rx-sm:text-[42px] text-[34px] text-navy leading-[1.02] tracking-[-0.035em]">
           {title}
         </h2>
         <p className="mt-3 rx-sm:mt-4 rx-sm:text-[18px] text-[16px] text-ink leading-relaxed">
