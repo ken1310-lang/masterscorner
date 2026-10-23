@@ -73,7 +73,7 @@ The fee amount is an exact rupee amount (INR) with at most two decimal places, n
 
 At least one schedule row is a write-contract invariant owned by Task 10. PostgreSQL cannot express child cardinality without a deferred trigger, and the Neon HTTP path must not depend on deferred transaction state. Task 10 writes the class and its schedule rows in one batch and rejects a write with no schedule. Reads treat a class with no schedules as incomplete rather than inventing a session.
 
-A class, its martial art and its location all carry the same owning `profile_id` by construction. Task 10 must validate submitted ids against the caller's profile before writing; the foreign keys guarantee that referenced rows exist and cannot be deleted while a class uses them.
+A class references the profile, martial art and location by id. The foreign keys guarantee that the referenced rows exist and cannot be deleted while a class uses them, but they do not compare owners. Task 10 must validate submitted location and martial-art ids against the caller's profile before writing; database owner isolation for those ids is an application invariant until then.
 
 ### 3.4 Query
 

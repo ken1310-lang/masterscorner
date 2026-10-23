@@ -255,7 +255,7 @@ Every pull request runs the same four gates locally and in `.github/workflows/ci
 
 The workflow runs on pull requests to `development` and `master`, and on pushes to `development`. It needs **no secrets and no `.env` files**: installing, running the Varlock codegen postinstall, linting, type-checking and building all succeed with nothing set (measured in a clean worktree), and the web build simply inlines no `VITE_SERVER_URL` — CI never deploys that artifact. No test may read a real value.
 
-Tests are `bun:test`, colocated as `*.test.ts` next to the code they cover. Packages without tests yet declare `bun test --pass-with-no-tests`, so dropping a test file into one of them is all it takes to be covered. The gates that need a terminal (`db:generate`, `db:push`, `deploy`, `deploy:production`, `destroy`) are never invoked by CI — Turbo refuses interactive tasks without a TTY.
+Tests are `bun:test`, colocated as `*.test.ts` next to the code they cover. Packages without tests yet declare `bun test --pass-with-no-tests`, so dropping a test file into one of them is all it takes to be covered. Live database suites are opt-in and are not part of CI: `bun run test:db` in `packages/api` exercises the profile/media round trips, and the same command in `packages/db` exercises class constraints and relations against the development branch. The gates that need a terminal (`db:generate`, `db:push`, `deploy`, `deploy:production`, `destroy`) are never invoked by CI — Turbo refuses interactive tasks without a TTY.
 
 Requiring this workflow before merging into `development` and `master` is branch protection, which is a repository setting and therefore an owner action.
 
