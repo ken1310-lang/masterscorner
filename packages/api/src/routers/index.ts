@@ -1,10 +1,12 @@
 import { protectedProcedure, publicProcedure, router } from "../index";
 import { classesRouter } from "./classes";
+import { directoryRouter } from "./directory";
 import { masterRouter } from "./master";
 import { mediaRouter } from "./media";
 
 export const appRouter = router({
   classes: classesRouter,
+  directory: directoryRouter,
   healthCheck: publicProcedure.query(() => "OK"),
   master: masterRouter,
   media: mediaRouter,

@@ -177,14 +177,17 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 
 ## Phase 4 — Directory
 
-### [ ] 11. Public class listing
+### [x] 11. Public class listing — done on `task/11-public-directory`
 
 - **Description:** `/classes` built from real classes: class name, art, master, location, next session, fee, filters for art, location and audience, and an honest empty state (PRD §10).
 - **Acceptance:** the listing shows only real classes; filters compose and adjust the query; a search with no matches explains what is missing instead of showing invented rows; no Book action is rendered (deviation D3).
 - **Verify:** seed the development environment with classes across two masters; browser check that filters change results; contract test for the filter query.
 - **Deps:** 9, 10
-- **Files:** `packages/api/src/routers/directory.ts`, `apps/web/src/routes/classes.tsx`, `apps/web/src/components/classes/class-row.tsx`
+- **Files:** `packages/api/src/routers/directory.ts`, `packages/api/src/directory.ts`, `apps/web/src/routes/_marketplace/classes.tsx`, `apps/web/src/components/classes/{directory-screen,class-row,directory-values}.tsx`
 - **Scope:** Medium
+- **Status (2026-10-23):** `directory.classes` is a public query over classes owned by real profiles. It returns `active` and `full` classes with their master display name, martial art, location, weekly next session, optional fee and status; paused classes and classes without schedules are omitted. Martial-art and location options are global to the eligible directory, and filters compose on the server. Next session is computed in the API from stored wall-clock slots against Asia/Kolkata and returned as a UTC instant. The browser renders the prototype's registry hero and class table, stores filters in the URL (`art`, `location`, `audience`), keeps previous results while a filter query loads, and shows distinct loading, refresh-error, filtered-empty and directory-empty states. No Book action, rating, review, verification badge or invented fee is rendered.
+- **Verification (2026-10-23):** `bun run gates` 5/5; web suite 51/51 with 195 assertions; API suite 49 pass / 31 skipped; live `bun run test:db` 24/24 with 162 assertions. The directory suite covers anonymous access, active/full inclusion, paused exclusion, two-master data, global options, each filter alone and composed, no-match, unknown valid ids and absence of account fields. Pure tests cover next-session rollover and formatting. Browser walkthrough at 1440, 980, 760 and 520 px with five classes from two masters: 5 rows, Silambam filter 3, children filter 2, children + Velachery 1, Silambam + Velachery empty with active-filter copy and Clear filters, reload restored filters, no Book text, no horizontal overflow, and the seed-free reload showed the honest empty state. Temporary accounts and classes were deleted.
+- **Stack:** branched from `task/10-classes-crud` because PR #23 is still open; retarget to `development` after Task 10 merges.
 
 ### [ ] 12. Master registry
 

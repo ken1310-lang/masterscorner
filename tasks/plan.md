@@ -80,7 +80,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Phase 4: Directory (PR 11-15)
 
-- [ ] Task 11: Public class listing — `/classes` from real classes, filters for art, location and audience, empty state.
+- [x] Task 11: Public class listing — `/classes` from real classes, filters for art, location and audience, empty state.
 - [ ] Task 12: Master registry — `/masters` with the same filters, sort by experience, pagination, empty state.
 - [ ] Task 13: Master profile page — `/masters/$slug`, sections for identity, about, training paths, locations and schedule; no ratings, reviews, badges or contact CTAs.
 - [ ] Task 14: Home page — hero, search, featured masters and class preview from real data.
