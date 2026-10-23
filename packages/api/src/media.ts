@@ -156,8 +156,9 @@ export interface MediaView {
 }
 
 /**
- * The media table may briefly hold two rows of a kind after concurrent
- * replacements. Reads are deterministic: newest wins, ties keep query order.
+ * Replacements serialize per profile and kind, so normal reads see one row per
+ * kind. Defensive dedupe still applies to historical or direct writes: the
+ * newest row wins and ties keep query order.
  */
 export function toMediaViews(
   rows: readonly StoredMedia[],
