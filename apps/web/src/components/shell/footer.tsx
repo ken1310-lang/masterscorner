@@ -28,7 +28,7 @@ const footerColumns: {
 /** Prototype footer (745-787, footer markup at the end of each shell screen). */
 export function Footer() {
   return (
-    <footer className="bg-footer pt-[70px] pb-6 text-white">
+    <footer className="on-navy bg-footer pt-[70px] pb-6 text-white">
       <ShellContainer>
         <div className="grid gap-10 md:gap-20 lg:grid-cols-[1.2fr_1fr]">
           <div>
