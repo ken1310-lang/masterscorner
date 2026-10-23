@@ -9,7 +9,7 @@ Tasks 1–3 and 5–8, the implemented portion of Task 4, and associated PRs #1�
 | Finding | Remediation |
 | --- | --- |
 | FileReader crosses account boundaries | Recheck the captured generation after file reading and cancellation before sending bytes; stale read errors also have no effects. Covers A → B → A. |
-| Profile/photo response ordering | Cancel exact profile queries before sending/applying mutations. Functional cache updates merge only owned fields: profile/children versus profile-photo entries. Missing cache is not resurrected. Media views carry an ISO `createdAt`, and the merged list is sorted newest-first, so a replacement photo cannot be appended behind an older logo. |
+| Profile/photo response ordering | Cancel exact profile queries before sending/applying mutations. Functional cache updates merge only owned fields: profile/children versus profile-photo entries. Missing cache is not resurrected. Media views carry an ISO `createdAt`, and the merged list is sorted newest-first, so a replacement photo cannot be appended behind an older logo. A differing other-kind row in the photo response is not merged beside the cached row, preserving one current row per kind. |
 | Long-name console overflow | Shrink/truncate the accessible account trigger; zero-minimum grid tracks and wrap long overview/account text. |
 | Dark-surface keyboard focus | Apply `on-navy` to dark containers and use the surface-aware `--focus` token in the global focus-visible outline. |
 | Commented dotenv comparisons | Use explicit `dotenv.parse` without loading process values. Guard tests cover commented secret/origin values, quoted literal hashes, exports, BOM and last-wins duplicates. |

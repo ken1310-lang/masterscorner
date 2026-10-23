@@ -70,13 +70,10 @@ function mergePhotoMedia(
   saved: readonly MediaView[]
 ): MediaView[] {
   const merged = new Map<string, MediaView>();
-  for (const item of saved) {
-    if (item.kind !== "profile_photo") {
-      merged.set(item.id, item);
-    }
-  }
-  // A concurrent logo operation owns its cached entry; the photo mutation
-  // must not roll it back while correcting the shared order.
+  // The photo mutation owns only profile_photo rows. A response may carry a
+  // different logo replaced elsewhere; seeding it beside the cached logo would
+  // leave two ids of the same kind. Keep the cached logo until a profile read
+  // adopts the server's current row.
   for (const item of current) {
     if (item.kind !== "profile_photo") {
       merged.set(item.id, item);

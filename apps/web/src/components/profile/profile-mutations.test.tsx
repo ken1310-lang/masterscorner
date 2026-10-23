@@ -337,10 +337,10 @@ describe("profile response slice ownership", () => {
                   url: "https://image.test/new",
                 },
                 {
-                  createdAt: "2026-10-20T10:00:00.000Z",
-                  id: "logo",
+                  createdAt: "2026-10-22T10:00:00.000Z",
+                  id: "new-logo",
                   kind: "site_logo",
-                  url: "https://image.test/logo",
+                  url: "https://image.test/new-logo",
                 },
               ]
             : [];
@@ -385,6 +385,8 @@ describe("profile response slice ownership", () => {
         expect(view.cached()?.media.map((item) => item.id)).toEqual(
           operation === "upload" ? ["new-photo", "logo"] : ["logo"]
         );
+        const mediaKinds = view.cached()?.media.map((item) => item.kind) ?? [];
+        expect(new Set(mediaKinds).size).toBe(mediaKinds.length);
         if (operation === "upload") {
           expect(view.getByRole("img").getAttribute("src")).toBe(
             "https://image.test/new"
