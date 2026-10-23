@@ -18,7 +18,7 @@ Success: `/classes` lists only classes that exist in the development database, e
 
 ### 2.2 Out of scope
 
-- Master registry, master profile, home and For Masters pages (Tasks 12-15).
+- Master registry, master profile, home and For Masters pages (Tasks 12-15). Task 12 is specified in `SPEC-master-registry.md`; the remaining pages stay out of this spec.
 - Booking, enquiries, trials, payments, reviews, ratings, verification and academy entities (later phases; ADR-002).
 - Class detail pages, maps, distance filtering, duration and currency switching.
 - Native parity.

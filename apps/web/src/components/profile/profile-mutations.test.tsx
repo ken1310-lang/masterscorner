@@ -172,6 +172,7 @@ async function setup() {
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   const queryKey = trpc.master.getProfile.queryKey();
   queryClient.setQueryData(queryKey, initialPayload());
+  const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
 
   function Editor() {
     const profile = useQuery(trpc.master.getProfile.queryOptions());
@@ -201,6 +202,7 @@ async function setup() {
     ...view,
     queryClient,
     queryKey,
+    registryQueryKey,
     requests,
     sessionQueries,
     cached: () => queryClient.getQueryData<MasterProfilePayload>(queryKey),
@@ -577,5 +579,31 @@ describe("profile response slice ownership", () => {
         .getByRole("button", { name: "Save changes" })
         .hasAttribute("disabled")
     ).toBe(false);
+  });
+});
+
+describe("public registry freshness", () => {
+  test("successful profile save invalidates every registry page", async () => {
+    const view = await setup();
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
+    fireEvent.change(view.getByLabelText("Display name"), {
+      target: { value: "Saved master" },
+    });
+    await clickButton(view, "Save changes");
+    const save = await view.request("master.saveProfile");
+    await settle(() => save.resolve(initialPayload()));
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 });

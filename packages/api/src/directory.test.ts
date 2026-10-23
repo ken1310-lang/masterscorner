@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   directoryClassFiltersSchema,
+  directoryMasterFiltersSchema,
   MAX_DIRECTORY_MARTIAL_ART_FILTER,
   nextSessionStart,
   normalizeDirectoryFilter,
@@ -112,6 +113,28 @@ describe("directoryClassFiltersSchema", () => {
     ).toThrow();
     expect(() =>
       directoryClassFiltersSchema.parse({ martialArt: "   " })
+    ).toThrow();
+  });
+});
+
+describe("directoryMasterFiltersSchema", () => {
+  test("normalizes names and validates the page", () => {
+    expect(
+      directoryMasterFiltersSchema.parse({
+        location: " Velachery ",
+        martialArt: " Karate ",
+        page: 2,
+      })
+    ).toEqual({
+      location: "velachery",
+      martialArt: "karate",
+      page: 2,
+    });
+    expect(directoryMasterFiltersSchema.parse({})).toEqual({});
+    expect(() => directoryMasterFiltersSchema.parse({ page: 0 })).toThrow();
+    expect(() => directoryMasterFiltersSchema.parse({ page: 1.5 })).toThrow();
+    expect(() =>
+      directoryMasterFiltersSchema.parse({ audience: "teens" })
     ).toThrow();
   });
 });

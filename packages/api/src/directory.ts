@@ -45,6 +45,18 @@ export const directoryClassFiltersSchema = z
   })
   .optional();
 
+/** Six cards fill the prototype's two-column registry grid on one page. */
+export const DIRECTORY_MASTER_PAGE_SIZE = 6;
+
+export const directoryMasterFiltersSchema = z
+  .object({
+    audience: z.enum(CLASS_AUDIENCES).optional(),
+    location: directoryLocationFilterSchema.optional(),
+    martialArt: directoryMartialArtFilterSchema.optional(),
+    page: z.number().int("Page must be a whole number").min(1).optional(),
+  })
+  .optional();
+
 export interface DirectoryFilterOption {
   /** The canonical display name. */
   name: string;
@@ -71,6 +83,29 @@ export interface DirectoryClassesPayload {
   classes: DirectoryClassView[];
   locations: DirectoryFilterOption[];
   martialArts: DirectoryFilterOption[];
+}
+
+export interface DirectoryMasterView {
+  /** Current classes only; a profile with no classes has no tags. */
+  audiences: ClassAudience[];
+  /** `profile.homeCity`; absent rather than inferred from a location. */
+  city: string | null;
+  displayName: string;
+  id: string;
+  /** Every martial art in profile order. */
+  martialArts: string[];
+  yearsTeaching: number | null;
+}
+
+export interface DirectoryMastersPayload {
+  locations: DirectoryFilterOption[];
+  martialArts: DirectoryFilterOption[];
+  masters: DirectoryMasterView[];
+  /** Effective page after clamping to the available range. */
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }
 
 const INDIA_OFFSET_MINUTES = 5 * 60 + 30;

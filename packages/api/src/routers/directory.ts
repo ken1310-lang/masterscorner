@@ -2,14 +2,29 @@ import { masterClass } from "@my-better-t-app/db/schema/classes";
 import {
   masterLocation,
   masterMartialArt,
+  masterProfile,
 } from "@my-better-t-app/db/schema/master";
-import { eq, inArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  exists,
+  inArray,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 
+import { CLASS_AUDIENCES, type ClassAudience } from "../classes";
 import {
   DIRECTORY_CLASS_STATUSES,
+  DIRECTORY_MASTER_PAGE_SIZE,
   type DirectoryClassesPayload,
   type DirectoryFilterOption,
+  type DirectoryMastersPayload,
+  type DirectoryMasterView,
   directoryClassFiltersSchema,
+  directoryMasterFiltersSchema,
   nextSessionStart,
   normalizeDirectoryFilter,
 } from "../directory";
@@ -136,6 +151,177 @@ export const directoryRouter = router({
         classes,
         locations: locations.map(({ name, value }) => ({ name, value })),
         martialArts: martialArts.map(({ name, value }) => ({ name, value })),
+      };
+    }),
+  masters: publicProcedure
+    .input(directoryMasterFiltersSchema)
+    .query(async ({ ctx, input }): Promise<DirectoryMastersPayload> => {
+      const [martialArtRows, locationRows] = await Promise.all([
+        ctx.db
+          .select({ id: masterMartialArt.id, name: masterMartialArt.name })
+          .from(masterMartialArt)
+          .groupBy(masterMartialArt.id, masterMartialArt.name),
+        ctx.db
+          .select({ id: masterLocation.id, name: masterLocation.name })
+          .from(masterLocation)
+          .groupBy(masterLocation.id, masterLocation.name),
+      ]);
+      const martialArts = groupFilterOptions(martialArtRows);
+      const locations = groupFilterOptions(locationRows);
+
+      const conditions: SQL[] = [];
+      if (input?.martialArt) {
+        const ids =
+          martialArts.find((item) => item.value === input.martialArt)?.ids ??
+          [];
+        conditions.push(
+          ids.length
+            ? exists(
+                ctx.db
+                  .select({ id: masterMartialArt.id })
+                  .from(masterMartialArt)
+                  .where(
+                    and(
+                      eq(masterMartialArt.profileId, masterProfile.id),
+                      inArray(masterMartialArt.id, ids)
+                    )
+                  )
+              )
+            : sql`false`
+        );
+      }
+      if (input?.location) {
+        const ids =
+          locations.find((item) => item.value === input.location)?.ids ?? [];
+        conditions.push(
+          ids.length
+            ? exists(
+                ctx.db
+                  .select({ id: masterLocation.id })
+                  .from(masterLocation)
+                  .where(
+                    and(
+                      eq(masterLocation.profileId, masterProfile.id),
+                      inArray(masterLocation.id, ids)
+                    )
+                  )
+              )
+            : sql`false`
+        );
+      }
+      if (input?.audience) {
+        conditions.push(
+          exists(
+            ctx.db
+              .select({ id: masterClass.id })
+              .from(masterClass)
+              .where(
+                and(
+                  eq(masterClass.profileId, masterProfile.id),
+                  inArray(masterClass.status, [...DIRECTORY_CLASS_STATUSES]),
+                  eq(masterClass.audience, input.audience)
+                )
+              )
+          )
+        );
+      }
+
+      const where = and(...conditions);
+      const countRows = await ctx.db
+        .select({ value: count() })
+        .from(masterProfile)
+        .where(where);
+      const total = countRows[0]?.value ?? 0;
+      const totalPages = Math.ceil(total / DIRECTORY_MASTER_PAGE_SIZE);
+      const page =
+        totalPages === 0 ? 1 : Math.min(input?.page ?? 1, totalPages);
+
+      const rows = await ctx.db
+        .select({
+          displayName: masterProfile.displayName,
+          homeCity: masterProfile.homeCity,
+          id: masterProfile.id,
+          yearsTeaching: masterProfile.yearsTeaching,
+        })
+        .from(masterProfile)
+        .where(where)
+        .orderBy(
+          sql`${masterProfile.yearsTeaching} desc nulls last`,
+          asc(masterProfile.displayName),
+          asc(masterProfile.id)
+        )
+        .limit(DIRECTORY_MASTER_PAGE_SIZE)
+        .offset((page - 1) * DIRECTORY_MASTER_PAGE_SIZE);
+
+      const ids = rows.map((row) => row.id);
+      const [artRows, audienceRows] = ids.length
+        ? await Promise.all([
+            ctx.db
+              .select({
+                name: masterMartialArt.name,
+                profileId: masterMartialArt.profileId,
+              })
+              .from(masterMartialArt)
+              .where(inArray(masterMartialArt.profileId, ids))
+              .orderBy(
+                asc(masterMartialArt.profileId),
+                asc(masterMartialArt.position)
+              ),
+            ctx.db
+              .selectDistinct({
+                audience: masterClass.audience,
+                profileId: masterClass.profileId,
+              })
+              .from(masterClass)
+              .where(
+                and(
+                  inArray(masterClass.profileId, ids),
+                  inArray(masterClass.status, [...DIRECTORY_CLASS_STATUSES])
+                )
+              )
+              .orderBy(asc(masterClass.profileId), asc(masterClass.audience)),
+          ])
+        : [[], []];
+
+      const artNames = new Map<string, string[]>();
+      for (const row of artRows) {
+        const names = artNames.get(row.profileId) ?? [];
+        names.push(row.name);
+        artNames.set(row.profileId, names);
+      }
+      const audienceOrder = new Map(
+        CLASS_AUDIENCES.map((audience, index) => [audience, index])
+      );
+      const audiences = new Map<string, ClassAudience[]>();
+      for (const row of audienceRows) {
+        const values = audiences.get(row.profileId) ?? [];
+        values.push(row.audience);
+        audiences.set(row.profileId, values);
+      }
+      for (const values of audiences.values()) {
+        values.sort(
+          (left, right) =>
+            (audienceOrder.get(left) ?? 0) - (audienceOrder.get(right) ?? 0)
+        );
+      }
+
+      const masters: DirectoryMasterView[] = rows.map((row) => ({
+        audiences: audiences.get(row.id) ?? [],
+        city: row.homeCity,
+        displayName: row.displayName,
+        id: row.id,
+        martialArts: artNames.get(row.id) ?? [],
+        yearsTeaching: row.yearsTeaching,
+      }));
+
+      return {
+        locations: locations.map(({ name, value }) => ({ name, value })),
+        martialArts: martialArts.map(({ name, value }) => ({ name, value })),
+        masters,
+        page,
+        pageSize: DIRECTORY_MASTER_PAGE_SIZE,
+        total,
+        totalPages,
       };
     }),
 });

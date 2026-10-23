@@ -8,7 +8,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "test": "bun test",
-    "test:db": "bun --env-file=../../apps/server/.env test src/routers/master.integration.test.ts src/routers/media.integration.test.ts src/routers/classes.integration.test.ts src/routers/directory.integration.test.ts"
+    "test:db": "bun --env-file=../../apps/server/.env test src/routers/master.integration.test.ts src/routers/media.integration.test.ts src/routers/classes.integration.test.ts src/routers/directory.integration.test.ts src/routers/masters.integration.test.ts"
   },
   "dependencies": {
     "@my-better-t-app/auth": "workspace:*",

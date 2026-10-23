@@ -54,6 +54,7 @@ export function ClassesScreen() {
   const setStatus = useMutation(trpc.classes.setStatus.mutationOptions());
   const removeClass = useMutation(trpc.classes.remove.mutationOptions());
   const queryKey = trpc.classes.list.queryKey();
+  const directoryMastersKey = trpc.directory.masters.queryKey();
 
   const handleRetry = useCallback(() => {
     classesQuery.refetch();
@@ -93,10 +94,14 @@ export function ClassesScreen() {
       queryClient.setQueryData<ClassesPayload>(queryKey, (current) =>
         current ? upsertClass(current, saved) : current
       );
+      await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+      if (!isCurrentSession()) {
+        return;
+      }
       toast.success(input.id ? "Class updated" : "Class added");
       setEditor(null);
     },
-    [queryClient, queryKey, saveClass, sessionQueries]
+    [directoryMastersKey, queryClient, queryKey, saveClass, sessionQueries]
   );
 
   const handleToggleStatus = useCallback(
@@ -135,6 +140,10 @@ export function ClassesScreen() {
               }
             : current
         );
+        await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+        if (!isCurrentSession()) {
+          return;
+        }
         let message = "Class resumed";
         if (nextStatus === "paused") {
           message = "Class paused";
@@ -150,7 +159,7 @@ export function ClassesScreen() {
         setStatusPendingId(null);
       }
     },
-    [queryClient, queryKey, sessionQueries, setStatus]
+    [directoryMastersKey, queryClient, queryKey, sessionQueries, setStatus]
   );
 
   const handleRemove = useCallback(
@@ -179,6 +188,10 @@ export function ClassesScreen() {
               }
             : current
         );
+        await queryClient.invalidateQueries({ queryKey: directoryMastersKey });
+        if (!isCurrentSession()) {
+          return;
+        }
         setConfirmingId(null);
         toast.success("Class removed");
       } catch (error) {
@@ -189,7 +202,7 @@ export function ClassesScreen() {
         setDeletePendingId(null);
       }
     },
-    [queryClient, queryKey, removeClass, sessionQueries]
+    [directoryMastersKey, queryClient, queryKey, removeClass, sessionQueries]
   );
 
   if (classesQuery.status === "pending") {
