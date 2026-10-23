@@ -43,7 +43,7 @@ interface DirectoryClassFilters {
 }
 ```
 
-Filters compose with AND. Martial arts and locations are child rows of individual master profiles, so their UUIDs are not public identities: two masters teaching Karate own two different art rows. The directory groups child rows by normalized name (`lower(btrim(name))`), exposes one option per normalized name, and resolves a selection to every matching child id across masters. The filter value is that normalized name. An unknown name is a valid input that returns no rows; it is not an error. Empty strings are normalized to `undefined` by the route before the query is sent. The query includes classes whose status is `active` or `full`; `paused` classes are not current. Classes without at least one schedule are incomplete and are not returned.
+Filters compose with AND. Martial arts and locations are child rows of individual master profiles, so their UUIDs are not public identities: two masters teaching Karate own two different art rows. The directory groups child rows by normalized name (`lower(btrim(name))`), exposes one option per normalized name, and resolves a selection to every matching child id across masters. The filter value is that normalized name. Normalization happens before the length check; the filter limits are twice the profile maxima because lowercasing can expand one UTF-16 code unit into two. This keeps every value generated from a valid profile name queryable, while a long ASCII value such as 90 or 120 characters is accepted and returns no rows instead of a validation error. An unknown name is a valid input that returns no rows; it is not an error. Empty strings are normalized to `undefined` by the route before the query is sent. The query includes classes whose status is `active` or `full`; `paused` classes are not current. Classes without at least one schedule are incomplete and are not returned.
 
 The response:
 
@@ -123,19 +123,24 @@ Full gates:               bun run gates
 ## 5. Code style
 
 ```ts
-const sharedFilter = z.string().trim().min(1);
+export function normalizeDirectoryFilter(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export const MAX_DIRECTORY_MARTIAL_ART_FILTER = MAX_MARTIAL_ART_NAME * 2;
+
+export const directoryMartialArtFilterSchema = z
+  .string()
+  .transform(normalizeDirectoryFilter)
+  .pipe(z.string().min(1).max(MAX_DIRECTORY_MARTIAL_ART_FILTER));
 
 export const directoryClassFiltersSchema = z
   .object({
     audience: z.enum(CLASS_AUDIENCES).optional(),
-    location: sharedFilter.max(MAX_LOCATION_NAME).optional(),
-    martialArt: sharedFilter.max(MAX_MARTIAL_ART_NAME).optional(),
+    location: directoryLocationFilterSchema.optional(),
+    martialArt: directoryMartialArtFilterSchema.optional(),
   })
   .optional();
-
-export function normalizeDirectoryFilter(value: string) {
-  return value.trim().toLowerCase();
-}
 
 export function nextSessionStart(
   schedules: readonly Pick<ClassScheduleView, "dayOfWeek" | "startTime">[],
@@ -149,7 +154,7 @@ Use the existing tRPC `publicProcedure`, Drizzle relational reads, TanStack Quer
 
 ## 6. Testing strategy
 
-- Small: next-session calculation at exact start, before/after a slot, week rollover and no schedules; filter-schema trims and normalizes shared names, and rejects an invalid audience or empty name.
+- Small: next-session calculation at exact start, before/after a slot, week rollover and no schedules; filter schemas normalize before enforcing their shared limits, accept 90/120-character art values, preserve valid Unicode-expanded names and reject an invalid audience or empty name.
 - Contract: anonymous caller receives only active/full classes from two masters that share the same art and location names; one grouped option resolves both masters; each filter narrows the set and combined filters compose; paused and profile-less data do not appear; no account email or revision is present in the payload. Fixtures use unique shared names so unrelated development rows cannot change an exact assertion.
 - Runtime: seed two masters with the same art and location names and classes across audiences; verify URL filters, counts, empty states and the absence of Book.
 - UI: browser check at 1440, 980, 760 and 520 px; select each filter; confirm no horizontal page scroll and the header `Classes` link is active.

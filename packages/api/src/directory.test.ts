@@ -2,9 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import {
   directoryClassFiltersSchema,
+  MAX_DIRECTORY_MARTIAL_ART_FILTER,
   nextSessionStart,
   normalizeDirectoryFilter,
 } from "./directory";
+import { MAX_MARTIAL_ART_NAME } from "./master-profile";
 
 const friday = new Date("2026-10-23T12:00:00.000Z"); // Fri 17:30 IST
 
@@ -68,7 +70,7 @@ describe("directoryClassFiltersSchema", () => {
     expect(directoryClassFiltersSchema.parse({})).toEqual({});
   });
 
-  test("accepts shared names and trims them", () => {
+  test("normalizes shared names before matching", () => {
     expect(
       directoryClassFiltersSchema.parse({
         audience: "children",
@@ -77,14 +79,31 @@ describe("directoryClassFiltersSchema", () => {
       })
     ).toEqual({
       audience: "children",
-      location: "Velachery",
-      martialArt: "Karate",
+      location: "velachery",
+      martialArt: "karate",
     });
   });
 
   test("normalizes shared names for matching", () => {
     expect(normalizeDirectoryFilter("  Karate  ")).toBe("karate");
     expect(normalizeDirectoryFilter("VELACHERY")).toBe("velachery");
+  });
+
+  test("validates the normalized value against the shared limit", () => {
+    const longArt = "a".repeat(120);
+    expect(
+      directoryClassFiltersSchema.parse({ martialArt: longArt })?.martialArt
+    ).toBe(longArt);
+
+    const expandedArt = "İ".repeat(MAX_MARTIAL_ART_NAME);
+    expect(
+      directoryClassFiltersSchema.parse({ martialArt: expandedArt })?.martialArt
+    ).toHaveLength(MAX_DIRECTORY_MARTIAL_ART_FILTER);
+    expect(() =>
+      directoryClassFiltersSchema.parse({
+        martialArt: "İ".repeat(MAX_MARTIAL_ART_NAME + 1),
+      })
+    ).toThrow();
   });
 
   test("rejects an unknown audience and empty names", () => {

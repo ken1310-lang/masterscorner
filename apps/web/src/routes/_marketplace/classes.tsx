@@ -1,9 +1,8 @@
 import { CLASS_AUDIENCES } from "@my-better-t-app/api/classes";
-import { normalizeDirectoryFilter } from "@my-better-t-app/api/directory";
 import {
-  MAX_LOCATION_NAME,
-  MAX_MARTIAL_ART_NAME,
-} from "@my-better-t-app/api/master-profile";
+  directoryLocationFilterSchema,
+  directoryMartialArtFilterSchema,
+} from "@my-better-t-app/api/directory";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { z } from "zod";
@@ -13,15 +12,8 @@ import {
   DirectoryScreen,
 } from "@/components/classes/directory-screen";
 
-const searchFilter = z.string().trim().min(1);
-const artFilter = searchFilter
-  .max(MAX_MARTIAL_ART_NAME)
-  .transform(normalizeDirectoryFilter)
-  .optional()
-  .catch(undefined);
-const locationFilter = searchFilter
-  .max(MAX_LOCATION_NAME)
-  .transform(normalizeDirectoryFilter)
+const artFilter = directoryMartialArtFilterSchema.optional().catch(undefined);
+const locationFilter = directoryLocationFilterSchema
   .optional()
   .catch(undefined);
 

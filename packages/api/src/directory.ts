@@ -13,20 +13,37 @@ import { MAX_LOCATION_NAME, MAX_MARTIAL_ART_NAME } from "./master-profile";
 export const DIRECTORY_CLASS_STATUSES = ["active", "full"] as const;
 export type DirectoryClassStatus = (typeof DIRECTORY_CLASS_STATUSES)[number];
 
-const sharedFilter = z.string().trim().min(1);
-
-export const directoryClassFiltersSchema = z
-  .object({
-    audience: z.enum(CLASS_AUDIENCES).optional(),
-    location: sharedFilter.max(MAX_LOCATION_NAME).optional(),
-    martialArt: sharedFilter.max(MAX_MARTIAL_ART_NAME).optional(),
-  })
-  .optional();
-
 /** Matches the profile's normalized child-name uniqueness (`lower(btrim(name))`). */
 export function normalizeDirectoryFilter(value: string) {
   return value.trim().toLowerCase();
 }
+
+/**
+ * A stored name is validated before normalization, and lowercasing can expand
+ * one UTF-16 code unit into two (`İ` -> `i` + combining dot). The filter value
+ * is normalized before its length is checked, so a valid maximum-length profile
+ * name must remain valid at this boundary.
+ */
+export const MAX_DIRECTORY_MARTIAL_ART_FILTER = MAX_MARTIAL_ART_NAME * 2;
+export const MAX_DIRECTORY_LOCATION_FILTER = MAX_LOCATION_NAME * 2;
+
+export const directoryMartialArtFilterSchema = z
+  .string()
+  .transform(normalizeDirectoryFilter)
+  .pipe(z.string().min(1).max(MAX_DIRECTORY_MARTIAL_ART_FILTER));
+
+export const directoryLocationFilterSchema = z
+  .string()
+  .transform(normalizeDirectoryFilter)
+  .pipe(z.string().min(1).max(MAX_DIRECTORY_LOCATION_FILTER));
+
+export const directoryClassFiltersSchema = z
+  .object({
+    audience: z.enum(CLASS_AUDIENCES).optional(),
+    location: directoryLocationFilterSchema.optional(),
+    martialArt: directoryMartialArtFilterSchema.optional(),
+  })
+  .optional();
 
 export interface DirectoryFilterOption {
   /** The canonical display name. */

@@ -73,12 +73,8 @@ export const directoryRouter = router({
       const martialArts = groupFilterOptions(martialArtRows);
       const locations = groupFilterOptions(locationRows);
 
-      const martialArt = input?.martialArt
-        ? normalizeDirectoryFilter(input.martialArt)
-        : null;
-      const location = input?.location
-        ? normalizeDirectoryFilter(input.location)
-        : null;
+      const martialArt = input?.martialArt ?? null;
+      const location = input?.location ?? null;
       const martialArtIds = martialArt
         ? (martialArts.find((item) => item.value === martialArt)?.ids ?? [])
         : null;
