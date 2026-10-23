@@ -7,6 +7,7 @@ import {
   type ClassScheduleView,
   type ClassStatus,
   type MasterClassView,
+  type ResumableClassStatus,
   type SaveClassInput,
   saveClassInputSchema,
   toTimeInput,
@@ -126,6 +127,16 @@ export function classFormValuesToInput(
     })),
     status: values.status,
   });
+}
+
+export function statusAfterToggle(
+  status: ClassStatus,
+  pausedFromStatus: ResumableClassStatus | null
+): ClassStatus {
+  if (status !== "paused") {
+    return "paused";
+  }
+  return pausedFromStatus ?? "active";
 }
 
 export function formatFee(

@@ -36,6 +36,7 @@ Success: the development branch stores a class and all its schedule rows, every 
 export const CLASS_AUDIENCES = ["children", "adults", "all"] as const;
 export const CLASS_LEVELS = ["beginner", "intermediate", "advanced", "all"] as const;
 export const CLASS_STATUSES = ["active", "paused", "full"] as const;
+export const CLASS_RESUMABLE_STATUSES = ["active", "full"] as const;
 export const CLASS_FEE_PERIODS = ["session", "week", "month", "term"] as const;
 ```
 
@@ -51,11 +52,12 @@ export const CLASS_FEE_PERIODS = ["session", "week", "month", "term"] as const;
 | `audience` | text | required; one of `CLASS_AUDIENCES` |
 | `level` | text | required; one of `CLASS_LEVELS` |
 | `status` | text | required; one of `CLASS_STATUSES`; defaults to `active` |
+| `paused_from_status` | text | nullable; one of `CLASS_RESUMABLE_STATUSES`; present only while `status = 'paused'` |
 | `fee_amount` | numeric(10,2) | nullable; when present, greater than zero |
 | `fee_period` | text | nullable; one of `CLASS_FEE_PERIODS`; present exactly when `fee_amount` is present |
 | `created_at`, `updated_at` | timestamp | required timestamps |
 
-The fee amount is an exact rupee amount (INR) with at most two decimal places, not a float. The first release is India-only and has no currency switcher, so the schema omits a currency column. Indexes cover `profile_id`, `martial_art_id` and `location_id`.
+The fee amount is an exact rupee amount (INR) with at most two decimal places, not a float. The first release is India-only and has no currency switcher, so the schema omits a currency column. Indexes cover `profile_id`, `martial_art_id` and `location_id`. Pausing stores the pre-pause `active` or `full` status in `paused_from_status`, and resume restores it; legacy paused rows without a stored value resume as `active`.
 
 ### 3.2 `master_class_schedule`
 
@@ -99,7 +101,7 @@ The query is the read shape Tasks 10, 11, 13 and 16 extend. No presentation form
 
 `classes.list` is a protected query returning the caller's classes newest-first with `martialArt`, `location` and sorted `schedules`, plus the profile's ordered martial art and location options. The list is empty before a profile exists.
 
-`classes.save` creates when `id` is omitted and updates an owned class when present. It requires a master profile and rejects a martial-art or location id that is not in that profile's children. A profile with no options cannot create a class. The write is one `db.batch` transaction: the class row and its complete schedule. Updates delete and reinsert the schedule, so schedule ids are not stable; the class id is. Schedules must contain at least one row. PostgreSQL remains the final check for every Task 9 constraint.
+`classes.save` creates when `id` is omitted and updates an owned class when present. It requires a master profile and rejects a martial-art or location id that is not in that profile's children. A profile with no options cannot create a class. The write is one `db.batch` transaction: the class row and its complete schedule. Updates delete and reinsert the schedule, so schedule ids are not stable; the class id is. The response snapshot is the final statement in that same batch, so another session cannot replace the returned values between the write and the read. Schedules must contain at least one row. PostgreSQL remains the final check for every Task 9 constraint.
 
 `classes.setStatus` and `classes.remove` scope the row by the caller's profile id. A missing or foreign class returns `NOT_FOUND`. Removing a class cascades its schedules. A profile save that would delete a martial art or location still referenced by a class maps PostgreSQL `23001` to an actionable `CONFLICT` rather than the raw constraint message.
 
@@ -109,4 +111,4 @@ The query is the read shape Tasks 10, 11, 13 and 16 extend. No presentation form
 
 The same screen hosts the create/edit panel. It covers name, martial art, location, audience, level, status, an optional fee amount plus period, and one or more weekly schedule rows. Client validation mirrors the API for the fee pair, positive two-decimal fee, ISO weekday, valid `HH:MM` times, end-after-start, unique day/start and at least one schedule. The profile editor is the recovery path when the master has no martial art or location.
 
-Pause/resume is a row action; removal opens an inline confirmation that names the class and warns that the schedule is removed too. Save, status and remove responses update the cached list immediately. Those cache writes are generation-scoped to the session and cancel in-flight list reads first, matching the profile save contract. The editor disables row actions while open so a status change or another draft cannot race it, and profile options refetch when the screen mounts so a profile edit is visible without a manual reload.
+Pause/resume is a row action; resume restores the status stored before pausing, so a full class does not return as active. Removal opens an inline confirmation that names the class and warns that the schedule is removed too. Save, status and remove responses update the cached list immediately. Those cache writes are generation-scoped to the session and cancel in-flight list reads first, matching the profile save contract. The editor disables row actions while open so a status change or another draft cannot race it, and profile options refetch when the screen mounts so a profile edit is visible without a manual reload. A failed background refresh keeps the last loaded classes on screen with a non-blocking error; the blocking load state appears only when no classes were cached.

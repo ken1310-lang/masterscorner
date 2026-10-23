@@ -6,6 +6,7 @@ import {
   formatFee,
   formatSchedules,
   initialClassValues,
+  statusAfterToggle,
 } from "./class-values";
 
 const ART = "11111111-1111-4111-8111-111111111111";
@@ -26,6 +27,7 @@ const existing: MasterClassView = {
   location,
   martialArt: art,
   name: "Silambam Foundation",
+  pausedFromStatus: null,
   schedules: [
     { dayOfWeek: 1, endTime: "19:00:00", id: "s1", startTime: "18:00:00" },
     { dayOfWeek: 3, endTime: "19:00:00", id: "s2", startTime: "18:00:00" },
@@ -85,6 +87,16 @@ describe("class form values", () => {
     expect(input.id).toBeUndefined();
     expect(input.feeAmount).toBeNull();
     expect(input.feePeriod).toBeNull();
+  });
+});
+
+describe("class status transitions", () => {
+  test("restores full classes after a pause", () => {
+    expect(statusAfterToggle("active", null)).toBe("paused");
+    expect(statusAfterToggle("full", null)).toBe("paused");
+    expect(statusAfterToggle("paused", "full")).toBe("full");
+    expect(statusAfterToggle("paused", "active")).toBe("active");
+    expect(statusAfterToggle("paused", null)).toBe("active");
   });
 });
 

@@ -4,7 +4,7 @@ import {
   masterClassSchedule,
 } from "@my-better-t-app/db/schema/classes";
 import { TRPCError } from "@trpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 import {
@@ -63,6 +63,7 @@ function toClassView(row: {
   location: { id: string; name: string };
   martialArt: { id: string; name: string };
   name: string;
+  pausedFromStatus: MasterClassView["pausedFromStatus"];
   schedules: {
     dayOfWeek: number;
     endTime: string;
@@ -80,6 +81,7 @@ function toClassView(row: {
     location: { id: row.location.id, name: row.location.name },
     martialArt: { id: row.martialArt.id, name: row.martialArt.name },
     name: row.name,
+    pausedFromStatus: row.pausedFromStatus,
     schedules: [...row.schedules]
       .sort(
         (left, right) =>
@@ -94,18 +96,6 @@ function toClassView(row: {
       })),
     status: row.status,
   };
-}
-
-async function loadClassView(
-  db: Database,
-  id: string,
-  profileId: string
-): Promise<MasterClassView | null> {
-  const row = await db.query.masterClass.findFirst({
-    where: { id, profileId },
-    with: { location: true, martialArt: true, schedules: true },
-  });
-  return row ? toClassView(row) : null;
 }
 
 function postgresCode(error: unknown) {
@@ -214,7 +204,20 @@ export const classesRouter = router({
         }
         classWrite = ctx.db
           .update(masterClass)
-          .set(fields)
+          .set({
+            ...fields,
+            pausedFromStatus: sql`
+              case
+                when ${input.status} = 'paused' then
+                  case
+                    when ${masterClass.status} = 'paused'
+                      then ${masterClass.pausedFromStatus}
+                    else ${masterClass.status}
+                  end
+                else null
+              end
+            `,
+          })
           .where(
             and(
               eq(masterClass.id, input.id),
@@ -228,6 +231,7 @@ export const classesRouter = router({
           .values({
             ...fields,
             id,
+            pausedFromStatus: null,
             profileId: options.profileId,
           })
           .returning({ id: masterClass.id });
@@ -251,10 +255,15 @@ export const classesRouter = router({
           }))
         )
       );
+      const snapshot = ctx.db.query.masterClass.findFirst({
+        where: { id, profileId: options.profileId },
+        with: { location: true, martialArt: true, schedules: true },
+      });
+      statements.push(snapshot);
 
-      let guardRows: unknown;
+      let results: unknown[];
       try {
-        [guardRows] = await ctx.db.batch(statements);
+        results = await ctx.db.batch(statements);
       } catch (error) {
         const mapped = classWriteError(error);
         if (mapped) {
@@ -262,15 +271,15 @@ export const classesRouter = router({
         }
         throw error;
       }
+      const [guardRows] = results;
       if (!Array.isArray(guardRows) || guardRows.length === 0) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Class not found" });
       }
-
-      const saved = await loadClassView(ctx.db, id, options.profileId);
+      const saved = results.at(-1) as Awaited<typeof snapshot>;
       if (!saved) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Class not found" });
       }
-      return saved;
+      return toClassView(saved);
     }),
 
   setStatus: protectedProcedure
@@ -282,14 +291,31 @@ export const classesRouter = router({
       }
       const [updated] = await ctx.db
         .update(masterClass)
-        .set({ status: input.status })
+        .set({
+          status: input.status,
+          pausedFromStatus: sql`
+            case
+              when ${input.status} = 'paused' then
+                case
+                  when ${masterClass.status} = 'paused'
+                    then ${masterClass.pausedFromStatus}
+                  else ${masterClass.status}
+                end
+              else null
+            end
+          `,
+        })
         .where(
           and(
             eq(masterClass.id, input.id),
             eq(masterClass.profileId, profileId)
           )
         )
-        .returning({ id: masterClass.id, status: masterClass.status });
+        .returning({
+          id: masterClass.id,
+          pausedFromStatus: masterClass.pausedFromStatus,
+          status: masterClass.status,
+        });
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Class not found" });
       }

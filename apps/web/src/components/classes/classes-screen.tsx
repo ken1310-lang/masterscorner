@@ -13,6 +13,7 @@ import { ConsolePageHeader } from "@/components/console/page-header";
 import Loader from "@/components/loader";
 import { useTRPC } from "@/utils/trpc";
 import { ClassForm } from "./class-form";
+import { statusAfterToggle } from "./class-values";
 import { ClassesTable } from "./classes-table";
 
 type EditorState =
@@ -101,7 +102,7 @@ export function ClassesScreen() {
   const handleToggleStatus = useCallback(
     async (item: MasterClassView) => {
       const isCurrentSession = sessionQueries.captureScope();
-      const nextStatus = item.status === "paused" ? "active" : "paused";
+      const nextStatus = statusAfterToggle(item.status, item.pausedFromStatus);
       setStatusPendingId(item.id);
       try {
         const updated = await setStatus.mutateAsync({
@@ -124,15 +125,23 @@ export function ClassesScreen() {
                 ...current,
                 classes: current.classes.map((candidate) =>
                   candidate.id === updated.id
-                    ? { ...candidate, status: updated.status }
+                    ? {
+                        ...candidate,
+                        pausedFromStatus: updated.pausedFromStatus,
+                        status: updated.status,
+                      }
                     : candidate
                 ),
               }
             : current
         );
-        toast.success(
-          nextStatus === "paused" ? "Class paused" : "Class resumed"
-        );
+        let message = "Class resumed";
+        if (nextStatus === "paused") {
+          message = "Class paused";
+        } else if (nextStatus === "full") {
+          message = "Class resumed as full";
+        }
+        toast.success(message);
       } catch (error) {
         if (isCurrentSession()) {
           toast.error(messageFor(error));
@@ -186,7 +195,7 @@ export function ClassesScreen() {
   if (classesQuery.status === "pending") {
     return <Loader />;
   }
-  if (classesQuery.isError) {
+  if (classesQuery.isError && !classesQuery.data) {
     return (
       <ConsoleEmptyState title="Classes could not load">
         <p>{classesQuery.error.message}</p>
@@ -199,6 +208,9 @@ export function ClassesScreen() {
         </button>
       </ConsoleEmptyState>
     );
+  }
+  if (!classesQuery.data) {
+    return <Loader />;
   }
 
   const payload = classesQuery.data;
@@ -223,6 +235,24 @@ export function ClassesScreen() {
         kicker="Teaching"
         title="Classes"
       />
+
+      {classesQuery.isError ? (
+        <div
+          className="mb-4 flex flex-col gap-2 rounded-[10px] border border-line bg-surface-alt px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          role="status"
+        >
+          <p className="text-muted-text text-xs">
+            Could not refresh classes. Showing the last loaded list.
+          </p>
+          <button
+            className="min-h-9 font-extrabold text-accent-text text-xs underline-offset-4 hover:underline"
+            onClick={handleRetry}
+            type="button"
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
 
       {editor ? (
         <ClassForm

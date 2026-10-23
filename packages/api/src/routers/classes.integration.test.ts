@@ -11,6 +11,7 @@ import { user } from "@my-better-t-app/db/schema/auth";
 import { masterClass } from "@my-better-t-app/db/schema/classes";
 import { eq } from "drizzle-orm";
 
+import type { MasterClassView, SaveClassInput } from "../classes";
 import type { MediaRateLimit, MediaStorage } from "../media";
 import { appRouter } from "./index";
 
@@ -156,13 +157,104 @@ describeDb("classes database round trip", () => {
       id: created.id,
       status: "paused",
     });
-    expect(paused).toEqual({ id: created.id, status: "paused" });
+    expect(paused).toEqual({
+      id: created.id,
+      pausedFromStatus: "full",
+      status: "paused",
+    });
     const afterPause = await callerA.classes.list();
     expect(afterPause.classes[0]?.status).toBe("paused");
+    expect(afterPause.classes[0]?.pausedFromStatus).toBe("full");
+
+    const pausedByEditor = await callerA.classes.save({
+      audience: "all",
+      feeAmount: null,
+      feePeriod: null,
+      id: created.id,
+      level: "all",
+      locationId: locationA.id,
+      martialArtId: artA.id,
+      name: "Silambam Paused",
+      schedules: [{ dayOfWeek: 5, endTime: "20:30", startTime: "19:30" }],
+      status: "paused",
+    });
+    expect(pausedByEditor.pausedFromStatus).toBe("full");
+
+    const resumed = await callerA.classes.setStatus({
+      id: created.id,
+      status: "full",
+    });
+    expect(resumed).toEqual({
+      id: created.id,
+      pausedFromStatus: null,
+      status: "full",
+    });
 
     const removed = await callerA.classes.remove({ id: created.id });
     expect(removed).toEqual({ id: created.id });
     expect((await callerA.classes.list()).classes).toHaveLength(0);
+  });
+
+  test("returns each concurrent save's own snapshot", async () => {
+    const created = await callerA.classes.save({
+      audience: "adults",
+      feeAmount: null,
+      feePeriod: null,
+      level: "beginner",
+      locationId: locationA.id,
+      martialArtId: artA.id,
+      name: "Concurrent base",
+      schedules: [{ dayOfWeek: 1, endTime: "19:00", startTime: "18:00" }],
+      status: "active",
+    });
+    const leftInput: SaveClassInput = {
+      audience: "adults",
+      feeAmount: null,
+      feePeriod: null,
+      id: created.id,
+      level: "beginner",
+      locationId: locationA.id,
+      martialArtId: artA.id,
+      name: "Concurrent Monday",
+      schedules: [{ dayOfWeek: 1, endTime: "19:00", startTime: "18:00" }],
+      status: "active",
+    };
+    const rightInput: SaveClassInput = {
+      ...leftInput,
+      name: "Concurrent Tuesday",
+      schedules: [{ dayOfWeek: 2, endTime: "20:00", startTime: "19:00" }],
+      status: "full",
+    };
+    const snapshot = (item: MasterClassView) => ({
+      name: item.name,
+      schedules: item.schedules.map(({ dayOfWeek, endTime, startTime }) => ({
+        dayOfWeek,
+        endTime,
+        startTime,
+      })),
+      status: item.status,
+    });
+
+    const rounds = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        Promise.all([
+          callerA.classes.save(leftInput),
+          callerA.classes.save(rightInput),
+        ])
+      )
+    );
+    for (const [left, right] of rounds) {
+      expect(snapshot(left)).toEqual({
+        name: leftInput.name,
+        schedules: leftInput.schedules,
+        status: leftInput.status,
+      });
+      expect(snapshot(right)).toEqual({
+        name: rightInput.name,
+        schedules: rightInput.schedules,
+        status: rightInput.status,
+      });
+    }
   });
 
   test("scopes reads and writes to the owning master", async () => {

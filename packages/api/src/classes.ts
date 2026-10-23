@@ -7,6 +7,7 @@ import {
   type ClassFeePeriod,
   type ClassLevel,
   type ClassStatus,
+  type ResumableClassStatus,
 } from "@my-better-t-app/db/schema/class-kinds";
 import { z } from "zod";
 
@@ -15,11 +16,13 @@ export type {
   ClassFeePeriod,
   ClassLevel,
   ClassStatus,
+  ResumableClassStatus,
 } from "@my-better-t-app/db/schema/class-kinds";
 export {
   CLASS_AUDIENCES,
   CLASS_FEE_PERIODS,
   CLASS_LEVELS,
+  CLASS_RESUMABLE_STATUSES,
   CLASS_STATUSES,
 } from "@my-better-t-app/db/schema/class-kinds";
 
@@ -234,6 +237,7 @@ export interface MasterClassView {
   location: ClassOption;
   martialArt: ClassOption;
   name: string;
+  pausedFromStatus: ResumableClassStatus | null;
   schedules: ClassScheduleView[];
   status: ClassStatus;
 }
