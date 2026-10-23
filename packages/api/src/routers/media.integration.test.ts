@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { createDb } from "@my-better-t-app/db";
 import { user } from "@my-better-t-app/db/schema/auth";
 import { media } from "@my-better-t-app/db/schema/master";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { MediaImageType, MediaRateLimit, MediaStorage } from "../media";
 import { MediaStorageError } from "../media";
 
@@ -20,18 +20,21 @@ const OBJECT_KEY = /^masters\/[0-9a-f-]+\/[0-9a-f-]+\.png$/;
 function makeStorage() {
   const puts: { contentType: MediaImageType; key: string }[] = [];
   const deletes: string[] = [];
+  const objects = new Set<string>();
   const storage: MediaStorage = {
     deleteObject: (key) => {
       deletes.push(key);
+      objects.delete(key);
       return Promise.resolve();
     },
     publicUrl: (key) => `https://cdn.example/media/${key}`,
     putObject: (key, _body, contentType) => {
       puts.push({ contentType, key });
+      objects.add(key);
       return Promise.resolve();
     },
   };
-  return { deletes, puts, storage };
+  return { deletes, objects, puts, storage };
 }
 
 const allowAll: MediaRateLimit = {
@@ -364,5 +367,216 @@ describeDb("media procedures database round trip", () => {
       await db.delete(user).where(eq(user.id, ownerId));
       await db.delete(user).where(eq(user.id, intruderId));
     }
+  });
+});
+
+describeDb("media failure recovery", () => {
+  const db = createDb({ DATABASE_URL: databaseUrl ?? "" });
+  const accountIds: string[] = [];
+
+  afterAll(async () => {
+    await Promise.all(
+      accountIds.map((id) => db.delete(user).where(eq(user.id, id)))
+    );
+  });
+
+  async function createAccount(storage: MediaStorage) {
+    const id = `media-recovery-${crypto.randomUUID()}`;
+    const email = `${id}@example.com`;
+    accountIds.push(id);
+    await db.insert(user).values({ email, id, name: "Media Recovery" });
+    const context = {
+      db,
+      mediaRateLimit: allowAll,
+      mediaStorage: storage,
+      session: {
+        session: { id: `media-session-${id}` },
+        user: {
+          accountType: "master",
+          email,
+          id,
+          name: "Media Recovery",
+        },
+      } as never,
+    };
+    const caller = appRouter.createCaller(context);
+    await caller.master.saveProfile({
+      displayName: "Media Recovery",
+      homeCity: null,
+      introduction: null,
+      locations: [],
+      martialArts: [{ name: "Silambam" }],
+      revision: null,
+      yearsTeaching: null,
+    });
+    return { caller, context };
+  }
+
+  test("rolls back a replacement DB failure and deletes only its new object", async () => {
+    const { deletes, objects, puts, storage } = makeStorage();
+    const { caller, context } = await createAccount(storage);
+    const previous = await caller.media.upload({
+      contentType: "image/png",
+      data: PNG,
+      kind: "profile_photo",
+    });
+    const profileId = previous.profile?.id;
+    if (!profileId) {
+      throw new Error("The media recovery account has no profile");
+    }
+    const previousRows = await db
+      .select()
+      .from(media)
+      .where(eq(media.profileId, profileId));
+    const previousObjects = [...objects];
+
+    // Execute every real replacement statement, then abort the same database
+    // transaction. No schema mutation or fake successful DB result is needed.
+    const failingDb = new Proxy(db, {
+      get(target, property, receiver) {
+        if (property === "batch") {
+          return (queries: Parameters<typeof db.batch>[0]) =>
+            target.batch([...queries, target.execute(sql`select 1 / 0`)]);
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const failing = appRouter.createCaller({ ...context, db: failingDb });
+
+    await expect(
+      failing.media.upload({
+        contentType: "image/png",
+        data: PNG,
+        kind: "profile_photo",
+      })
+    ).rejects.toMatchObject({ code: "INTERNAL_SERVER_ERROR" });
+
+    expect(puts).toHaveLength(2);
+    const newObject = puts[1]?.key;
+    if (!newObject) {
+      throw new Error("The failed replacement did not write an object");
+    }
+    expect(newObject).toMatch(OBJECT_KEY);
+    expect(deletes).toEqual([newObject]);
+    expect([...objects]).toEqual(previousObjects);
+    expect(
+      await db.select().from(media).where(eq(media.profileId, profileId))
+    ).toEqual(previousRows);
+    expect((await caller.master.getProfile()).media).toEqual(previous.media);
+  });
+
+  test("returns the replacement photo even when deleting the old object fails", async () => {
+    const { deletes, objects, puts, storage } = makeStorage();
+    const failingDeletes: MediaStorage = {
+      ...storage,
+      deleteObject: (key) => {
+        deletes.push(key);
+        return Promise.reject(new MediaStorageError("DELETE refused", 503));
+      },
+    };
+    const { caller } = await createAccount(failingDeletes);
+    const previous = await caller.media.upload({
+      contentType: "image/png",
+      data: PNG,
+      kind: "profile_photo",
+    });
+
+    const replacement = await caller.media.upload({
+      contentType: "image/png",
+      data: PNG,
+      kind: "profile_photo",
+    });
+
+    const previousKey = puts[0]?.key;
+    const replacementKey = puts[1]?.key;
+    const [currentMedia] = replacement.media;
+    if (
+      !(previousKey && replacementKey && currentMedia && replacement.profile)
+    ) {
+      throw new Error("The replacement did not return persisted media");
+    }
+    expect(deletes).toEqual([previousKey]);
+    expect(objects.size).toBe(2);
+    expect(replacement.media).toHaveLength(1);
+    expect(replacement.media[0]?.id).not.toBe(previous.media[0]?.id);
+    expect(currentMedia.url).toBe(storage.publicUrl(replacementKey));
+    expect((await caller.master.getProfile()).media).toEqual(replacement.media);
+    const rows = await db
+      .select({ id: media.id, objectKey: media.objectKey })
+      .from(media)
+      .where(eq(media.profileId, replacement.profile.id));
+    expect(rows).toEqual([{ id: currentMedia.id, objectKey: replacementKey }]);
+  });
+
+  test("removes the photo from the profile even when deleting its object fails", async () => {
+    const { deletes, objects, puts, storage } = makeStorage();
+    const { caller } = await createAccount({
+      ...storage,
+      deleteObject: (key) => {
+        deletes.push(key);
+        return Promise.reject(new MediaStorageError("DELETE refused", 503));
+      },
+    });
+    const uploaded = await caller.media.upload({
+      contentType: "image/png",
+      data: PNG,
+      kind: "profile_photo",
+    });
+
+    const uploadedKey = puts[0]?.key;
+    if (!(uploadedKey && uploaded.profile)) {
+      throw new Error("The upload did not return persisted media");
+    }
+    const removed = await caller.media.remove({ kind: "profile_photo" });
+
+    expect(deletes).toEqual([uploadedKey]);
+    expect(objects.size).toBe(1);
+    expect(removed.media).toEqual([]);
+    expect((await caller.master.getProfile()).media).toEqual([]);
+    expect(
+      await db
+        .select()
+        .from(media)
+        .where(eq(media.profileId, uploaded.profile.id))
+    ).toEqual([]);
+  });
+
+  test("saving profile edits retains the uploaded photo's identity and URL", async () => {
+    const { deletes, objects, puts, storage } = makeStorage();
+    const { caller } = await createAccount(storage);
+    const uploaded = await caller.media.upload({
+      contentType: "image/png",
+      data: PNG,
+      kind: "profile_photo",
+    });
+    const { profile } = uploaded;
+    if (!profile) {
+      throw new Error("The uploaded photo has no profile");
+    }
+    const uploadedKey = puts[0]?.key;
+    if (!uploadedKey) {
+      throw new Error("The upload did not write an object");
+    }
+    expect(uploaded.media).toHaveLength(1);
+
+    const saved = await caller.master.saveProfile({
+      displayName: "Updated Media Recovery",
+      homeCity: "Chennai",
+      introduction: "Profile edited after uploading a photo.",
+      locations: uploaded.locations,
+      martialArts: uploaded.martialArts,
+      revision: profile.revision,
+      yearsTeaching: 12,
+    });
+
+    expect(saved.profile?.displayName).toBe("Updated Media Recovery");
+    expect(saved.profile?.revision).not.toBe(profile.revision);
+    expect(saved.media).toEqual(uploaded.media);
+    const reloaded = await caller.master.getProfile();
+    expect(reloaded.profile).toEqual(saved.profile);
+    expect(reloaded.media).toEqual(uploaded.media);
+    expect(puts).toHaveLength(1);
+    expect(deletes).toEqual([]);
+    expect([...objects]).toEqual([uploadedKey]);
   });
 });
