@@ -48,6 +48,7 @@ export const uploadMediaInputSchema = z.object({
 });
 
 export interface MediaView {
+  createdAt: string;
   id: string;
   kind: MediaKind;
   url: string;
@@ -61,7 +62,7 @@ Procedures, both `protectedProcedure`:
 | `media.upload` | `{ kind, contentType, data }` where `data` is base64 without a data-URL prefix | `MasterProfilePayload` (same shape as `master.saveProfile`) | `UNAUTHORIZED`, `BAD_REQUEST` (malformed/oversized/mismatched bytes), `TOO_MANY_REQUESTS`, `PRECONDITION_FAILED` (no profile yet), `SERVICE_UNAVAILABLE` (storage refused) |
 | `media.remove` | `{ kind }` | `MasterProfilePayload` | `UNAUTHORIZED`, `NOT_FOUND` (no current asset), `PRECONDITION_FAILED` |
 
-`MasterProfilePayload` gains `media: MediaView[]`, ordered newest first. `getProfile` and `saveProfile` return media alongside profile data. Client cache writers merge only their owned slice: profile saves update profile/children and retain cached media; photo operations update `profile_photo` entries and retain profile/children and other media kinds. Delayed unrelated snapshots therefore cannot erase newer results.
+`MasterProfilePayload` gains `media: MediaView[]`, ordered newest first. `createdAt` is the row's creation instant serialized as an ISO 8601 UTC string; the server sorts by the underlying timestamp. `getProfile` and `saveProfile` return media alongside profile data. Client cache writers merge only their owned slice: profile saves update profile/children and retain cached media; photo operations update `profile_photo` entries and retain profile/children and other media kinds. After merging, the shared list is sorted by `createdAt` descending so a delayed unrelated snapshot cannot erase newer results or reverse the server's newest-first order.
 
 Bytes are decoded and sniffed server-side. JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`) and WebP (`RIFF` + `WEBP`) signatures must match the declared `contentType`; anything else is rejected before storage is touched.
 

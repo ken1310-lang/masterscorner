@@ -65,6 +65,33 @@ function initialsFor(name: string) {
   return initials || "MC";
 }
 
+function mergePhotoMedia(
+  current: readonly MediaView[],
+  saved: readonly MediaView[]
+): MediaView[] {
+  const merged = new Map<string, MediaView>();
+  for (const item of saved) {
+    if (item.kind !== "profile_photo") {
+      merged.set(item.id, item);
+    }
+  }
+  // A concurrent logo operation owns its cached entry; the photo mutation
+  // must not roll it back while correcting the shared order.
+  for (const item of current) {
+    if (item.kind !== "profile_photo") {
+      merged.set(item.id, item);
+    }
+  }
+  for (const item of saved) {
+    if (item.kind === "profile_photo") {
+      merged.set(item.id, item);
+    }
+  }
+  return [...merged.values()].sort((left, right) =>
+    right.createdAt.localeCompare(left.createdAt)
+  );
+}
+
 interface PhotoFieldProps {
   accountName: string;
   disabled: boolean;
@@ -103,14 +130,7 @@ export function PhotoField({
           current
             ? {
                 ...current,
-                media: [
-                  ...current.media.filter(
-                    (item) => item.kind !== "profile_photo"
-                  ),
-                  ...saved.media.filter(
-                    (item) => item.kind === "profile_photo"
-                  ),
-                ],
+                media: mergePhotoMedia(current.media, saved.media),
               }
             : undefined
       );

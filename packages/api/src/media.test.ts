@@ -121,11 +121,13 @@ describe("toMediaViews", () => {
       toMediaViews(rows, (key) => `https://cdn.example/media/${key}`)
     ).toEqual([
       {
+        createdAt: "2026-10-23T10:00:00.000Z",
         id: "new-photo",
         kind: "profile_photo",
         url: "https://cdn.example/media/masters/p/new.jpg",
       },
       {
+        createdAt: "2026-10-21T10:00:00.000Z",
         id: "logo",
         kind: "site_logo",
         url: "https://cdn.example/media/masters/p/logo.png",

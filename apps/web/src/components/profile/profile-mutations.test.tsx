@@ -96,8 +96,18 @@ function initialPayload(): MasterProfilePayload & {
       },
     ],
     media: [
-      { id: "old-photo", kind: "profile_photo", url: "https://image.test/old" },
-      { id: "logo", kind: "site_logo", url: "https://image.test/logo" },
+      {
+        createdAt: "2026-10-20T10:00:00.000Z",
+        id: "logo",
+        kind: "site_logo",
+        url: "https://image.test/logo",
+      },
+      {
+        createdAt: "2026-10-19T10:00:00.000Z",
+        id: "old-photo",
+        kind: "profile_photo",
+        url: "https://image.test/old",
+      },
     ],
     profile: {
       displayName: "Original master",
@@ -321,9 +331,16 @@ describe("profile response slice ownership", () => {
           operation === "upload"
             ? [
                 {
+                  createdAt: "2026-10-23T10:00:00.000Z",
                   id: "new-photo",
                   kind: "profile_photo",
                   url: "https://image.test/new",
+                },
+                {
+                  createdAt: "2026-10-20T10:00:00.000Z",
+                  id: "logo",
+                  kind: "site_logo",
+                  url: "https://image.test/logo",
                 },
               ]
             : [];
@@ -365,6 +382,9 @@ describe("profile response slice ownership", () => {
         expect(
           view.cached()?.media.find((item) => item.kind === "profile_photo")?.id
         ).toBe(operation === "upload" ? "new-photo" : undefined);
+        expect(view.cached()?.media.map((item) => item.id)).toEqual(
+          operation === "upload" ? ["new-photo", "logo"] : ["logo"]
+        );
         if (operation === "upload") {
           expect(view.getByRole("img").getAttribute("src")).toBe(
             "https://image.test/new"

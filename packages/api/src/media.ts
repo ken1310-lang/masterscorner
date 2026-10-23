@@ -150,6 +150,7 @@ export interface StoredMedia {
 }
 
 export interface MediaView {
+  createdAt: string;
   id: string;
   kind: MediaKind;
   url: string;
@@ -175,7 +176,12 @@ export function toMediaViews(
       continue;
     }
     seen.add(row.kind);
-    views.push({ id: row.id, kind: row.kind, url: publicUrl(row.objectKey) });
+    views.push({
+      createdAt: new Date(row.createdAt).toISOString(),
+      id: row.id,
+      kind: row.kind,
+      url: publicUrl(row.objectKey),
+    });
   }
   return views;
 }
