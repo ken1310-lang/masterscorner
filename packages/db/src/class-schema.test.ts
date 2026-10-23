@@ -52,6 +52,18 @@ function checkSql(table: PgTable, name: string) {
 }
 
 describe("class schema", () => {
+  test("class vocabularies match the first-release contract", () => {
+    expect(CLASS_AUDIENCES).toEqual(["children", "adults", "all"]);
+    expect(CLASS_LEVELS).toEqual([
+      "beginner",
+      "intermediate",
+      "advanced",
+      "all",
+    ]);
+    expect(CLASS_STATUSES).toEqual(["active", "paused", "full"]);
+    expect(CLASS_FEE_PERIODS).toEqual(["session", "week", "month", "term"]);
+  });
+
   test("a class owns its profile and references a location and martial art", () => {
     for (const column of [
       masterClass.profileId,
