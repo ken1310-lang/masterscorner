@@ -75,6 +75,8 @@ At least one schedule row is a write-contract invariant owned by Task 10. Postgr
 
 A class references the profile, martial art and location by id. The foreign keys guarantee that the referenced rows exist and cannot be deleted while a class uses them, but they do not compare owners. Task 10 must validate submitted location and martial-art ids against the caller's profile before writing; database owner isolation for those ids is an application invariant until then.
 
+Profile activity includes classes and their schedules. `master_class_touch_profile` reuses `touch_master_profile`, so a class insert, edit or delete advances `master_profile.updated_at`. `master_class_schedule_touch_class` advances the parent class's `updated_at` on schedule inserts, edits and deletes; the class trigger then advances the profile. Both timestamps use `GREATEST(..., clock_timestamp())`, matching the existing monotonic profile trigger and avoiding stale writes under concurrency. Migration `20261023072509_touch_profile_on_class_change` installs the triggers.
+
 ### 3.4 Query
 
 `createDb` exposes a class with its schedule rows:

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { createDb } from "./index";
 import { user } from "./schema/auth";
@@ -107,11 +107,95 @@ describeDb("class schema database round trip", () => {
     expect(databaseError?.cause?.code ?? databaseError?.code).toBe(code);
   }
 
+  async function timestamps(classId: string, profileId: string) {
+    const classRow = first(
+      await db
+        .select({ updatedAt: masterClass.updatedAt })
+        .from(masterClass)
+        .where(eq(masterClass.id, classId))
+    );
+    const profileRow = first(
+      await db
+        .select({ updatedAt: masterProfile.updatedAt })
+        .from(masterProfile)
+        .where(eq(masterProfile.id, profileId))
+    );
+    return {
+      classUpdatedAt: classRow.updatedAt,
+      profileUpdatedAt: profileRow.updatedAt,
+    };
+  }
+
+  async function resetActivity(classId: string, profileId: string) {
+    const past = "2000-01-01T00:00:00.000Z";
+    await db.execute(
+      sql`update ${masterClass} set updated_at = ${past} where id = ${classId}`
+    );
+    await db.execute(
+      sql`update ${masterProfile} set updated_at = ${past} where id = ${profileId}`
+    );
+  }
+
   afterEach(async () => {
     await Promise.all(
       createdUsers
         .splice(0)
         .map((userId) => db.delete(user).where(eq(user.id, userId)))
+    );
+  });
+
+  test("class and schedule changes advance profile activity", async () => {
+    const { classId, profileId } = await seed();
+    await resetActivity(classId, profileId);
+    const before = await timestamps(classId, profileId);
+
+    await db
+      .update(masterClass)
+      .set({ name: "Silambam Foundation Renamed" })
+      .where(eq(masterClass.id, classId));
+
+    const afterClassEdit = await timestamps(classId, profileId);
+    expect(afterClassEdit.classUpdatedAt.getTime()).toBeGreaterThan(
+      before.classUpdatedAt.getTime()
+    );
+    expect(afterClassEdit.profileUpdatedAt.getTime()).toBeGreaterThan(
+      before.profileUpdatedAt.getTime()
+    );
+
+    await resetActivity(classId, profileId);
+    const beforeSchedule = await timestamps(classId, profileId);
+    const insertedSchedule = first(
+      await db
+        .insert(masterClassSchedule)
+        .values({
+          classId,
+          dayOfWeek: 2,
+          endTime: "18:00:00",
+          startTime: "17:00:00",
+        })
+        .returning({ id: masterClassSchedule.id })
+    );
+
+    const afterScheduleEdit = await timestamps(classId, profileId);
+    expect(afterScheduleEdit.classUpdatedAt.getTime()).toBeGreaterThan(
+      beforeSchedule.classUpdatedAt.getTime()
+    );
+    expect(afterScheduleEdit.profileUpdatedAt.getTime()).toBeGreaterThan(
+      beforeSchedule.profileUpdatedAt.getTime()
+    );
+
+    await resetActivity(classId, profileId);
+    const beforeScheduleDelete = await timestamps(classId, profileId);
+    await db
+      .delete(masterClassSchedule)
+      .where(eq(masterClassSchedule.id, insertedSchedule.id));
+
+    const afterScheduleDelete = await timestamps(classId, profileId);
+    expect(afterScheduleDelete.classUpdatedAt.getTime()).toBeGreaterThan(
+      beforeScheduleDelete.classUpdatedAt.getTime()
+    );
+    expect(afterScheduleDelete.profileUpdatedAt.getTime()).toBeGreaterThan(
+      beforeScheduleDelete.profileUpdatedAt.getTime()
     );
   });
 

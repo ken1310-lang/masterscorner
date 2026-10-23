@@ -44,8 +44,9 @@ export const masterProfile = pgTable(
     introduction: text("introduction"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     /**
-     * Profile activity time. Child triggers bump it on location, martial-art
-     * and media inserts, updates and deletes; direct edits bump it here.
+     * Profile activity time. Child triggers bump it on location, martial-art,
+     * media, class and schedule inserts, updates and deletes; direct edits bump
+     * it here.
      */
     updatedAt: timestamp("updated_at")
       .defaultNow()

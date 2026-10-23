@@ -75,6 +75,11 @@ export const masterClass = pgTable(
     }),
     feePeriod: text("fee_period").$type<ClassFeePeriod>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    /**
+     * Class activity time. Direct edits and schedule inserts, updates and
+     * deletes advance it in the database; the class trigger advances the
+     * owning profile in the same transaction.
+     */
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
