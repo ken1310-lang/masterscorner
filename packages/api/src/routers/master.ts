@@ -3,6 +3,7 @@ import {
   masterLocation,
   masterMartialArt,
   masterProfile,
+  media,
 } from "@my-better-t-app/db/schema/master";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -16,6 +17,7 @@ import {
   planProfileChildren,
   saveProfileInputSchema,
 } from "../master-profile";
+import { type MediaStorage, toMediaViews } from "../media";
 
 /**
  * Positions are unique per profile, and a martial-art name is unique per
@@ -88,7 +90,14 @@ const profileIdForRevision = (userId: string, revision: string) =>
 function toProfilePayload(
   profile: MasterProfileSummary,
   martialArts: MasterProfileChild[],
-  locations: MasterProfileChild[]
+  locations: MasterProfileChild[],
+  mediaRows: readonly {
+    createdAt: Date | string;
+    id: string;
+    kind: "profile_photo" | "site_logo";
+    objectKey: string;
+  }[],
+  storage: MediaStorage
 ): MasterProfilePayload {
   return {
     locations: locations.map(({ id, name, position }) => ({
@@ -101,24 +110,27 @@ function toProfilePayload(
       name,
       position,
     })),
+    media: toMediaViews(mediaRows, storage.publicUrl),
     profile,
   };
 }
 
-async function loadProfile(
+export async function loadProfile(
   db: Database,
-  userId: string
+  userId: string,
+  storage: MediaStorage
 ): Promise<MasterProfilePayload> {
   const profile = await db.query.masterProfile.findFirst({
     where: { userId },
     with: {
       martialArts: { orderBy: { position: "asc" } },
       locations: { orderBy: { position: "asc" } },
+      media: { orderBy: { createdAt: "desc" } },
     },
   });
 
   if (!profile) {
-    return { locations: [], martialArts: [], profile: null };
+    return { locations: [], martialArts: [], media: [], profile: null };
   }
 
   return toProfilePayload(
@@ -131,13 +143,15 @@ async function loadProfile(
       yearsTeaching: profile.yearsTeaching,
     },
     profile.martialArts,
-    profile.locations
+    profile.locations,
+    profile.media,
+    storage
   );
 }
 
 export const masterRouter = router({
   getProfile: protectedProcedure.query(({ ctx }) =>
-    loadProfile(ctx.db, ctx.session.user.id)
+    loadProfile(ctx.db, ctx.session.user.id, ctx.mediaStorage)
   ),
 
   saveProfile: protectedProcedure
@@ -357,7 +371,17 @@ export const masterRouter = router({
           })
           .from(masterLocation)
           .where(eq(masterLocation.profileId, profileId))
-          .orderBy(masterLocation.position)
+          .orderBy(masterLocation.position),
+        ctx.db
+          .select({
+            createdAt: media.createdAt,
+            id: media.id,
+            kind: media.kind,
+            objectKey: media.objectKey,
+          })
+          .from(media)
+          .where(eq(media.profileId, profileId))
+          .orderBy(media.createdAt)
       );
 
       const [first, ...rest] = statements;
@@ -373,20 +397,34 @@ export const masterRouter = router({
         }
         throw error;
       }
-      // The batch preserves statement order; the three snapshot reads are
+      // The batch preserves statement order; the four snapshot reads are
       // appended last. Writes without RETURNING come back as raw result
       // objects, so read the guard and the snapshot by position.
       const [guardRows] = result;
-      const [profileRows, martialArts, locations] = result.slice(-3) as [
+      const [profileRows, martialArts, locations, mediaRows] = result.slice(
+        -4
+      ) as [
         MasterProfileSummary[],
         MasterProfileChild[],
         MasterProfileChild[],
+        {
+          createdAt: Date | string;
+          id: string;
+          kind: "profile_photo" | "site_logo";
+          objectKey: string;
+        }[],
       ];
       const [profile] = profileRows;
       if (!Array.isArray(guardRows) || guardRows.length === 0 || !profile) {
         throw profileConflict();
       }
 
-      return toProfilePayload(profile, martialArts, locations);
+      return toProfilePayload(
+        profile,
+        martialArts,
+        locations,
+        mediaRows,
+        ctx.mediaStorage
+      );
     }),
 });

@@ -4,8 +4,17 @@ import { createDb } from "@my-better-t-app/db";
 import { user } from "@my-better-t-app/db/schema/auth";
 import { masterProfile } from "@my-better-t-app/db/schema/master";
 import { eq } from "drizzle-orm";
-
+import type { MediaRateLimit, MediaStorage } from "../media";
 import { appRouter } from "./index";
+
+const mediaStorage: MediaStorage = {
+  deleteObject: async () => undefined,
+  publicUrl: (key) => `https://cdn.example/media/${key}`,
+  putObject: async () => undefined,
+};
+const mediaRateLimit: MediaRateLimit = {
+  limit: async () => ({ success: true }),
+};
 
 const databaseUrl = process.env.DATABASE_URL;
 const describeDb = databaseUrl ? describe : describe.skip;
@@ -22,6 +31,8 @@ describeDb("master profile database round trip", () => {
   const callerFor = (database: Database, id = userId, userEmail = email) =>
     appRouter.createCaller({
       db: database,
+      mediaRateLimit,
+      mediaStorage,
       session: {
         session: { id: `round-trip-session-${id}` },
         user: {

@@ -34,6 +34,12 @@ export const server = Cloudflare.Worker("server", {
     AWS_ENDPOINT_URL_S3: Config.String("AWS_ENDPOINT_URL_S3"),
     AWS_REGION: Config.String("AWS_REGION"),
     AWS_SECRET_ACCESS_KEY: Config.Redacted("AWS_SECRET_ACCESS_KEY"),
+    // Upload abuse guard (SPEC-media §4): ten uploads per minute per account,
+    // per Cloudflare location. The binding is platform state, not a secret.
+    MEDIA_UPLOAD_RATE_LIMIT: Cloudflare.RateLimit("MEDIA_UPLOAD_RATE_LIMIT", {
+      namespaceId: 1001,
+      simple: { limit: 10, period: 60 },
+    }),
   },
   dev: {
     port: 3000,

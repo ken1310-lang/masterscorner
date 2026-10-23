@@ -11,14 +11,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { MEDIA_KINDS, type MediaKind } from "./media-kinds";
 
-/**
- * The first release has two media roles. Keep this list and the
- * `media_kind_check` constraint in sync; the type prevents a third value in
- * application code, and the check keeps it out of the database.
- */
-export const MEDIA_KINDS = ["profile_photo", "site_logo"] as const;
-export type MediaKind = (typeof MEDIA_KINDS)[number];
+export { MEDIA_KINDS, type MediaKind } from "./media-kinds";
 
 /** Constants only; this keeps the migration check in step with the type. */
 const mediaKindList = sql.raw(

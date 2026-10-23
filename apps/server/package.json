@@ -15,6 +15,7 @@
     "@my-better-t-app/auth": "workspace:*",
     "@my-better-t-app/db": "workspace:*",
     "@trpc/server": "catalog:",
+    "aws4fetch": "^1.0.20",
     "better-auth": "catalog:",
     "hono": "^4.13.7",
     "varlock": "catalog:",

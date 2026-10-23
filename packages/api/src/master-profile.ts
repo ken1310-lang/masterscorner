@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { MediaView } from "./media";
+
 export const MAX_DISPLAY_NAME = 120;
 export const MAX_CITY = 120;
 export const MAX_INTRODUCTION = 2000;
@@ -186,5 +188,6 @@ export interface MasterProfileChild {
 export interface MasterProfilePayload {
   locations: MasterProfileChild[];
   martialArts: MasterProfileChild[];
+  media: MediaView[];
   profile: MasterProfileSummary | null;
 }
