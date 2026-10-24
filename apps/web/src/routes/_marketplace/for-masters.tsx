@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Fragment } from "react";
 
 import { RedesignContainer } from "@/components/shell/container";
+import { authClient } from "@/lib/auth-client";
 
 const flow = [
   {
@@ -60,6 +61,17 @@ export const Route = createFileRoute("/_marketplace/for-masters")({
 });
 
 function ForMastersRoute() {
+  const { data: session, isPending } = authClient.useSession();
+  const primaryCta = session
+    ? {
+        label: "Open your master profile",
+        to: "/dashboard/profile" as const,
+      }
+    : {
+        label: "Create your master profile",
+        to: "/signup" as const,
+      };
+
   return (
     <>
       <section className="bg-canvas py-16 rx-md:py-24">
@@ -76,12 +88,19 @@ function ForMastersRoute() {
               your public profile up to date from one console.
             </p>
             <div className="mt-10 flex rx-sm:flex-row flex-col rx-sm:items-center gap-4 rx-sm:gap-6">
-              <Link
-                className="inline-flex min-h-12 rx-sm:w-auto w-full items-center justify-center rounded-full bg-brand-strong px-7 py-3.5 font-semibold text-[16px] text-white transition-colors duration-150 hover:bg-brand-deep"
-                to="/signup"
-              >
-                Create your master profile
-              </Link>
+              {isPending ? (
+                <span
+                  aria-hidden="true"
+                  className="inline-flex min-h-12 rx-sm:w-auto w-full min-w-[13rem] rounded-full bg-brand-strong/25"
+                />
+              ) : (
+                <Link
+                  className="inline-flex min-h-12 rx-sm:w-auto w-full items-center justify-center rounded-full bg-brand-strong px-7 py-3.5 font-semibold text-[16px] text-white transition-colors duration-150 hover:bg-brand-deep"
+                  to={primaryCta.to}
+                >
+                  {primaryCta.label}
+                </Link>
+              )}
               <Link
                 className="inline-flex min-h-11 rx-sm:w-auto w-full items-center justify-center font-semibold text-[16px] text-navy underline-offset-4 hover:underline"
                 to="/masters"

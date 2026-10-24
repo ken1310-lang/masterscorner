@@ -235,7 +235,7 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 - **Deps:** 5
 - **Files:** `apps/web/src/routes/_marketplace/for-masters.tsx`; shell, footer and Home master links
 - **Scope:** Small
-- **Done:** the editorial page uses shipped profile, directory and class facts only; the console preview has no sample metrics; header, Home, footer and mobile master links reach it; the primary CTA reaches `/signup`. Browser-checked at 1440/1024/768/390 with no horizontal overflow or console errors; `bun run gates` pass.
+- **Done:** the editorial page uses shipped profile, directory and class facts only; the console preview has no sample metrics; header, Home, footer and mobile master links reach it; the primary CTA reaches `/signup` for visitors and `/dashboard/profile` for signed-in masters, with no guest CTA while the session resolves. Browser-checked at 1440/1024/768/390 with no horizontal overflow or console errors; `bun run gates` pass.
 
 ### Checkpoint E
 
