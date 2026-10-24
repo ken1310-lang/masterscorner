@@ -58,7 +58,7 @@ function MastersEmpty() {
       </p>
       <Link
         className="mt-5 inline-flex rounded-full bg-navy px-5 py-2.5 font-semibold text-[15px] text-white hover:bg-navy-deep"
-        to="/signup"
+        to="/for-masters"
       >
         Create a profile
       </Link>
