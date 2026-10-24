@@ -17,6 +17,8 @@ const app = new Hono();
  * from occupying Worker memory before Zod can reject it.
  */
 const TRPC_BODY_LIMIT = 8 * 1024 * 1024;
+/** Better Auth request bodies are small; cap them before the router parses them. */
+const AUTH_BODY_LIMIT = 32 * 1024;
 
 app.use(logger());
 app.use(
@@ -26,6 +28,15 @@ app.use(
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+  })
+);
+
+app.use(
+  "/api/auth/*",
+  bodyLimit({
+    maxSize: AUTH_BODY_LIMIT,
+    onError: (c) =>
+      c.json({ error: { message: "Request body is too large." } }, 413),
   })
 );
 

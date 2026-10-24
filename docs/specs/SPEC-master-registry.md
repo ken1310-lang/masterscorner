@@ -28,7 +28,7 @@ Success: `/masters` lists only stored master profiles; every filter and page is 
 
 - Always: derive registry rows from stored profiles; filter with normalized shared names; derive audience tags from current classes; use a deterministic total order; keep filter and page in the URL; make no verification, rating, review or fee claims.
 - Ask first: changing which profile states are public; changing the public slug format; changing page size, sort order or audience source; adding a registry action that links to a missing route.
-- Never: render a rating, review count, verification badge, fee, learner count or profile-completeness score; expose account email, user id, profile revision or drafts; invent a city or audience; render a dead `View profile` link.
+- Never: render a rating, review count, verification badge, fee, learner count or profile-completeness score; expose account email, user id, profile revision or drafts; invent a city or audience; render a dead profile link.
 
 ## 3. Contract
 
@@ -65,6 +65,7 @@ interface DirectoryMasterView {
   yearsTeaching: number | null;
   martialArts: string[]; // profile order
   audiences: ("children" | "adults" | "all")[]; // current classes, canonical order
+  photoUrl: string | null; // current profile_photo URL
 }
 
 interface DirectoryMastersPayload {
@@ -80,7 +81,7 @@ interface DirectoryMastersPayload {
 
 Order: `yearsTeaching` descending with nulls last, then `displayName` ascending, then `id` ascending. This total order makes offsets deterministic. `page` greater than `totalPages` clamps to the last page; with zero results it clamps to 1. Filter options are global, not narrowed by active filters, so choices stay stable while filtering.
 
-Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class audiences, the profile id, the derived public slug, and global filter name/value options cross the boundary. No email, user id, revision, introduction, per-profile location rows, fees, media or class rows are returned.
+Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class audiences, the profile id, the derived public slug, the current profile-photo URL, and global filter name/value options cross the boundary. No email, user id, revision, introduction, per-profile location rows, fees, media object keys or class rows are returned.
 
 ### 3.2 Shared browser contract
 
@@ -94,7 +95,7 @@ Only `displayName`, `homeCity`, `yearsTeaching`, ordered arts, current-class aud
 
 The query must not load every profile to filter or paginate in memory.
 
-Console profile saves and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. The prefix marks every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
+Console profile saves, profile photo uploads/removals, and class save/status/remove mutations invalidate the `directory.masters` query prefix after their successful response and the existing identity-scope check. Profile saves and class save/status/remove also invalidate `directory.classes`, whose rows carry the master display name and profile art/location names. The prefixes mark every filter and page variant stale, so returning to `/masters` inside the query client's 60-second freshness window reads the changed profile, arts, city, years, photo or audience tags instead of the cached response. Failed or superseded writes do not invalidate the public registry.
 
 ### 3.3 Screen
 
@@ -102,14 +103,15 @@ Console profile saves and class save/status/remove mutations invalidate the `dir
 
 The result header shows the real count (`6 masters`, `1 master`) and `Sorted by experience`. The card grid uses two columns above the mobile breakpoint and one below. Each card shows:
 
+- a current profile photo when supplied, otherwise an intentional initials fallback;
 - display name;
 - all martial arts in profile order, joined for the subtitle;
 - `homeCity` when supplied;
-- `yearsTeaching` when supplied, as `18 years`;
+- `yearsTeaching` when supplied, as `18 years teaching`;
 - audience tags using the class labels;
-- a `View profile` link to `/masters/$slug` on every card.
+- the whole card is a link to `/masters/$slug`.
 
-Cards have no photo, rating, review count, verification badge, fee or profile-completeness score. A card with no city, years or audiences simply omits those lines.
+Cards have no rating, review count, verification badge, fee or profile-completeness score. A card with no city, years or audiences simply omits those lines.
 
 Pagination appears only when `totalPages > 1`: Previous, `Page X of Y`, Next. Buttons are keyboard accessible, disabled at the ends, and update only `page`, keeping filters.
 
@@ -178,7 +180,7 @@ Use the existing `publicProcedure`, Drizzle relational/data reads, TanStack Quer
 ## 6. Testing strategy
 
 - Small: master filter schema accepts normalized art/location names and page numbers; rejects page 0 and invalid audience; inherited length limits remain enforced.
-- Contract: anonymous caller sees stored masters ordered by experience with nulls last and stable id tie-breaks; first and last pages contain no duplicates or omissions; page beyond the end clamps; unknown filters return `total: 0`; shared art/location names resolve all profiles; audience matches current classes only, excludes paused classes, and leaves classless masters listed without tags; every card has the derived slug; payload contains no email, user id, revision, fee or introduction.
+- Contract: anonymous caller sees stored masters ordered by experience with nulls last and stable id tie-breaks; first and last pages contain no duplicates or omissions; page beyond the end clamps; unknown filters return `total: 0`; shared art/location names resolve all profiles; audience matches current classes only, excludes paused classes, and leaves classless masters listed without tags; every card has the derived slug and only the current profile-photo URL; payload contains no email, user id, revision, fee, object key or introduction.
 - UI: browser check at 1440, 980, 760 and 520 px with seeded masters; inspect filter controls, cards, tags, pagination, filter reset, first/last page and empty state; confirm no horizontal page scroll, no rating/badge/fee, a working profile link, and keyboard-usable controls.
 - Freshness: a profile save invalidates a non-default registry page key; a browser walkthrough changes years and class state, then returns inside the 60-second window and observes the new card position/tag without a manual reload.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
@@ -194,4 +196,4 @@ Use the existing `publicProcedure`, Drizzle relational/data reads, TanStack Quer
 
 ## 8. Open questions
 
-None for Task 12. The public profile slug and card action are specified in `SPEC-master-profile-page.md`. Photo-led cards, user-selectable sort and distance sorting are deferred to later tasks or phases.
+None for Task 12. The public profile slug and card link are specified in `SPEC-master-profile-page.md`. Photo-led cards shipped in redesign Phase R1; user-selectable sort and distance sorting remain deferred.

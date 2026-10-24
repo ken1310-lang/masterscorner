@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createDb } from "@my-better-t-app/db";
 import { user } from "@my-better-t-app/db/schema/auth";
+import { media } from "@my-better-t-app/db/schema/master";
 import { inArray } from "drizzle-orm";
 
 import { masterProfileSlug, normalizeDirectoryFilter } from "../directory";
@@ -53,6 +54,7 @@ describeDb("public master registry database contract", () => {
   interface MasterFixture {
     art: { id: string; name: string };
     location: { id: string; name: string };
+    profileId: string;
     uniqueArt: string;
     userId: string;
   }
@@ -94,6 +96,7 @@ describeDb("public master registry database contract", () => {
     return {
       art: payload.martialArts[0],
       location: payload.locations[0],
+      profileId: payload.profile.id,
       uniqueArt: payload.martialArts[1].name,
       userId: id,
     };
@@ -122,6 +125,14 @@ describeDb("public master registry database contract", () => {
     if (!(alpha && bravo && charlie && delta)) {
       throw new Error("Registry fixture masters were incomplete");
     }
+
+    await db.insert(media).values({
+      byteSize: 1,
+      contentType: "image/png",
+      kind: "profile_photo",
+      objectKey: `masters/${alpha.profileId}/registry-photo.png`,
+      profileId: alpha.profileId,
+    });
 
     const alphaCaller = callerFor(alpha.userId);
     const bravoCaller = callerFor(bravo.userId);
@@ -199,6 +210,16 @@ describeDb("public master registry database contract", () => {
     expect(first.masters.map((item) => item.yearsTeaching)).toEqual([
       8, 8, 7, 6, 5, 4,
     ]);
+    const alpha = masters.get("alpha");
+    if (!alpha) {
+      throw new Error("Alpha fixture was missing");
+    }
+    expect(first.masters[0]?.photoUrl).toBe(
+      `https://cdn.example/media/masters/${alpha.profileId}/registry-photo.png`
+    );
+    expect(first.masters.slice(1).every((item) => item.photoUrl === null)).toBe(
+      true
+    );
 
     const second = await anonymous.directory.masters({
       martialArt: fixtureArt,
@@ -307,6 +328,7 @@ describeDb("public master registry database contract", () => {
       "displayName",
       "id",
       "martialArts",
+      "photoUrl",
       "slug",
       "yearsTeaching",
     ]);
@@ -316,6 +338,7 @@ describeDb("public master registry database contract", () => {
     const serialized = JSON.stringify(payload);
     expect(serialized).not.toContain("@example.com");
     expect(serialized).not.toContain(privateIntroduction);
+    expect(serialized).not.toContain("objectKey");
     expect(serialized).not.toContain("revision");
   });
 });

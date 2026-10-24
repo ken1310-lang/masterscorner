@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — owner decisions confirmed 2026-10-20.
+Accepted — owner decisions confirmed 2026-10-20. **Partially superseded on 2026-10-23:** the owner selected the Magic Patterns redesign and asked to include reviews, verification, booking/trial and pricing as modules. See `ADR-005-magic-patterns-redesign.md` and `docs/specs/SPEC-redesign.md`; the original MVP exclusions remain historical, and each new feature needs its own approved spec before implementation.
 
 ## Date
 

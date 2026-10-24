@@ -55,7 +55,9 @@ export function MasterProfileHero({
             Masters
           </Link>
           <span aria-hidden="true">/</span>
-          <span>{profile.displayName}</span>
+          <span className="min-w-0 [overflow-wrap:anywhere]">
+            {profile.displayName}
+          </span>
         </nav>
 
         <div
@@ -76,11 +78,11 @@ export function MasterProfileHero({
           ) : null}
 
           <div className="min-w-0">
-            <h1 className="break-words font-extrabold text-[clamp(42px,6vw,70px)] leading-[.98] tracking-[-.055em]">
+            <h1 className="break-words font-extrabold text-[clamp(42px,6vw,70px)] leading-[.98] tracking-[-.055em] [overflow-wrap:anywhere]">
               {profile.displayName}
             </h1>
             {arts ? (
-              <p className="mt-3 text-lg text-muted-text leading-relaxed">
+              <p className="mt-3 text-lg text-muted-text leading-relaxed [overflow-wrap:anywhere]">
                 {arts}
               </p>
             ) : null}

@@ -83,7 +83,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 - [x] Task 11: Public class listing — `/classes` from real classes, filters for art, location and audience, empty state.
 - [x] Task 12: Master registry — `/masters` with the same filters, sort by experience, pagination, empty state.
 - [x] Task 13: Master profile page — `/masters/$slug`, sections for identity, about, training paths, locations and schedule; no ratings, reviews, badges or contact CTAs.
-- [ ] Task 14: Home page — hero, search, featured masters and class preview from real data.
+- [x] Task 14: Home page — hero, search, featured masters and class preview from real data; ported to the Phase R1 Magic Patterns shell.
 - [ ] Task 15: For Masters page — what a listing includes, console preview, sign-up call to action; no plan, price or verification claim.
 
 ### Checkpoint E
@@ -101,6 +101,21 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 - [ ] Every ported screen matches the prototype except the documented deviations.
 - [ ] Migrations applied to development; production deployment rehearsed.
 
+## Redesign program (owner decision 2026-10-23)
+
+The Magic Patterns OS supersedes the old prototype for screens as they are ported; the full contract is `docs/specs/SPEC-redesign.md` and ADR-005. The program runs alongside the remaining first-release tasks and does not make unbacked trust or conversion content shippable.
+
+| Phase | Scope | Depends on |
+| --- | --- | --- |
+| R1 | Design tokens, marketplace shell, Home with real featured masters/class preview | 12, 13 |
+| R2 | Masters registry, master profile, Classes, For Masters visual port | R1 |
+| R3 | Login port and sign-up design in the same language | R1 |
+| R4 | Console shell, profile, classes and site settings | R1, R3 |
+| R5 | Reviews, verification, booking/trial and pricing modules, each with its own approved spec and migration | R2, module specs |
+| R6 | Pro Site earth theme and settings | R2, 16, 17 |
+
+Phase R1 acceptance: new tokens do not alter unported screens; Home uses only real directory data; search navigates to filtered `/masters`; live nav/footer only; Magic Patterns images are local marketing assets, not master portraits; 1440/1024/768/390 browser checks; `bun run gates` and live API tests pass.
+
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
@@ -112,8 +127,10 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 | Only production is deployed, so the deployed path (TLS, custom domain, per-environment secrets) is untested until the first release | Medium | The production stack is deployed once from `master` in Phase 0 as an empty rehearsal and redeployed at each checkpoint, so the deploy path is exercised long before there is anything to lose (ADR-001) |
 | Email delivery for verification and reset needs a provider — the one open question | Medium | Task 4 owns it: settle the provider before that PR, otherwise ship sign-up and sign-in and add verification and reset in a follow-up PR for the same task |
 | Media upload abuse (oversized files, wrong types, hotlinking), and the Free plan's 5 GB object-storage cap | Low | Media is stored in Neon Object Storage (ADR-004) with size and type limits and rate limiting on the upload endpoint (Task 8); the bucket is `public_read`, so hotlinking is not prevented and is accepted at this size |
-| Mock pressure to re-add contact CTAs, ratings and badges | Medium | ADR-002 owner decisions and deviations D1-D4 are review-blocking, not preferences |
+| Mock pressure to re-add contact CTAs, ratings and badges | Medium | ADR-002 owner decisions and deviations D1-D4 are review-blocking, not preferences. **Owner changed this on 2026-10-23:** ADR-005 adds reviews, verification, booking/trial and pricing as spec-gated modules; until each module ships, its unbacked element stays absent. |
 | Fee information arrives as free text and becomes unusable | Low | Task 9 decides the shape (amount plus period) before the console form is built |
+| Redesign scope expands visually before the supporting modules exist | High | ADR-005 and `SPEC-redesign.md` make the port route-scoped; no placeholder ratings, reviews, badges, prices or CTAs; feature modules need their own specs and migrations |
+| Magic Patterns generated images have unresolved production provenance | Medium | Use them only as temporary marketing assets, keep master portraits real, and record/replace the assets before launch |
 
 ## Open Questions
 
@@ -122,3 +139,8 @@ Closed in ADR-004 on 2026-10-20: Pro Site addressing (subdomain target, path unt
 Still open:
 
 1. Email provider for verification and reset (Resend, SES, MailChannels or other)? Owned by Task 4; nothing else in the first release depends on it.
+2. Reviews: student verification, moderation, one-review-per-student and aggregate rating policy.
+3. Verification: evidence, manual/admin workflow, badge eligibility, expiry and revocation.
+4. Booking/trial: request lifecycle, contact capture and consent, notifications, lead ownership and pricing.
+5. Pricing/plans: billing provider, plan prices, entitlement enforcement and the conflict with the free Pro Site decision.
+6. Magic Patterns image licensing/provenance for production use.

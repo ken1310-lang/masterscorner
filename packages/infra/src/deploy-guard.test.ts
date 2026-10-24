@@ -6,6 +6,7 @@ import {
   assertProductionTarget,
   type DeployTarget,
   isSameDatabase,
+  isSameStorageEndpoint,
   readDotenvValue,
 } from "./deploy-guard";
 
@@ -32,6 +33,8 @@ const target = (overrides: Partial<DeployTarget> = {}): DeployTarget => ({
   databaseUrl:
     "postgresql://master:pw@ep-production-pooler.ap-southeast-1.aws.neon.tech/db",
   developmentAuthSecret: "development-auth-secret",
+  developmentBucketEndpoint:
+    "https://br-development.storage.c-3.ap-southeast-1.aws.neon.tech",
   developmentCorsOrigin: "http://localhost:3001",
   developmentDatabaseUrl,
   neonBranch: "production",
@@ -79,6 +82,17 @@ describe("assertProductionTarget", () => {
     expect(() =>
       assertProductionTarget(target({ bucketEndpoint: undefined }))
     ).toThrow(BUCKET_REFUSAL);
+  });
+
+  test("refuses the development branch's bucket endpoint", () => {
+    expect(() =>
+      assertProductionTarget(
+        target({
+          bucketEndpoint:
+            "https://br-development.storage.c-3.ap-southeast-1.aws.neon.tech/media",
+        })
+      )
+    ).toThrow(DEVELOPMENT_DATABASE_REFUSAL);
   });
 
   test("refuses the development branch's database, credentials or not", () => {
@@ -210,6 +224,32 @@ describe("assertProductionTarget", () => {
       }
     }
   );
+});
+
+describe("isSameStorageEndpoint", () => {
+  test("matches the same host and port regardless of path", () => {
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com/media",
+        "https://storage.example.com/other"
+      )
+    ).toBe(true);
+  });
+
+  test("keeps different hosts and ports distinct", () => {
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com",
+        "https://other.example.com"
+      )
+    ).toBe(false);
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com:9000",
+        "https://storage.example.com"
+      )
+    ).toBe(false);
+  });
 });
 
 describe("isSameDatabase", () => {

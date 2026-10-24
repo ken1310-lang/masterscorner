@@ -13,12 +13,23 @@ import {
 const sectionHeading =
   "font-extrabold text-[clamp(28px,3.5vw,40px)] leading-[1.02] tracking-[-.045em]";
 
+function FullBadge() {
+  return (
+    <span className="inline-flex shrink-0 rounded-[5px] bg-[#f3e8e9] px-2 py-0.5 font-extrabold text-[10px] text-brand-strong uppercase tracking-[.08em]">
+      Full
+    </span>
+  );
+}
+
 function TrainingPathCard({ item }: { item: DirectoryMasterClassView }) {
   return (
-    <article className="rounded-[16px] border border-line bg-card p-5">
-      <h3 className="break-words font-extrabold text-[18px] tracking-[-.02em]">
-        {item.name}
-      </h3>
+    <article className="min-w-0 rounded-[16px] border border-line bg-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="min-w-0 break-words font-extrabold text-[18px] tracking-[-.02em] [overflow-wrap:anywhere]">
+          {item.name}
+        </h3>
+        {item.status === "full" ? <FullBadge /> : null}
+      </div>
       <p className="mt-1 text-muted-text text-xs leading-relaxed">
         {item.martialArt.name} · {AUDIENCE_LABELS[item.audience]} ·{" "}
         {LEVEL_LABELS[item.level]}
@@ -67,7 +78,10 @@ function LocationsAndSchedule({
                       className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
                       key={item.id}
                     >
-                      <span className="font-bold text-sm">{item.name}</span>
+                      <span className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-sm [overflow-wrap:anywhere]">
+                        {item.name}
+                        {item.status === "full" ? <FullBadge /> : null}
+                      </span>
                       <span className="text-muted-text text-xs sm:text-right sm:text-sm">
                         {formatSchedules(item.schedules)}
                       </span>

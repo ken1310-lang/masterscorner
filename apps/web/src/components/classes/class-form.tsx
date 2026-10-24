@@ -141,6 +141,7 @@ function ClassSelectField({
 
 interface ClassInputFieldProps {
   ariaLabel?: string;
+  autoFocus?: boolean;
   field: AnyFieldApi;
   hint?: string;
   inputMode?: "decimal" | "numeric" | "text";
@@ -151,6 +152,7 @@ interface ClassInputFieldProps {
 
 function ClassInputField({
   ariaLabel,
+  autoFocus,
   field,
   hint,
   inputMode,
@@ -177,6 +179,7 @@ function ClassInputField({
         aria-describedby={describedBy}
         aria-invalid={errors.length > 0}
         aria-label={ariaLabel}
+        autoFocus={autoFocus}
         className="h-auto min-h-11 rounded-[10px] border-line bg-card px-3.5 py-[11px] text-sm focus-visible:border-navy focus-visible:ring-0"
         id={field.name}
         inputMode={inputMode}
@@ -311,6 +314,7 @@ export function ClassForm({
                   <form.Field name="name">
                     {(field) => (
                       <ClassInputField
+                        autoFocus
                         field={field}
                         label="Class name"
                         placeholder="e.g. Silambam Foundation"

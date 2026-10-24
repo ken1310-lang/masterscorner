@@ -105,6 +105,16 @@ describe("nextSessionStart", () => {
     ).toBe("2026-10-30T11:59:00.000Z");
   });
 
+  test("rolls a passed Sunday slot to next Sunday", () => {
+    const sundayNoon = new Date("2026-10-25T06:30:00.000Z"); // Sun 12:00 IST
+    expect(
+      nextSessionStart(
+        [{ dayOfWeek: 7, startTime: "09:00:00" }],
+        sundayNoon
+      )?.toISOString()
+    ).toBe("2026-11-01T03:30:00.000Z");
+  });
+
   test("rolls across the week boundary", () => {
     expect(
       nextSessionStart(

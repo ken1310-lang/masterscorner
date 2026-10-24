@@ -172,6 +172,7 @@ async function setup() {
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   const queryKey = trpc.master.getProfile.queryKey();
   queryClient.setQueryData(queryKey, initialPayload());
+  const directoryClassesQueryKey = trpc.directory.classes.queryKey();
   const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
   const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
     slug: "profile-a",
@@ -205,6 +206,7 @@ async function setup() {
     ...view,
     queryClient,
     queryKey,
+    directoryClassesQueryKey,
     registryQueryKey,
     directoryProfileQueryKey,
     requests,
@@ -599,6 +601,11 @@ describe("public directory freshness", () => {
       totalPages: 0,
     });
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.directoryClassesQueryKey, {
+      classes: [],
+      locations: [],
+      martialArts: [],
+    });
     fireEvent.change(view.getByLabelText("Display name"), {
       target: { value: "Saved master" },
     });
@@ -616,11 +623,26 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.directoryClassesQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
-  test("successful photo upload invalidates the public profile", async () => {
+  test("successful photo upload invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     const reader = choosePhoto(view.container);
     await settle(() => reader.succeed());
     const upload = await view.request("media.upload");
@@ -631,11 +653,25 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 
-  test("successful photo removal invalidates the public profile", async () => {
+  test("successful photo removal invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     await clickButton(view, "Remove photo");
     const remove = await view.request("media.remove");
     await settle(() => remove.resolve(initialPayload()));
@@ -645,11 +681,25 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 
-  test("failed photo upload leaves the public profile fresh", async () => {
+  test("failed photo upload leaves the public profile and registry fresh", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.registryQueryKey, {
+      locations: [],
+      martialArts: [],
+      masters: [],
+      page: 2,
+      pageSize: 6,
+      total: 0,
+      totalPages: 0,
+    });
     const reader = choosePhoto(view.container);
     await settle(() => reader.succeed());
     const upload = await view.request("media.upload");
@@ -658,6 +708,9 @@ describe("public directory freshness", () => {
     expect(
       view.queryClient.getQueryState(view.directoryProfileQueryKey)
         ?.isInvalidated
+    ).toBe(false);
+    expect(
+      view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
     ).toBe(false);
   });
 });

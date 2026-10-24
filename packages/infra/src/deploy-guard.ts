@@ -25,6 +25,8 @@ export interface DeployTarget {
   databaseUrl: string | undefined;
   /** `BETTER_AUTH_SECRET` recorded in the development env file, when that file exists. */
   developmentAuthSecret: string | undefined;
+  /** `AWS_ENDPOINT_URL_S3` recorded in the development env file, when that file exists. */
+  developmentBucketEndpoint: string | undefined;
   /** `CORS_ORIGIN` recorded in the development env file, when that file exists. */
   developmentCorsOrigin: string | undefined;
   /** `DATABASE_URL` recorded in the development env file, when that file exists. */
@@ -58,6 +60,17 @@ export function assertProductionTarget(target: DeployTarget): void {
       "Refusing to deploy: AWS_ENDPOINT_URL_S3 is unset. `neon.ts` declares the media bucket, so the production branch must supply its endpoint — run `neon deploy` and `neon env pull` on that branch."
     );
   }
+  if (
+    target.developmentBucketEndpoint &&
+    isSameStorageEndpoint(
+      target.bucketEndpoint,
+      target.developmentBucketEndpoint
+    )
+  ) {
+    throw new Error(
+      "Refusing to deploy: AWS_ENDPOINT_URL_S3 points at the same bucket endpoint as apps/server/.env, which is the development branch. Deploy from a shell holding the production branch's media values."
+    );
+  }
   if (isSameDatabase(target.databaseUrl, target.developmentDatabaseUrl)) {
     throw new Error(
       "Refusing to deploy: DATABASE_URL points at the same database as apps/server/.env, which is the development branch. Deploy from a shell holding the production branch's values."
@@ -78,6 +91,23 @@ export function assertProductionTarget(target: DeployTarget): void {
     throw new Error(
       `Refusing to deploy: CORS_ORIGIN is still the value in apps/server/.env ("${target.developmentCorsOrigin}"), so the API would trust the development origin instead of the deployed web origin.`
     );
+  }
+}
+
+/** True for the same storage host and port, regardless of path. */
+export function isSameStorageEndpoint(
+  a: string | undefined,
+  b: string | undefined
+): boolean {
+  if (!(a && b)) {
+    return false;
+  }
+  try {
+    const left = new URL(a);
+    const right = new URL(b);
+    return left.host === right.host;
+  } catch {
+    return a === b;
   }
 }
 
