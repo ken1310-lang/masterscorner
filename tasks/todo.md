@@ -233,9 +233,9 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 - **Acceptance:** no plan name, price or verification claim appears (deviations D2, D4); the console preview panel shows real numbers or omits them; the call to action reaches sign-up.
 - **Verify:** browser comparison at four widths; grep the page for plan and price strings; click through to sign-up.
 - **Deps:** 5
-- **Files:** `apps/web/src/routes/_marketplace/for-masters.tsx`; shell, footer and Home master links
+- **Files:** `apps/web/src/routes/_marketplace/for-masters.tsx`; shell, footer, Home master links and signup guard
 - **Scope:** Small
-- **Done:** the editorial page uses shipped profile, directory and class facts only; the console preview has no sample metrics; header, Home, footer and mobile master links reach it; the primary CTA reaches `/signup` for visitors and `/dashboard/profile` for signed-in masters, with no guest CTA while the session resolves. Browser-checked at 1440/1024/768/390 with no horizontal overflow or console errors; `bun run gates` pass.
+- **Done:** the editorial page uses shipped profile, directory and class facts only; the console preview has no sample metrics; header, Home (including the empty-state CTA), footer and mobile master links reach it; the primary CTA reaches `/signup` for visitors and `/dashboard/profile` for signed-in masters, with no guest CTA while the session resolves. Signed-in visits to `/signup` or `/login?form=signup` redirect to `/dashboard/profile`. Browser-checked at 1440/1024/768/390 with no horizontal overflow or console errors; `bun run gates` pass.
 
 ### Checkpoint E
 
