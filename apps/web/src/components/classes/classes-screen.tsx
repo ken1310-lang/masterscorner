@@ -56,6 +56,7 @@ export function ClassesScreen() {
   const [statusPendingId, setStatusPendingId] = useState<string | null>(null);
   const [deletePendingId, setDeletePendingId] = useState<string | null>(null);
   const editorTrigger = useRef<HTMLButtonElement | null>(null);
+  const newClassRef = useRef<HTMLButtonElement | null>(null);
 
   const saveClass = useMutation(trpc.classes.save.mutationOptions());
   const setStatus = useMutation(trpc.classes.setStatus.mutationOptions());
@@ -104,7 +105,13 @@ export function ClassesScreen() {
     if (editor === null && editorTrigger.current) {
       const trigger = editorTrigger.current;
       editorTrigger.current = null;
-      trigger.focus();
+      // Saving the first class removes the empty-state trigger. Fall back to
+      // the persistent header action rather than focusing a detached node.
+      if (trigger.isConnected) {
+        trigger.focus();
+      } else {
+        newClassRef.current?.focus();
+      }
     }
   }, [editor]);
   const cancelRemove = useCallback(() => setConfirmingId(null), []);
@@ -291,6 +298,7 @@ export function ClassesScreen() {
       className="min-h-11 rounded-[9px] bg-navy px-3.5 py-[11px] font-black text-white text-xs hover:bg-navy-deep disabled:pointer-events-none disabled:opacity-60"
       disabled={editor !== null}
       onClick={startNewClass}
+      ref={newClassRef}
       type="button"
     >
       New class

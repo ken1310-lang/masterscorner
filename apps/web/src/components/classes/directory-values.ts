@@ -7,15 +7,18 @@ const NEXT_SESSION_FORMATTER = new Intl.DateTimeFormat("en-IN", {
 });
 
 const NEXT_SESSION_CUSHION_MS = 1000;
+/** `nextSessionStart` selects by India wall-clock minute, not second. */
+const NEXT_SESSION_MINUTE_MS = 60_000;
 
 interface NextSessionPayload {
   classes: readonly { nextSessionAt: string }[];
 }
 
 /**
- * A stale cached class must be refreshed as soon as its next session starts.
- * Returning the interval to the nearest start keeps the public lists from
- * showing yesterday's slot after a page has stayed open across the boundary.
+ * A stale cached class must be refreshed after its next session starts.
+ * The API resolves sessions by India wall-clock minute, so refreshing during
+ * that minute returns the same instant and would schedule another one-second
+ * request. Wait until the start minute has elapsed instead.
  */
 export function nextSessionRefetchInterval(
   payload: NextSessionPayload | undefined,
@@ -36,7 +39,7 @@ export function nextSessionRefetchInterval(
   }
   return Math.max(
     NEXT_SESSION_CUSHION_MS,
-    earliest - now + NEXT_SESSION_CUSHION_MS
+    earliest + NEXT_SESSION_MINUTE_MS - now + NEXT_SESSION_CUSHION_MS
   );
 }
 

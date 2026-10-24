@@ -24,7 +24,7 @@ describe("formatNextSession", () => {
 describe("nextSessionRefetchInterval", () => {
   const now = Date.parse("2026-10-23T00:00:00.000Z");
 
-  test("refreshes just after the nearest next session", () => {
+  test("refreshes after the nearest next session's start minute", () => {
     expect(
       nextSessionRefetchInterval(
         {
@@ -35,7 +35,16 @@ describe("nextSessionRefetchInterval", () => {
         },
         now
       )
-    ).toBe(301_000);
+    ).toBe(361_000);
+  });
+
+  test("does not poll again during the start minute", () => {
+    expect(
+      nextSessionRefetchInterval(
+        { classes: [{ nextSessionAt: "2026-10-23T00:05:00.000Z" }] },
+        Date.parse("2026-10-23T00:05:01.000Z")
+      )
+    ).toBe(60_000);
   });
 
   test("refreshes soon when the nearest cached slot has already passed", () => {
