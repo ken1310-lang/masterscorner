@@ -21,10 +21,10 @@ export function MobileNav() {
         to: "/dashboard" as const,
       }
     : {
-        active: pathname === "/signup",
+        active: pathname === "/for-masters",
         icon: LayoutDashboard,
         label: "For Masters",
-        to: "/signup" as const,
+        to: "/for-masters" as const,
       };
 
   const items = [

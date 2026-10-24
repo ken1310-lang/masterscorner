@@ -70,7 +70,7 @@ export function Header() {
               </Link>
               <Link
                 className="whitespace-nowrap rounded-full bg-brand-strong px-4 rx-sm:px-5 py-2 rx-sm:py-2.5 font-semibold rx-sm:text-[15px] text-[14px] text-white transition-colors duration-150 hover:bg-brand-deep"
-                to="/signup"
+                to="/for-masters"
               >
                 For Masters
               </Link>

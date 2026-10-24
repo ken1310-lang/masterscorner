@@ -84,7 +84,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 - [x] Task 12: Master registry — `/masters` with the same filters, sort by experience, pagination, empty state.
 - [x] Task 13: Master profile page — `/masters/$slug`, sections for identity, about, training paths, locations and schedule; no ratings, reviews, badges or contact CTAs.
 - [x] Task 14: Home page — hero, search, featured masters and class preview from real data; ported to the Phase R1 Magic Patterns shell.
-- [ ] Task 15: For Masters page — what a listing includes, console preview, sign-up call to action; no plan, price or verification claim.
+- [x] Task 15: For Masters page — editorial page from shipped profile, directory and class facts; console preview without sample metrics; header, Home, footer and mobile master links; session-aware profile/sign-up CTA. No plan, price or verification claim.
 
 ### Checkpoint E
 

@@ -84,9 +84,9 @@ export function HomeHero({
           />
           <Link
             className="mt-5 font-semibold text-[15px] text-brand-strong underline-offset-4 hover:underline"
-            to="/signup"
+            to="/for-masters"
           >
-            I am a master →
+            I am a master <span aria-hidden="true">→</span>
           </Link>
         </div>
       </RedesignContainer>
