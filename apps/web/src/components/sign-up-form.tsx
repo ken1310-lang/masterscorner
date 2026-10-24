@@ -1,7 +1,7 @@
 import { Button } from "@my-better-t-app/ui/components/button";
 import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -13,10 +13,17 @@ import Loader from "./loader";
 
 export default function SignUpForm({ redirect }: { redirect?: string }) {
   const navigate = useNavigate();
-  const { isPending } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const { sessionQueries } = useRouter().options.context;
   const [formError, setFormError] = useState<string | null>(null);
+  const signupStarted = useRef(false);
   const destination = safeRedirectPath(redirect);
+
+  useEffect(() => {
+    if (session && !signupStarted.current) {
+      navigate({ replace: true, to: "/dashboard/profile" });
+    }
+  }, [navigate, session]);
 
   const form = useForm({
     defaultValues: {
@@ -25,6 +32,7 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
       password: "",
     },
     onSubmit: async ({ value }) => {
+      signupStarted.current = true;
       setFormError(null);
       await authClient.signUp.email(
         {
@@ -39,6 +47,7 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
             await navigate({ href: destination ?? "/dashboard" });
           },
           onError: (error) => {
+            signupStarted.current = false;
             setFormError(error.error.message || error.error.statusText);
           },
         }
@@ -53,7 +62,7 @@ export default function SignUpForm({ redirect }: { redirect?: string }) {
     },
   });
 
-  if (isPending) {
+  if (isPending || session) {
     return <Loader />;
   }
 
