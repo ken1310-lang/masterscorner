@@ -7,7 +7,7 @@ export function ClassRow({ item }: { item: DirectoryClassView }) {
   return (
     <li className="grid gap-2 border-line border-b px-2 py-5 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.8fr)] md:items-center md:gap-4">
       <div className="min-w-0">
-        <h3 className="font-extrabold text-[15px] text-ink leading-snug">
+        <h3 className="font-extrabold text-[15px] text-ink leading-snug [overflow-wrap:anywhere]">
           {item.name}
         </h3>
         <p className="mt-1 text-muted-text text-xs">
@@ -49,11 +49,9 @@ export function ClassRow({ item }: { item: DirectoryClassView }) {
           Fee
         </span>
         <p className="mt-0.5 text-sm md:mt-0">
-          {item.feeAmount === null ? (
-            <span className="text-muted-text text-xs">Not listed</span>
-          ) : (
-            formatFee(item.feeAmount, item.feePeriod)
-          )}
+          {item.feeAmount === null
+            ? null
+            : formatFee(item.feeAmount, item.feePeriod)}
         </p>
       </div>
     </li>

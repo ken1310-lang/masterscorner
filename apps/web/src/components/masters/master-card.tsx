@@ -32,7 +32,7 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
 
   return (
     <Link
-      className="group grid grid-rows-[auto_1fr] rounded-[24px] outline-offset-4"
+      className="group grid min-w-0 grid-cols-1 grid-rows-[auto_1fr] rounded-[24px] outline-offset-4"
       params={{ slug: master.slug }}
       to="/masters/$slug"
     >
@@ -40,7 +40,7 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
         {master.photoUrl ? (
           <img
             alt={master.displayName}
-            className="size-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.03] motion-reduce:transform-none"
+            className="size-full object-cover transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.03] motion-reduce:transform-none motion-reduce:group-hover:scale-100"
             height={500}
             loading="lazy"
             src={master.photoUrl}
@@ -55,19 +55,21 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
           </div>
         )}
       </div>
-      <div className="flex flex-col pt-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="break-words font-semibold rx-sm:text-[24px] text-[22px] text-navy leading-tight tracking-[-0.02em] group-hover:underline group-hover:underline-offset-4">
+      <div className="flex min-w-0 flex-col pt-5">
+        <div className="flex min-w-0 items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="break-words font-semibold rx-sm:text-[24px] text-[22px] text-navy leading-tight tracking-[-0.02em] [overflow-wrap:anywhere] group-hover:underline group-hover:underline-offset-4">
               {master.displayName}
             </h3>
             {arts ? (
-              <p className="mt-1 break-words text-[16px] text-ink">{arts}</p>
+              <p className="mt-1 break-words text-[16px] text-ink [overflow-wrap:anywhere]">
+                {arts}
+              </p>
             ) : null}
           </div>
         </div>
         {meta ? (
-          <p className="mt-auto break-words pt-4 text-[15px] text-ink-muted">
+          <p className="mt-auto break-words pt-4 text-[15px] text-ink-muted [overflow-wrap:anywhere]">
             {meta}
           </p>
         ) : null}

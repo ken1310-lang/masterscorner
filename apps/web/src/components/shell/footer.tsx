@@ -1,29 +1,49 @@
 import { Link } from "@tanstack/react-router";
 
+import { authClient } from "@/lib/auth-client";
+
 import { BrandLogo } from "./brand-logo";
 import { RedesignContainer } from "./container";
 
-const footerColumns: {
+interface FooterLink {
+  label: string;
+  search?: { form: "signin" };
+  to:
+    | "/classes"
+    | "/dashboard"
+    | "/dashboard/profile"
+    | "/login"
+    | "/masters"
+    | "/signup";
+}
+
+interface FooterColumn {
   heading: string;
-  links: {
-    to: "/classes" | "/dashboard" | "/login" | "/masters" | "/signup";
-    label: string;
-    search?: { form: "signin" };
-  }[];
-}[] = [
-  {
-    heading: "Discover",
-    links: [
-      { label: "Masters", to: "/masters" },
-      { label: "Classes", to: "/classes" },
-    ],
-  },
+  links: FooterLink[];
+}
+
+const discoverColumn: FooterColumn = {
+  heading: "Discover",
+  links: [
+    { label: "Masters", to: "/masters" },
+    { label: "Classes", to: "/classes" },
+  ],
+};
+
+const guestColumns: FooterColumn[] = [
   {
     heading: "For masters",
     links: [
       { label: "Create a profile", to: "/signup" },
       { label: "Sign in", to: "/login", search: { form: "signin" } },
     ],
+  },
+];
+
+const signedInColumns: FooterColumn[] = [
+  {
+    heading: "For masters",
+    links: [{ label: "Your profile", to: "/dashboard/profile" }],
   },
   {
     heading: "Console",
@@ -32,6 +52,12 @@ const footerColumns: {
 ];
 
 export function Footer() {
+  const { data: session } = authClient.useSession();
+  const columns = [
+    discoverColumn,
+    ...(session ? signedInColumns : guestColumns),
+  ];
+
   return (
     <footer className="bg-navy text-white">
       <RedesignContainer className="pt-14 rx-md:pt-20 pb-10">
@@ -44,7 +70,7 @@ export function Footer() {
             </p>
           </div>
           <div className="grid grid-cols-2 rx-sm:grid-cols-3 rx-sm:gap-10 gap-x-6 gap-y-10">
-            {footerColumns.map((column) => (
+            {columns.map((column) => (
               <div key={column.heading}>
                 <h3 className="font-semibold text-[15px] text-white">
                   {column.heading}

@@ -13,9 +13,7 @@ const SKELETONS = ["one", "two", "three", "four"] as const;
 
 function ClassFee({ item }: { item: DirectoryClassView }) {
   if (item.feeAmount === null) {
-    return (
-      <span className="font-normal text-[14px] text-ink-muted">Not listed</span>
-    );
+    return null;
   }
   return <>{formatFee(item.feeAmount, item.feePeriod)}</>;
 }
@@ -86,7 +84,7 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
         {classes.slice(0, 4).map((item) => (
           <li className="border-hairline border-b py-5" key={item.id}>
             <div className="flex items-start justify-between gap-3">
-              <p className="font-semibold text-[18px] text-navy tracking-[-0.015em]">
+              <p className="min-w-0 font-semibold text-[18px] text-navy tracking-[-0.015em] [overflow-wrap:anywhere]">
                 {item.name}
               </p>
               {item.status === "full" ? (
@@ -103,13 +101,12 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
               <span className="font-semibold">
                 {formatNextSession(item.nextSessionAt)}
               </span>
-              <span className="text-ink-muted">
-                {" "}
-                ·{" "}
-                {item.feeAmount === null
-                  ? "Fee not listed"
-                  : formatFee(item.feeAmount, item.feePeriod)}
-              </span>
+              {item.feeAmount === null ? null : (
+                <span className="text-ink-muted">
+                  {" "}
+                  · {formatFee(item.feeAmount, item.feePeriod)}
+                </span>
+              )}
             </p>
           </li>
         ))}
@@ -128,7 +125,7 @@ function ClassesList({ classes }: { classes: DirectoryClassView[] }) {
         <tbody>
           {classes.slice(0, 4).map((item) => (
             <tr className="border-hairline border-b" key={item.id}>
-              <td className="py-6 pr-4 font-semibold rx-lg:text-[20px] text-[18px] text-navy tracking-[-0.015em]">
+              <td className="py-6 pr-4 font-semibold rx-lg:text-[20px] text-[18px] text-navy tracking-[-0.015em] [overflow-wrap:anywhere]">
                 <span className="flex flex-wrap items-center gap-2">
                   {item.name}
                   {item.status === "full" ? (

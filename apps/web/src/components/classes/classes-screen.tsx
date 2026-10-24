@@ -5,7 +5,13 @@ import type {
 } from "@my-better-t-app/api/classes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import {
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 import { ConsoleEmptyState } from "@/components/console/empty-state";
@@ -49,6 +55,7 @@ export function ClassesScreen() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [statusPendingId, setStatusPendingId] = useState<string | null>(null);
   const [deletePendingId, setDeletePendingId] = useState<string | null>(null);
+  const editorTrigger = useRef<HTMLButtonElement | null>(null);
 
   const saveClass = useMutation(trpc.classes.save.mutationOptions());
   const setStatus = useMutation(trpc.classes.setStatus.mutationOptions());
@@ -79,14 +86,27 @@ export function ClassesScreen() {
     classesQuery.refetch();
   }, [classesQuery]);
   const closeEditor = useCallback(() => setEditor(null), []);
-  const startNewClass = useCallback(() => {
+  const startNewClass = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    editorTrigger.current = event.currentTarget;
     setConfirmingId(null);
     setEditor({ mode: "new" });
   }, []);
-  const editClass = useCallback((item: MasterClassView) => {
-    setConfirmingId(null);
-    setEditor({ item, mode: "edit" });
-  }, []);
+  const editClass = useCallback(
+    (item: MasterClassView, trigger: HTMLButtonElement) => {
+      editorTrigger.current = trigger;
+      setConfirmingId(null);
+      setEditor({ item, mode: "edit" });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (editor === null && editorTrigger.current) {
+      const trigger = editorTrigger.current;
+      editorTrigger.current = null;
+      trigger.focus();
+    }
+  }, [editor]);
   const cancelRemove = useCallback(() => setConfirmingId(null), []);
 
   const handleSave = useCallback(
@@ -266,16 +286,16 @@ export function ClassesScreen() {
   const payload = classesQuery.data;
   const canCreate =
     payload.martialArts.length > 0 && payload.locations.length > 0;
-  const action =
-    !editor && canCreate ? (
-      <button
-        className="min-h-11 rounded-[9px] bg-navy px-3.5 py-[11px] font-black text-white text-xs hover:bg-navy-deep"
-        onClick={startNewClass}
-        type="button"
-      >
-        New class
-      </button>
-    ) : null;
+  const action = canCreate ? (
+    <button
+      className="min-h-11 rounded-[9px] bg-navy px-3.5 py-[11px] font-black text-white text-xs hover:bg-navy-deep disabled:pointer-events-none disabled:opacity-60"
+      disabled={editor !== null}
+      onClick={startNewClass}
+      type="button"
+    >
+      New class
+    </button>
+  ) : null;
 
   return (
     <>

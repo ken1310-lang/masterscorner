@@ -13,7 +13,7 @@ const navLinks: { to: "/classes" | "/masters"; label: string }[] = [
 ];
 
 const navLinkClass =
-  "whitespace-nowrap border-transparent border-b-2 py-1 font-medium text-[15px] text-ink transition-colors duration-150 hover:text-brand-strong";
+  "whitespace-nowrap border-b-2 py-1 font-medium text-[15px] text-ink transition-colors duration-150 hover:text-brand-strong";
 
 /** Off-canvas until focused. */
 export function SkipLink() {
@@ -47,6 +47,7 @@ export function Header() {
                 className: cn(navLinkClass, "border-navy text-navy"),
               }}
               className={navLinkClass}
+              inactiveProps={{ className: "border-transparent" }}
               key={link.to}
               to={link.to}
             >

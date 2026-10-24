@@ -1,5 +1,5 @@
 import type { MasterClassView } from "@my-better-t-app/api/classes";
-import { useCallback } from "react";
+import { type MouseEvent, useCallback } from "react";
 
 import { formatFee, formatSchedules, STATUS_LABELS } from "./class-values";
 
@@ -16,7 +16,7 @@ interface ClassRowProps {
   item: MasterClassView;
   onCancelRemove: () => void;
   onConfirmRemove: (item: MasterClassView) => void;
-  onEdit: (item: MasterClassView) => void;
+  onEdit: (item: MasterClassView, trigger: HTMLButtonElement) => void;
   onRequestRemove: (id: string) => void;
   onToggleStatus: (item: MasterClassView) => void;
   statusPending: boolean;
@@ -34,7 +34,10 @@ function ClassRow({
   onToggleStatus,
   statusPending,
 }: ClassRowProps) {
-  const handleEdit = useCallback(() => onEdit(item), [item, onEdit]);
+  const handleEdit = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => onEdit(item, event.currentTarget),
+    [item, onEdit]
+  );
   const handleToggle = useCallback(
     () => onToggleStatus(item),
     [item, onToggleStatus]
@@ -152,7 +155,7 @@ interface ClassesTableProps {
   deletePendingId: string | null;
   onCancelRemove: () => void;
   onConfirmRemove: (item: MasterClassView) => void;
-  onEdit: (item: MasterClassView) => void;
+  onEdit: (item: MasterClassView, trigger: HTMLButtonElement) => void;
   onRequestRemove: (id: string) => void;
   onToggleStatus: (item: MasterClassView) => void;
   statusPendingId: string | null;

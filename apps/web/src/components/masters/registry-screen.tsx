@@ -6,7 +6,7 @@ import type {
   DirectoryMastersPayload,
   DirectoryMasterView,
 } from "@my-better-t-app/api/directory";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useCallback } from "react";
 
 import { AUDIENCE_LABELS } from "@/components/classes/class-values";
@@ -283,7 +283,7 @@ function RegistryResults({
       </div>
 
       <h2 className="sr-only">Masters</h2>
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {masters.map((master) => (
           <MasterCard key={master.id} master={master} />
         ))}
@@ -382,14 +382,15 @@ export function RegistryScreen({
   onPageChange,
 }: RegistryScreenProps) {
   const trpc = useTRPC();
-  const mastersQuery = useQuery(
-    trpc.directory.masters.queryOptions({
+  const mastersQuery = useQuery({
+    ...trpc.directory.masters.queryOptions({
       ...(filters.art ? { martialArt: filters.art } : {}),
       ...(filters.location ? { location: filters.location } : {}),
       ...(filters.audience ? { audience: filters.audience } : {}),
       ...(filters.page ? { page: filters.page } : {}),
-    })
-  );
+    }),
+    placeholderData: keepPreviousData,
+  });
   const payload = mastersQuery.data;
   const hasFilters = Boolean(
     filters.art || filters.location || filters.audience

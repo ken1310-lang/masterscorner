@@ -141,7 +141,7 @@ export function HomeSearchBar({
       <form.Subscribe selector={selectSubmitting}>
         {(isSubmitting) => (
           <button
-            className="mt-2 rx-md:mt-0 flex h-[52px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-brand-strong px-6 font-semibold text-[16px] text-white transition-colors duration-150 hover:bg-brand-deep active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60 motion-reduce:transform-none"
+            className="mt-2 rx-md:mt-0 flex h-[52px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-brand-strong px-6 font-semibold text-[16px] text-white transition-colors duration-150 hover:bg-brand-deep active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60 motion-reduce:transform-none motion-reduce:active:scale-100"
             disabled={isSubmitting}
             type="submit"
           >

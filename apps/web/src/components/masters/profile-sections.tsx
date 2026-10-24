@@ -23,9 +23,9 @@ function FullBadge() {
 
 function TrainingPathCard({ item }: { item: DirectoryMasterClassView }) {
   return (
-    <article className="rounded-[16px] border border-line bg-card p-5">
+    <article className="min-w-0 rounded-[16px] border border-line bg-card p-5">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="break-words font-extrabold text-[18px] tracking-[-.02em]">
+        <h3 className="min-w-0 break-words font-extrabold text-[18px] tracking-[-.02em] [overflow-wrap:anywhere]">
           {item.name}
         </h3>
         {item.status === "full" ? <FullBadge /> : null}
@@ -78,7 +78,7 @@ function LocationsAndSchedule({
                       className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
                       key={item.id}
                     >
-                      <span className="flex flex-wrap items-center gap-2 font-bold text-sm">
+                      <span className="flex min-w-0 flex-wrap items-center gap-2 font-bold text-sm [overflow-wrap:anywhere]">
                         {item.name}
                         {item.status === "full" ? <FullBadge /> : null}
                       </span>

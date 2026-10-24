@@ -21,6 +21,10 @@ try {
     developmentEnvFile,
     "BETTER_AUTH_SECRET"
   );
+  const developmentBucketEndpoint = readDotenvValue(
+    developmentEnvFile,
+    "AWS_ENDPOINT_URL_S3"
+  );
   const developmentCorsOrigin = readDotenvValue(
     developmentEnvFile,
     "CORS_ORIGIN"
@@ -34,12 +38,13 @@ try {
     corsOrigin: process.env.CORS_ORIGIN,
     developmentDatabaseUrl,
     developmentAuthSecret,
+    developmentBucketEndpoint,
     developmentCorsOrigin,
     neonBranch: process.env.NEON_BRANCH,
   });
 
   console.log(
-    `Production deploy target verified: NODE_ENV=production, a database, an auth secret and a CORS origin that are none of them the development branch's${developmentDatabaseUrl ? " (checked against apps/server/.env)" : " (no development env file found to compare against)"}, and a media bucket endpoint.`
+    `Production deploy target verified: NODE_ENV=production, and a database, auth secret, CORS origin and media bucket endpoint that are none of them the development branch's${developmentDatabaseUrl ? " (checked against apps/server/.env)" : " (no development env file found to compare against)"}.`
   );
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));

@@ -26,7 +26,7 @@ export function SectionHead({
           to={link.to}
         >
           {link.label}
-          <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none" />
+          <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
         </Link>
       ) : null}
     </div>
