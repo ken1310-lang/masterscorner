@@ -227,14 +227,15 @@ Completed-task audit remediation (2026-10-23): see `docs/completed-task-audit.md
 - **Verification follow-up (2026-10-24):** public class rows and Home now omit the fee entirely when none is stored (the previous "Not listed"/"Fee not listed" placeholders violated SPEC-directory §3.3); a regression test covers it. Registry queries keep the previous page while filtering so controls keep focus, class editor entry/exit focuses the name field and restores the trigger (falling back to the persistent header action when the empty-state trigger is removed after the first save), public listings wait out the entire next-session start minute before polling again, the class-editor focus fallback now has a jsdom regression test, the footer follows session state, the dashboard copy no longer claims nothing is published, reduced-motion variants disable the emitted `scale`/`translate` properties, long unbroken names wrap at 320-1440 px, and the active header underline is visible. Server hardening caps `/api/auth/*` bodies at 32 KiB and sends `frame-ancestors 'none'`/`X-Frame-Options: DENY`; the production deploy guard now refuses the development bucket endpoint as well as its database. Verification: `bun run gates` 5/5 (web 63/63 with 220 assertions; API 60 pass/40 skipped with 121 assertions; infra 42/42), live `bun run test:db` 29/29 with 224 assertions, and browser checks for long names, no-fee rows, focus, footer, nav underline and reduced motion, including first-class save focus. Both new regressions were mutation-checked: removing the start-minute offset or the `isConnected` guard makes the suite fail. The remaining documented residuals are unbounded public class reads, best-effort media-object deletion, and the Expo auth proxy open redirect when the native plugin is enabled.
 - **Stack:** Branch `task/14-home-redesign`; spec `docs/specs/SPEC-redesign.md`; ADR-005.
 
-### [ ] 15. For Masters page
+### [x] 15. For Masters page — done on `task/15-for-masters`
 
-- **Description:** `/for-masters` acquisition page: what a listing includes, the console preview panel and the sign-up call to action (PRD §6.2 "For masters").
+- **Description:** `/for-masters` acquisition page: what a listing includes, the console preview panel and the sign-up call to action (PRD §6.2 "For masters"; `SPEC-redesign.md` §3).
 - **Acceptance:** no plan name, price or verification claim appears (deviations D2, D4); the console preview panel shows real numbers or omits them; the call to action reaches sign-up.
 - **Verify:** browser comparison at four widths; grep the page for plan and price strings; click through to sign-up.
 - **Deps:** 5
-- **Files:** `apps/web/src/routes/for-masters.tsx`
+- **Files:** `apps/web/src/routes/_marketplace/for-masters.tsx`; shell, footer and Home master links
 - **Scope:** Small
+- **Done:** the editorial page uses shipped profile, directory and class facts only; the console preview has no sample metrics; header, Home, footer and mobile master links reach it; the primary CTA reaches `/signup`. Browser-checked at 1440/1024/768/390 with no horizontal overflow or console errors; `bun run gates` pass.
 
 ### Checkpoint E
 

@@ -22,9 +22,9 @@ export function HomeMasterCta() {
             </p>
             <Link
               className="group mt-7 inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-navy px-6 py-3.5 font-semibold text-[16px] text-white transition-colors duration-150 hover:bg-navy-deep"
-              to="/signup"
+              to="/for-masters"
             >
-              Create your master profile
+              See the master platform
               <ArrowRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
             </Link>
           </div>

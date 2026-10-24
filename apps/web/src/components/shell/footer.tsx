@@ -12,6 +12,7 @@ interface FooterLink {
     | "/classes"
     | "/dashboard"
     | "/dashboard/profile"
+    | "/for-masters"
     | "/login"
     | "/masters"
     | "/signup";
@@ -34,6 +35,7 @@ const guestColumns: FooterColumn[] = [
   {
     heading: "For masters",
     links: [
+      { label: "Platform", to: "/for-masters" },
       { label: "Create a profile", to: "/signup" },
       { label: "Sign in", to: "/login", search: { form: "signin" } },
     ],
@@ -43,7 +45,10 @@ const guestColumns: FooterColumn[] = [
 const signedInColumns: FooterColumn[] = [
   {
     heading: "For masters",
-    links: [{ label: "Your profile", to: "/dashboard/profile" }],
+    links: [
+      { label: "Platform", to: "/for-masters" },
+      { label: "Your profile", to: "/dashboard/profile" },
+    ],
   },
   {
     heading: "Console",
