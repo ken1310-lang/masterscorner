@@ -88,6 +88,12 @@
   --color-hairline: #e4e6ec;
   --color-brand-deep: #9e2f3c;
   --color-saffron: #f4c64e;
+  /* SPEC-redesign §2: the Pro Site earth/parchment surface. */
+  --color-pro-earth: #17110c;
+  --color-pro-earth-2: #241a12;
+  --color-pro-ochre: #e0954a;
+  --color-pro-parchment: #f3e9da;
+  --color-pro-muted: #5d655f;
   --shadow-mc: 0 20px 60px rgba(11, 19, 43, 0.12);
   --font-sans:
     "Outfit Variable", "Manrope Variable", "Helvetica Neue", Arial, sans-serif;
@@ -188,6 +194,12 @@
 /* SPEC-redesign §2: min(100% - 40px, 1240px), without inner padding. */
 @utility redesign-container {
   width: min(100% - 40px, 1240px);
+  margin-inline: auto;
+}
+
+/* SPEC-pro-site §3.5: the standalone site uses a narrower editorial measure. */
+@utility pro-container {
+  width: min(100% - 40px, 1180px);
   margin-inline: auto;
 }
 

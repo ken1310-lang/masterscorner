@@ -53,6 +53,8 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
   const directoryClassesKey = trpc.directory.classes.queryKey();
   const directoryMastersKey = trpc.directory.masters.queryKey();
   const directoryMasterProfileKey = trpc.directory.masterProfile.queryKey();
+  const proSiteBySlugKey = trpc.proSite.bySlug.queryKey();
+  const proSiteStatusKey = trpc.proSite.status.queryKey();
 
   const form = useForm({
     defaultValues: initialProfileValues(accountName, payload),
@@ -95,6 +97,8 @@ export function ProfileForm({ accountName, payload }: ProfileFormProps) {
           queryClient.invalidateQueries({
             queryKey: directoryMasterProfileKey,
           }),
+          queryClient.invalidateQueries({ queryKey: proSiteBySlugKey }),
+          queryClient.invalidateQueries({ queryKey: proSiteStatusKey }),
         ]);
         if (!isCurrentSession()) {
           return;

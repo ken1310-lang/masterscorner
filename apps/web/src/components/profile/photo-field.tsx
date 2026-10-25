@@ -135,6 +135,8 @@ export function PhotoField({
     [queryClient, trpc.master.getProfile]
   );
 
+  const proSiteBySlugKey = trpc.proSite.bySlug.queryKey();
+
   const invalidatePublicProfile = useCallback(
     () =>
       Promise.all([
@@ -144,8 +146,14 @@ export function PhotoField({
         queryClient.invalidateQueries({
           queryKey: trpc.directory.masters.queryKey(),
         }),
+        queryClient.invalidateQueries({ queryKey: proSiteBySlugKey }),
       ]),
-    [queryClient, trpc.directory.masterProfile, trpc.directory.masters]
+    [
+      proSiteBySlugKey,
+      queryClient,
+      trpc.directory.masterProfile,
+      trpc.directory.masters,
+    ]
   );
 
   const uploadImage = useCallback(

@@ -65,6 +65,7 @@ export function ClassesScreen() {
   const directoryClassesKey = trpc.directory.classes.queryKey();
   const directoryMastersKey = trpc.directory.masters.queryKey();
   const directoryMasterProfileKey = trpc.directory.masterProfile.queryKey();
+  const proSiteBySlugKey = trpc.proSite.bySlug.queryKey();
 
   const invalidatePublicDirectory = useCallback(
     () =>
@@ -74,11 +75,13 @@ export function ClassesScreen() {
         queryClient.invalidateQueries({
           queryKey: directoryMasterProfileKey,
         }),
+        queryClient.invalidateQueries({ queryKey: proSiteBySlugKey }),
       ]),
     [
       directoryClassesKey,
       directoryMasterProfileKey,
       directoryMastersKey,
+      proSiteBySlugKey,
       queryClient,
     ]
   );
