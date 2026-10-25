@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 
-const focusClass =
+const focusOnEarth =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pro-ochre";
 
 /** Off-canvas until focused; the Pro Site has no marketplace skip target. */
 export function ProSiteSkipLink() {
   return (
     <a
-      className={`absolute -top-16 left-3 z-50 inline-flex min-h-11 items-center rounded-full bg-pro-earth px-4 font-semibold text-[13px] text-pro-parchment transition-[top] duration-150 ease-out focus-visible:top-3 motion-reduce:transition-none ${focusClass}`}
+      className={`absolute -top-16 left-3 z-50 inline-flex min-h-11 items-center rounded-full bg-pro-earth px-4 font-semibold text-[13px] text-pro-parchment transition-[top] duration-150 ease-out focus-visible:top-3 motion-reduce:transition-none ${focusOnEarth}`}
       href="#pro-main"
     >
       Skip to content
@@ -20,7 +20,7 @@ export function ProSitePoweredBy() {
     <p className="text-[12px] text-pro-parchment/60">
       Powered by{" "}
       <a
-        className={`font-semibold text-pro-ochre underline-offset-4 hover:underline ${focusClass}`}
+        className={`font-semibold text-pro-ochre underline-offset-4 hover:underline ${focusOnEarth}`}
         href="/"
       >
         MastersCorner

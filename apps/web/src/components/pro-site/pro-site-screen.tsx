@@ -6,8 +6,8 @@ import { useTRPC } from "@/utils/trpc";
 import { ProSiteStateFrame } from "./pro-site-chrome";
 import { ProSitePage } from "./pro-site-page";
 
-const focusClass =
-  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pro-ochre";
+const focusOnParchment =
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pro-earth";
 
 function ProSiteSkeleton() {
   return (
@@ -59,7 +59,7 @@ function ProSiteError({ onRetry }: { onRetry: () => void }) {
         The site request failed. Try again without losing this address.
       </p>
       <button
-        className={`mt-8 inline-flex min-h-11 items-center self-start rounded-full bg-pro-earth px-6 font-semibold text-[13px] text-pro-parchment ${focusClass}`}
+        className={`mt-8 inline-flex min-h-11 items-center self-start rounded-full bg-pro-earth px-6 font-semibold text-[13px] text-pro-parchment ${focusOnParchment}`}
         onClick={onRetry}
         type="button"
       >

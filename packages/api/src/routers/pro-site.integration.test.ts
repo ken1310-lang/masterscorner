@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createDb } from "@my-better-t-app/db";
 import { user } from "@my-better-t-app/db/schema/auth";
-import { media } from "@my-better-t-app/db/schema/master";
+import { masterProfile, media } from "@my-better-t-app/db/schema/master";
 import { proSite } from "@my-better-t-app/db/schema/pro-site";
 import { eq } from "drizzle-orm";
 
@@ -300,5 +300,23 @@ describeDb("public Pro Site database contract", () => {
   test("does not reveal another master's unpublished site", async () => {
     expect(await anonymous.proSite.bySlug({ slug: slugB })).toBeNull();
     expect(await callerA.proSite.bySlug({ slug: slugB })).toBeNull();
+  });
+
+  test("cascades the publication row when the profile is deleted", async () => {
+    const profile = await db.query.masterProfile.findFirst({
+      where: { userId: masterBId },
+      columns: { id: true },
+    });
+    if (!profile) {
+      throw new Error("Unpublished fixture profile was missing");
+    }
+
+    await db.delete(masterProfile).where(eq(masterProfile.id, profile.id));
+
+    const rows = await db
+      .select({ profileId: proSite.profileId })
+      .from(proSite)
+      .where(eq(proSite.profileId, profile.id));
+    expect(rows).toHaveLength(0);
   });
 });

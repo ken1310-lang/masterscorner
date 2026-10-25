@@ -10,8 +10,10 @@ import {
 
 import { ProSitePoweredBy, ProSiteSkipLink } from "./pro-site-chrome";
 
-const focusClass =
+const focusOnEarth =
   "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pro-ochre";
+const focusOnParchment =
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pro-earth";
 const sectionHeading =
   "mt-3 font-bold text-[clamp(34px,4.4vw,52px)] leading-[1.02] tracking-[-.045em] [overflow-wrap:anywhere]";
 const NAME_PARTS = /\s+/;
@@ -44,7 +46,7 @@ function ProSiteHeader({ site }: { site: ProSitePayload }) {
     <header className="sticky top-0 z-40 border-pro-earth/15 border-b bg-pro-parchment/95 backdrop-blur">
       <div className="pro-container flex rx-lg:h-[78px] flex-wrap rx-lg:flex-nowrap items-center gap-x-8 gap-y-3 py-3 rx-lg:py-0">
         <a
-          className={`flex min-w-0 items-center gap-3 rounded-sm ${focusClass}`}
+          className={`flex min-w-0 items-center gap-3 rounded-sm ${focusOnParchment}`}
           href="#pro-main"
         >
           {site.logoUrl ? (
@@ -82,7 +84,7 @@ function ProSiteHeader({ site }: { site: ProSitePayload }) {
           >
             {navItems.map((item) => (
               <a
-                className={`whitespace-nowrap py-2 font-semibold text-pro-earth/80 transition-colors duration-150 hover:text-pro-earth motion-reduce:transition-none ${focusClass}`}
+                className={`whitespace-nowrap py-2 font-semibold text-pro-earth/80 transition-colors duration-150 hover:text-pro-earth motion-reduce:transition-none ${focusOnParchment}`}
                 href={item.href}
                 key={item.href}
               >
@@ -141,7 +143,7 @@ function ProSiteHero({ site }: { site: ProSitePayload }) {
         </h1>
         {nextSection ? (
           <a
-            className={`mt-8 inline-flex min-h-11 items-center rounded-full bg-pro-ochre px-6 font-semibold text-[13px] text-pro-earth transition-colors duration-150 hover:bg-pro-parchment motion-reduce:transition-none ${focusClass}`}
+            className={`mt-8 inline-flex min-h-11 items-center rounded-full bg-pro-ochre px-6 font-semibold text-[13px] text-pro-earth transition-colors duration-150 hover:bg-pro-parchment motion-reduce:transition-none ${focusOnEarth}`}
             href={nextSection.href}
           >
             {nextSection.label}
@@ -211,9 +213,16 @@ function ProSiteAbout({ site }: { site: ProSitePayload }) {
   );
 }
 
-function FullBadge() {
+function FullBadge({ surface = "dark" }: { surface?: "dark" | "light" }) {
+  const tone =
+    surface === "light"
+      ? "border-pro-earth/30 text-pro-earth"
+      : "border-pro-ochre/40 text-pro-ochre";
+
   return (
-    <span className="inline-flex shrink-0 rounded-full border border-pro-ochre/40 px-2.5 py-0.5 font-semibold text-[10px] text-pro-ochre uppercase tracking-[.08em]">
+    <span
+      className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 font-semibold text-[10px] uppercase tracking-[.08em] ${tone}`}
+    >
       Full
     </span>
   );
@@ -241,10 +250,10 @@ function ProSitePrograms({ site }: { site: ProSitePayload }) {
           </p>
         </div>
 
-        <div className="mt-10 grid rx-lg:grid-cols-3 rx-md:grid-cols-2 gap-px overflow-hidden rounded-[24px] bg-pro-parchment/15">
+        <div className="mt-10 grid rx-lg:grid-cols-3 rx-md:grid-cols-2 gap-4">
           {site.classes.map((item, index) => (
             <article
-              className="min-w-0 bg-pro-earth-2 p-7 rx-lg:p-8"
+              className="min-w-0 rounded-[24px] border border-pro-parchment/15 bg-pro-earth-2 p-7 rx-lg:p-8"
               key={item.id}
             >
               <div className="flex items-start justify-between gap-4">
@@ -313,7 +322,9 @@ function ProSiteSchedule({ site }: { site: ProSitePayload }) {
                   >
                     <span className="flex min-w-0 flex-wrap items-center gap-2 font-semibold text-[14px] [overflow-wrap:anywhere]">
                       {item.name}
-                      {item.status === "full" ? <FullBadge /> : null}
+                      {item.status === "full" ? (
+                        <FullBadge surface="light" />
+                      ) : null}
                     </span>
                     <span className="rx-sm:text-right text-[13px] text-pro-muted">
                       {formatSchedules(item.schedules)}
@@ -357,7 +368,7 @@ function ProSiteContact({ site }: { site: ProSitePayload }) {
           ) : null}
           {schedule ? (
             <a
-              className={`mt-6 inline-flex min-h-11 items-center font-semibold text-[13px] text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusClass}`}
+              className={`mt-6 inline-flex min-h-11 items-center font-semibold text-[13px] text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusOnParchment}`}
               href="#schedule"
             >
               See the weekly schedule
@@ -417,7 +428,7 @@ export function ProSitePage({
               This site could not refresh. Showing the last loaded content.
             </p>
             <button
-              className={`self-start font-semibold text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusClass}`}
+              className={`self-start font-semibold text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusOnParchment}`}
               onClick={onRetry}
               type="button"
             >
