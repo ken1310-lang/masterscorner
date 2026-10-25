@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ProSitePayload } from "./pro-site";
-import { proSiteAddress, visibleProSiteSections } from "./pro-site";
+import {
+  effectiveSiteName,
+  proSiteAddress,
+  saveProSiteSettingsInputSchema,
+  visibleProSiteSections,
+} from "./pro-site";
 
 function payload(overrides: Partial<ProSitePayload> = {}): ProSitePayload {
   return {
@@ -26,7 +31,9 @@ function payload(overrides: Partial<ProSitePayload> = {}): ProSitePayload {
     logoUrl: null,
     martialArts: ["Silambam"],
     photoUrl: null,
+    siteName: "Arun Vel",
     slug: "arun-vel-00000000-0000-0000-0000-000000000001",
+    style: "ochre",
     yearsTeaching: 18,
     ...overrides,
   };
@@ -84,6 +91,60 @@ describe("Pro Site contract", () => {
   test("omits contact when neither city nor locations exist", () => {
     expect(
       visibleProSiteSections(payload({ homeCity: " ", locations: [] })).contact
+    ).toBe(false);
+  });
+});
+
+describe("Pro Site settings contract", () => {
+  test("falls back to the profile name when no override exists", () => {
+    expect(effectiveSiteName("Arun Vel", null)).toBe("Arun Vel");
+    expect(effectiveSiteName("Arun Vel", "  ")).toBe("Arun Vel");
+    expect(effectiveSiteName("Arun Vel", "Veeram")).toBe("Veeram");
+  });
+
+  test("trims a site name and stores a blank name as the fallback", () => {
+    expect(
+      saveProSiteSettingsInputSchema.parse({
+        siteName: "  Veeram Silambam  ",
+        style: "terracotta",
+      })
+    ).toEqual({ siteName: "Veeram Silambam", style: "terracotta" });
+    expect(
+      saveProSiteSettingsInputSchema.parse({ siteName: "   ", style: "ochre" })
+    ).toEqual({ siteName: null, style: "ochre" });
+    expect(
+      saveProSiteSettingsInputSchema.parse({ siteName: null, style: "sage" })
+    ).toEqual({ siteName: null, style: "sage" });
+  });
+
+  test("enforces the site-name limit after trimming", () => {
+    const name = "n".repeat(80);
+    expect(
+      saveProSiteSettingsInputSchema.safeParse({
+        siteName: name,
+        style: "ochre",
+      }).success
+    ).toBe(true);
+    expect(
+      saveProSiteSettingsInputSchema.safeParse({
+        siteName: ` ${name} `,
+        style: "ochre",
+      }).success
+    ).toBe(true);
+    expect(
+      saveProSiteSettingsInputSchema.safeParse({
+        siteName: "n".repeat(81),
+        style: "ochre",
+      }).success
+    ).toBe(false);
+  });
+
+  test("rejects a style outside the supported palettes", () => {
+    expect(
+      saveProSiteSettingsInputSchema.safeParse({
+        siteName: "Veeram",
+        style: "custom",
+      }).success
     ).toBe(false);
   });
 });

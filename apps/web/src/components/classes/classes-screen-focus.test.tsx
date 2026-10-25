@@ -137,7 +137,11 @@ async function setup() {
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   queryClient.setQueryData(trpc.classes.list.queryKey(), emptyPayload());
   const proSiteKey = trpc.proSite.bySlug.queryKey({ slug: "profile-a" });
+  const proSitePreviewKey = trpc.proSite.preview.queryKey();
+  const proSiteStatusKey = trpc.proSite.status.queryKey();
   queryClient.setQueryData(proSiteKey, null);
+  queryClient.setQueryData(proSitePreviewKey, null);
+  queryClient.setQueryData(proSiteStatusKey, null);
 
   const rootRoute = createRootRouteWithContext<{
     sessionQueries: typeof sessionQueries;
@@ -156,7 +160,13 @@ async function setup() {
     </QueryClientProvider>
   );
   await view.findByRole("button", { name: "Create your first class" });
-  return { ...view, proSiteKey, queryClient };
+  return {
+    ...view,
+    proSiteKey,
+    proSitePreviewKey,
+    proSiteStatusKey,
+    queryClient,
+  };
 }
 
 async function settle(action: () => void | Promise<void>) {
@@ -228,6 +238,16 @@ describe("class editor focus restoration", () => {
     await waitFor(() =>
       expect(
         view.queryClient.getQueryState(view.proSiteKey)?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSitePreviewKey)?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteStatusKey)?.isInvalidated
       ).toBe(true)
     );
   });

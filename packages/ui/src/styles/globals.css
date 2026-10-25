@@ -92,6 +92,7 @@
   --color-pro-earth: #17110c;
   --color-pro-earth-2: #241a12;
   --color-pro-ochre: #e0954a;
+  --color-pro-ochre-ink: #8f5a2a;
   --color-pro-parchment: #f3e9da;
   --color-pro-muted: #5d655f;
   --shadow-mc: 0 20px 60px rgba(11, 19, 43, 0.12);
@@ -201,6 +202,17 @@
 @utility pro-container {
   width: min(100% - 40px, 1180px);
   margin-inline: auto;
+}
+
+/* SPEC-pro-site-settings §5.3: curated accents scoped to the standalone site. */
+.pro-site[data-style="terracotta"] {
+  --color-pro-ochre: #d67a52;
+  --color-pro-ochre-ink: #a85f3a;
+}
+
+.pro-site[data-style="sage"] {
+  --color-pro-ochre: #a8b497;
+  --color-pro-ochre-ink: #7c8b5e;
 }
 
 @keyframes redesign-word-in {

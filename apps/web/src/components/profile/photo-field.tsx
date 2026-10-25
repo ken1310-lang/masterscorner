@@ -136,6 +136,8 @@ export function PhotoField({
   );
 
   const proSiteBySlugKey = trpc.proSite.bySlug.queryKey();
+  const proSitePreviewKey = trpc.proSite.preview.queryKey();
+  const proSiteStatusKey = trpc.proSite.status.queryKey();
 
   const invalidatePublicProfile = useCallback(
     () =>
@@ -147,9 +149,13 @@ export function PhotoField({
           queryKey: trpc.directory.masters.queryKey(),
         }),
         queryClient.invalidateQueries({ queryKey: proSiteBySlugKey }),
+        queryClient.invalidateQueries({ queryKey: proSitePreviewKey }),
+        queryClient.invalidateQueries({ queryKey: proSiteStatusKey }),
       ]),
     [
       proSiteBySlugKey,
+      proSitePreviewKey,
+      proSiteStatusKey,
       queryClient,
       trpc.directory.masterProfile,
       trpc.directory.masters,
