@@ -11,12 +11,13 @@ import { type AnyFieldApi, useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { ConsoleEmptyState } from "@/components/console/empty-state";
 import { ConsolePageHeader } from "@/components/console/page-header";
+import { siteSettingsFormValues } from "@/components/pro-site/site-settings-values";
 import { useTRPC } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/dashboard/site")({
@@ -188,33 +189,66 @@ function PublicationCard({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, setPending] = useState(false);
+  const [focusRequest, setFocusRequest] = useState<{
+    target: "cancel" | "primary";
+  } | null>(null);
+  const primaryRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!focusRequest) {
+      return;
+    }
+    if (focusRequest.target === "cancel") {
+      cancelRef.current?.focus();
+    } else {
+      primaryRef.current?.focus();
+    }
+  }, [focusRequest]);
+
+  const requestFocus = useCallback((target: "cancel" | "primary") => {
+    setFocusRequest({ target });
+  }, []);
 
   const changePublication = useCallback(
     async (published: boolean) => {
       setPending(true);
+      let focusTarget: "cancel" | "primary" = "primary";
       try {
         if (await onChange(published)) {
           setConfirming(false);
+        } else if (confirming) {
+          focusTarget = "cancel";
         }
+      } catch (error) {
+        if (confirming) {
+          focusTarget = "cancel";
+        }
+        throw error;
       } finally {
         setPending(false);
+        requestFocus(focusTarget);
       }
     },
-    [onChange]
+    [confirming, onChange, requestFocus]
   );
 
   const actionLabel = publicationActionLabel(pending, status.published);
-  const cancelConfirmation = useCallback(() => setConfirming(false), []);
+  const cancelConfirmation = useCallback(() => {
+    setConfirming(false);
+    requestFocus("primary");
+  }, [requestFocus]);
   const confirmUnpublish = useCallback(() => {
     changePublication(false).catch(() => undefined);
   }, [changePublication]);
   const primaryAction = useCallback(() => {
     if (status.published) {
       setConfirming(true);
+      requestFocus("cancel");
       return;
     }
     changePublication(true).catch(() => undefined);
-  }, [changePublication, status.published]);
+  }, [changePublication, requestFocus, status.published]);
 
   return (
     <article className="rounded-[14px] border border-line bg-card p-5">
@@ -258,6 +292,7 @@ function PublicationCard({
               className="min-h-9 rounded-[8px] border border-line bg-card px-3 font-black text-[11px] hover:bg-surface-alt"
               disabled={pending}
               onClick={cancelConfirmation}
+              ref={cancelRef}
               type="button"
             >
               Keep published
@@ -281,6 +316,7 @@ function PublicationCard({
           }`}
           disabled={pending}
           onClick={primaryAction}
+          ref={primaryRef}
           type="button"
         >
           {actionLabel}
@@ -454,10 +490,7 @@ function SiteSettingsCard({
 }) {
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm({
-    defaultValues: {
-      siteName: status.siteName ?? status.displayName,
-      style: status.style,
-    },
+    defaultValues: siteSettingsFormValues(status),
     onSubmit: async ({ value }) => {
       setFormError(null);
       try {
@@ -465,10 +498,7 @@ function SiteSettingsCard({
           siteName: value.siteName.trim() || null,
           style: value.style,
         });
-        form.reset({
-          siteName: updated.siteName ?? updated.displayName,
-          style: updated.style,
-        });
+        form.reset(siteSettingsFormValues(updated));
       } catch (error) {
         setFormError(messageFor(error));
       }

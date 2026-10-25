@@ -176,7 +176,7 @@ Auth-only, outside the console shell. It renders the existing `ProSitePage` with
 - Small: site-name normalization (trim, empty -> null, 80-character limit, 81 rejected), style enum, effective name fallback, sync derivation.
 - Contract: settings insert/update preserves publication; publish/unpublish gate; preview is owner-only and returns draft data; another account cannot change or preview; no-profile behavior; public payload exact keys and values.
 - Migration: generated SQL reviewed, applied to development, and existing `pro_site` rows read with default style and null name.
-- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; style visibly changes; sync states; no plan/custom-domain copy; keyboard/focus; no horizontal overflow.
+- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; a style-only save preserves the unresolved profile-name fallback; style visibly changes; sync states; no plan/custom-domain copy; keyboard/focus, including the inline unpublish confirmation; no horizontal overflow.
 - Gates: `bun run gates`, focused API tests, `bun run test:db` against development.
 
 ## 7. Success criteria
