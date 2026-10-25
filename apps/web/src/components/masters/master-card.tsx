@@ -26,7 +26,7 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
   const audiences = master.audiences.map(
     (audience) => AUDIENCE_LABELS[audience]
   );
-  const meta = [master.city, years, audiences.join(", ")]
+  const meta = [master.city, years]
     .filter((item): item is string => Boolean(item))
     .join(" · ");
 
@@ -68,6 +68,18 @@ export function MasterCard({ master }: { master: DirectoryMasterView }) {
             ) : null}
           </div>
         </div>
+        {audiences.length > 0 ? (
+          <ul className="mt-4 flex list-none flex-wrap gap-2 p-0">
+            {audiences.map((audience) => (
+              <li
+                className="rounded-full border border-hairline px-2.5 py-1 font-medium text-[12px] text-ink-muted"
+                key={audience}
+              >
+                {audience}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         {meta ? (
           <p className="mt-auto break-words pt-4 text-[15px] text-ink-muted [overflow-wrap:anywhere]">
             {meta}

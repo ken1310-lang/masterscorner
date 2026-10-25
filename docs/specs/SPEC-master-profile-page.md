@@ -19,7 +19,7 @@ Success: `/masters/$slug` renders a full profile and a minimal profile credibly,
 - `/masters/$slug` with breadcrumb, identity hero, about, training paths, locations and schedule.
 - Registry cards link to the real profile route; the public profile query is invalidated after profile and class writes.
 - Pure slug tests and live contract tests for full/minimal profiles, not-found and privacy.
-- Browser verification at 1440 and 760 px plus the unknown slug.
+- Browser verification at 1440, 1024, 768 and 390 px plus the unknown slug.
 
 ### 2.2 Out of scope
 
@@ -100,11 +100,11 @@ The query must not read another profile or all profiles. The registry query adds
 
 `/masters/$slug` is a file route under `_marketplace`, sharing the existing header, footer and skip link. The page renders:
 
-1. Breadcrumb: `Masters / <display name>`, with `Masters` linking to `/masters`.
-2. Identity hero on `surface-alt`: profile photo when present (otherwise no photo column), display name as the only `h1`, martial arts joined with `·`, real stats for years teaching, teaching locations and current classes when present, and home city when present. No review, rating, verified, plan or profile-ID claim.
+1. Breadcrumb: `Masters / <display name>`, with `Masters` linking to `/masters` and a chevron separator.
+2. Identity hero on `bg-canvas`: profile photo when present (otherwise no photo column), display name as the only `h1`, martial arts joined with `·`, real stats for years teaching, teaching locations and current classes when present, and home city when present. No review, rating, verified, plan or profile-ID claim.
 3. `About the master` when `introduction` exists. Preserve line breaks; do not generate or expand copy.
-4. `Training paths` when current classes exist. Each card shows the class name and real metadata: martial art, audience and level. Fee appears only when stored. No description is invented. The page names classes as training paths because the release has no separate path entity.
-5. `Locations & schedule` when profile locations and current classes exist. Each location keeps profile order and lists its current classes with their weekly slots from `formatSchedules`. A location with no current class still appears without a schedule claim. When locations exist but no current classes, the section is titled `Teaching location`/`Teaching locations` instead. If no locations exist, the section is absent.
+4. `Training paths` when current classes exist. Each timeline entry shows the class name and real metadata: martial art, audience and level. Fee appears only when stored. No description is invented. The page names classes as training paths because the release has no separate path entity.
+5. `Locations & schedule` when profile locations and current classes exist. Each location keeps profile order in a bordered row and lists its current classes with their weekly slots from `formatSchedules`. A location with no current class still appears without a schedule claim. When locations exist but no current classes, the section is titled `Teaching location`/`Teaching locations` instead. If no locations exist, the section is absent.
 6. No reviews, verification, trial, enquiry, contact or Pro Site action. The right-hand trial/ID panels from the prototype are absent; content uses the full available width.
 
 Missing data rules: null introduction, photo, years, city, locations or classes removes that element or section. The minimal profile remains a valid page with name, arts and breadcrumb.
@@ -164,13 +164,13 @@ export function profileIdFromSlug(slug: string) {
 }
 ```
 
-Use existing semantic Tailwind roles (`bg-surface-alt`, `bg-card`, `text-muted-text`, `border-line`), `ShellContainer`, the custom `sm`/`md`/`lg` breakpoints, `formatFee`/`formatSchedules` and `NotFoundContent`. Do not add a state library, Tailwind config, schema migration or generic page abstraction.
+Use the R2 semantic roles (`bg-canvas`, `bg-sand`, `text-ink`, `text-ink-muted`, `border-hairline`), `RedesignContainer`, the custom `rx-sm`/`rx-md`/`rx-lg` breakpoints, `formatFee`/`formatSchedules` and `NotFoundContent`. Do not add a state library, Tailwind config, schema migration or generic page abstraction.
 
 ## 6. Testing strategy
 
 - Small: slug generation strips diacritics, collapses separators, caps the name, falls back to `master`, preserves the UUID and parses bare/renamed slugs; malformed slugs return null; input accepts a 200-character slug and rejects an empty one.
 - Contract (live): full profile returns ordered arts/locations, current active/full classes with sorted schedules, fee only when stored, photo URL from a seeded media row, and no paused class; minimal profile returns null/empty optional fields without error; unknown and malformed slugs return null; an old slug still resolves after a display-name change; payload keys exclude email, userId, revision, objectKey and paused fields.
-- UI: browser check at 1440 and 760 px for a full profile and a minimal profile; unknown slug shows the not-found content; a 201-character malformed slug shows not-found without a load error, retry or profile query; no horizontal page scroll; no rating, verification, trial, enquiry or Pro Site action; keyboard-focus the breadcrumb and registry link.
+- UI: browser check at 1440, 1024, 768 and 390 px for a full profile and a minimal profile; unknown slug shows the not-found content; a 201-character malformed slug shows not-found without a load error, retry or profile query; no horizontal page scroll; no rating, verification, trial, enquiry or Pro Site action; keyboard-focus the breadcrumb and registry link.
 - Freshness: a profile save, photo upload/removal and class save invalidate the public directory and profile prefixes; failed photo writes leave them fresh.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
@@ -180,7 +180,7 @@ Use existing semantic Tailwind roles (`bg-surface-alt`, `bg-card`, `text-muted-t
 2. A full profile renders identity, about, training paths and locations/schedule; a minimal profile renders credibly with absent sections.
 3. An unknown or malformed slug shows the not-found content and no partial profile.
 4. No prohibited trust or conversion claim/action is rendered.
-5. `bun run gates` and the live profile contract pass; browser checks at 1440 and 760 px have no overflow and match the prototype minus deviations D1-D3.
+5. `bun run gates` and the live profile contract pass; browser checks at 1440, 1024, 768 and 390 px have no overflow and match the prototype minus deviations D1-D3.
 6. Profile/class writes refresh the public profile cache within the freshness window.
 
 ## 8. Open questions

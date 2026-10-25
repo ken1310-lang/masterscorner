@@ -9,8 +9,10 @@ import type {
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useCallback } from "react";
 
-import { ShellContainer } from "@/components/shell/container";
+import { MarketplacePageHero } from "@/components/marketplace/page-hero";
+import { RedesignContainer } from "@/components/shell/container";
 import { useTRPC } from "@/utils/trpc";
+
 import { ClassRow } from "./class-row";
 import { AUDIENCE_LABELS } from "./class-values";
 import { nextSessionRefetchInterval } from "./directory-values";
@@ -46,32 +48,13 @@ function filterNames(
   ].filter((name): name is string => name !== null);
 }
 
-function DirectoryHero() {
-  return (
-    <section className="bg-navy py-[62px] text-white md:py-[84px] md:pb-[72px]">
-      <ShellContainer>
-        <p className="font-extrabold text-[12px] text-brand-lifted uppercase tracking-[.16em]">
-          Class Finder
-        </p>
-        <h1 className="mt-4 max-w-[760px] font-extrabold text-[clamp(42px,5.7vw,72px)] leading-[.98] tracking-[-.055em]">
-          Find a class that fits your week
-        </h1>
-        <p className="mt-6 max-w-[690px] text-[#bdc7d8] text-lg leading-relaxed">
-          Browse current training slots published by martial-arts masters across
-          MastersCorner.
-        </p>
-      </ShellContainer>
-    </section>
-  );
-}
-
 function DirectorySkeleton() {
   return (
-    <div aria-busy="true" className="space-y-3" role="status">
+    <div aria-busy="true" role="status">
       <span className="sr-only">Loading classes</span>
       {SKELETON_ROWS.map((row) => (
         <div
-          className="h-16 animate-pulse rounded-[10px] border border-line bg-surface-alt"
+          className="h-20 animate-pulse border-hairline border-b bg-sand motion-reduce:animate-none"
           key={row}
         />
       ))}
@@ -79,7 +62,7 @@ function DirectorySkeleton() {
   );
 }
 
-function DirectoryError({
+function DirectoryErrorState({
   message,
   onRetry,
 }: {
@@ -88,17 +71,19 @@ function DirectoryError({
 }) {
   return (
     <div
-      className="rounded-[14px] border border-line bg-card p-6"
+      className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16"
       role="status"
     >
-      <h2 className="font-extrabold text-lg">Classes could not load</h2>
-      <p className="mt-2 max-w-[60ch] text-muted-text text-sm">{message}</p>
+      <h2 className="font-semibold text-[20px] text-navy">
+        Classes could not load
+      </h2>
+      <p className="mt-2 max-w-[60ch] text-ink leading-relaxed">{message}</p>
       <button
-        className="mt-4 min-h-11 rounded-[9px] bg-navy px-4 font-black text-white text-xs hover:bg-navy-deep"
+        className="mt-6 min-h-11 rounded-full bg-navy px-5 py-2.5 font-semibold text-[15px] text-white hover:bg-navy-deep"
         onClick={onRetry}
         type="button"
       >
-        Try again
+        Retry
       </button>
     </div>
   );
@@ -107,14 +92,14 @@ function DirectoryError({
 function RefreshBanner({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="mb-4 flex flex-col gap-2 rounded-[10px] border border-line bg-surface-alt px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      className="mb-6 flex rx-sm:flex-row flex-col rx-sm:items-center rx-sm:justify-between gap-2 rounded-[16px] border border-hairline bg-sand px-4 py-3"
       role="status"
     >
-      <p className="text-muted-text text-xs">
+      <p className="text-ink-muted text-sm">
         Could not refresh classes. Showing the last loaded list.
       </p>
       <button
-        className="min-h-9 font-extrabold text-accent-text text-xs underline-offset-4 hover:underline"
+        className="min-h-9 rx-sm:self-auto self-start font-semibold text-accent-text text-sm underline-offset-4 hover:underline"
         onClick={onRetry}
         type="button"
       >
@@ -164,9 +149,7 @@ function DirectoryFiltersBar({
     [onFilterChange]
   );
   const fieldClass =
-    "min-h-11 w-full rounded-[9px] border border-line bg-card px-3 font-normal text-ink text-sm normal-case tracking-normal md:w-auto";
-  const labelClass =
-    "flex min-w-0 flex-col gap-1 font-extrabold text-[10px] text-muted-text uppercase tracking-[.1em]";
+    "min-h-11 w-full rounded-full border border-hairline bg-canvas px-5 text-[15px] font-medium text-ink focus:border-navy";
   const unknownArt =
     filters.art &&
     !payload.martialArts.some((item) => item.value === filters.art)
@@ -179,84 +162,79 @@ function DirectoryFiltersBar({
       : undefined;
 
   return (
-    <div className="mb-6 flex flex-col gap-3 border-line border-t-[3px] border-t-navy pt-4 md:flex-row md:flex-wrap md:items-end">
-      <div className="md:mr-auto">
-        <strong className="text-sm">Filter classes</strong>
-        <p className="mt-1 text-muted-text text-xs">
-          Narrow the list by what and where you want to train.
-        </p>
-        {hasFilters ? (
-          <p className="mt-1 text-muted-text text-xs">
-            Showing {activeNames.join(", ")}
-          </p>
-        ) : null}
+    <div className="border-hairline border-y py-4">
+      <div className="grid grid-cols-1 rx-sm:grid-cols-3 gap-3">
+        <label className="min-w-0">
+          <span className="sr-only">Martial art</span>
+          <select
+            className={fieldClass}
+            id="class-filter-art"
+            onChange={handleArt}
+            value={filters.art ?? ""}
+          >
+            <option value="">All martial arts</option>
+            {unknownArt ? (
+              <option value={unknownArt}>Selected martial art</option>
+            ) : null}
+            {payload.martialArts.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="min-w-0">
+          <span className="sr-only">Location</span>
+          <select
+            className={fieldClass}
+            id="class-filter-location"
+            onChange={handleLocation}
+            value={filters.location ?? ""}
+          >
+            <option value="">All locations</option>
+            {unknownLocation ? (
+              <option value={unknownLocation}>Selected location</option>
+            ) : null}
+            {payload.locations.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="min-w-0">
+          <span className="sr-only">Audience</span>
+          <select
+            className={fieldClass}
+            id="class-filter-audience"
+            onChange={handleAudience}
+            value={filters.audience ?? ""}
+          >
+            <option value="">All audiences</option>
+            {CLASS_AUDIENCES.map((audience) => (
+              <option key={audience} value={audience}>
+                {AUDIENCE_LABELS[audience]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
-      <label className={labelClass} htmlFor="filter-art">
-        Martial art
-        <select
-          className={fieldClass}
-          id="filter-art"
-          onChange={handleArt}
-          value={filters.art ?? ""}
-        >
-          <option value="">All martial arts</option>
-          {unknownArt ? (
-            <option value={unknownArt}>Selected martial art</option>
-          ) : null}
-          {payload.martialArts.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className={labelClass} htmlFor="filter-location">
-        Location
-        <select
-          className={fieldClass}
-          id="filter-location"
-          onChange={handleLocation}
-          value={filters.location ?? ""}
-        >
-          <option value="">All locations</option>
-          {unknownLocation ? (
-            <option value={unknownLocation}>Selected location</option>
-          ) : null}
-          {payload.locations.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className={labelClass} htmlFor="filter-audience">
-        Audience
-        <select
-          className={fieldClass}
-          id="filter-audience"
-          onChange={handleAudience}
-          value={filters.audience ?? ""}
-        >
-          <option value="">All audiences</option>
-          {CLASS_AUDIENCES.map((audience) => (
-            <option key={audience} value={audience}>
-              {AUDIENCE_LABELS[audience]}
-            </option>
-          ))}
-        </select>
-      </label>
-
       {hasFilters ? (
-        <button
-          className="min-h-11 self-start font-extrabold text-accent-text text-xs underline-offset-4 hover:underline md:self-end"
-          onClick={onClear}
-          type="button"
-        >
-          Clear filters
-        </button>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[13px] text-ink-muted">
+            Showing {activeNames.join(", ")}.
+          </p>
+          <button
+            className="min-h-11 font-semibold text-[14px] text-brand-strong underline-offset-4 hover:underline"
+            onClick={onClear}
+            type="button"
+          >
+            Clear filters
+          </button>
+        </div>
       ) : null}
     </div>
   );
@@ -273,34 +251,35 @@ function DirectoryResults({
 }) {
   return (
     <>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <p aria-live="polite" className="text-muted-text text-xs">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 py-6">
+        <h2
+          aria-live="polite"
+          className="font-semibold rx-sm:text-[22px] text-[20px] text-navy tracking-[-0.02em]"
+        >
           {classes.length} {classes.length === 1 ? "class" : "classes"}
-        </p>
+        </h2>
         {hasFilters ? (
-          <p className="text-muted-text text-xs">
+          <p className="text-[14px] text-ink-muted">
             Filtered by {activeNames.join(", ")}
           </p>
         ) : null}
       </div>
 
-      <div className="overflow-hidden rounded-[14px] border border-line bg-card">
-        <div
-          aria-hidden="true"
-          className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.8fr)] gap-4 border-line border-b bg-surface-alt/60 px-2 py-3 font-extrabold text-[10px] text-muted-text uppercase tracking-[.1em] md:grid"
-        >
-          <span>Class</span>
-          <span>Master</span>
-          <span>Location</span>
-          <span>Next session</span>
-          <span>Fee</span>
-        </div>
-        <ul aria-label="Published classes">
-          {classes.map((item) => (
-            <ClassRow item={item} key={item.id} />
-          ))}
-        </ul>
+      <div
+        aria-hidden="true"
+        className="rx-md:grid hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.8fr)] gap-4 border-ink border-b pb-3 font-semibold text-[13px] text-ink-muted"
+      >
+        <span>Class</span>
+        <span>Master</span>
+        <span>Location</span>
+        <span>Next session</span>
+        <span className="text-right">Fee</span>
       </div>
+      <ul aria-label="Published classes" className="list-none p-0">
+        {classes.map((item) => (
+          <ClassRow item={item} key={item.id} />
+        ))}
+      </ul>
     </>
   );
 }
@@ -316,20 +295,20 @@ function DirectoryEmpty({
 }) {
   return (
     <div
-      className="rounded-[14px] border border-line bg-card p-6"
+      className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16 text-center"
       role="status"
     >
-      <h2 className="font-extrabold text-lg">
+      <h2 className="font-semibold text-[20px] text-navy">
         {hasFilters ? "No classes match these filters" : "No classes yet"}
       </h2>
-      <p className="mt-2 max-w-[60ch] text-muted-text text-sm leading-relaxed">
+      <p className="mx-auto mt-2 max-w-[52ch] text-ink leading-relaxed">
         {hasFilters
           ? `No published class matches ${activeNames.join(", ")}. Try another martial art, location or audience.`
           : "No class has been published yet. When a master adds a class and schedule, it will appear here."}
       </p>
       {hasFilters ? (
         <button
-          className="mt-4 min-h-11 rounded-[9px] bg-navy px-4 font-black text-white text-xs hover:bg-navy-deep"
+          className="mt-6 min-h-11 rounded-full bg-navy px-5 py-2.5 font-semibold text-[15px] text-white hover:bg-navy-deep"
           onClick={onClear}
           type="button"
         >
@@ -373,13 +352,17 @@ export function DirectoryScreen({
 
   return (
     <>
-      <DirectoryHero />
-      <section className="py-[68px] md:py-[92px]">
-        <ShellContainer>
+      <MarketplacePageHero
+        body="Browse current training slots published by martial-arts masters across MastersCorner."
+        eyebrow="Class finder"
+        title="Find a class that fits your week"
+      />
+      <section className="bg-canvas pt-2 pb-16 rx-md:pb-24">
+        <RedesignContainer>
           {classesQuery.status === "pending" ? <DirectorySkeleton /> : null}
 
           {classesQuery.isError && !payload ? (
-            <DirectoryError
+            <DirectoryErrorState
               message={classesQuery.error.message}
               onRetry={handleRetry}
             />
@@ -417,7 +400,7 @@ export function DirectoryScreen({
               )}
             </>
           ) : null}
-        </ShellContainer>
+        </RedesignContainer>
       </section>
     </>
   );

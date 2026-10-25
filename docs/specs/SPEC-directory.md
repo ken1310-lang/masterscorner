@@ -12,7 +12,7 @@ Success: `/classes` lists only classes that exist in the development database, e
 
 - A public `directory.classes` query with composable martial-art, location and audience filters.
 - A shared, dependency-free directory contract for the browser: filter input, class view, fee/next-session display helpers.
-- `/classes` with the prototype's registry hero, a filter bar adapted from the `/masters` control bar, a real class table and honest empty, loading and error states.
+- `/classes` with the R2 marketplace hero, a filter bar adapted from the `/masters` control bar, a real class table and honest empty, loading and error states.
 - The `Classes` destination in the marketplace header.
 - Contract tests for filtering, status visibility and anonymous access; a development-branch walkthrough with classes from two masters.
 
@@ -88,9 +88,9 @@ The router reads distinct used child rows over the eligible status set, groups t
 
 ### 3.3 Screen
 
-`/classes` is a marketplace route under `_marketplace`, so it uses the existing header, footer and skip link. The hero says "Find a class that fits your week" and describes real master-owned classes. The filter bar has labelled selects for martial art, location and audience plus a visible "Clear filters" action when any filter is active. Selecting a filter updates the URL using the search keys `art`, `location` and `audience`; the `art` and `location` values are normalized shared names rather than one master's child UUID. Reloading or sharing the URL restores the filters. The query is server-side filtered.
+`/classes` is a marketplace route under `_marketplace`, so it uses the existing header, footer and skip link. The R2 screen uses the shared `MarketplacePageHero` with the eyebrow `Class finder`, the heading "Find a class that fits your week" and a sentence describing real master-owned classes. The filter bar is a bordered row of three pill selects for martial art, location and audience (visually hidden labels with visible values) plus a visible "Clear filters" action when any filter is active. Selecting a filter updates the URL using the search keys `art`, `location` and `audience`; the `art` and `location` values are normalized shared names rather than one master's child UUID. Reloading or sharing the URL restores the filters. The query is server-side filtered.
 
-The result list uses the prototype's table styling with columns Class, Master, Location, Next session and Fee. There is no Book column. Class and master are plain text; profile navigation is provided by the registry card rather than class rows. A `Full` class shows a text status badge; active classes do not need one. Fee renders only when stored; never "Not set" on the public page. Below the `md` breakpoint the rows become compact labelled blocks without horizontal page scroll; the desktop header is hidden from view but the list keeps a useful accessible name.
+The result list uses a typographic table with a dark top rule, light row separators and columns Class, Master, Location, Next session and Fee. Fee is right aligned. There is no Book column or card wrapper. Class and master are plain text; profile navigation is provided by the registry card rather than class rows. A `Full` class shows a text status badge; active classes do not need one. Fee renders only when stored; never "Not set" on the public page. Below the `rx-md` breakpoint the rows become compact labelled blocks without horizontal page scroll; the desktop header is hidden from view but the list keeps a useful accessible name.
 
 States:
 
@@ -152,14 +152,14 @@ export function nextSessionStart(
 }
 ```
 
-Use the existing tRPC `publicProcedure`, Drizzle relational reads, TanStack Query `queryOptions`, TanStack Router `validateSearch`/`useNavigate`, Tailwind semantic roles (`bg-navy`, `text-muted-text`, `border-line`) and native labelled controls. Do not add a new state library or a Tailwind config.
+Use the existing tRPC `publicProcedure`, Drizzle relational reads, TanStack Query `queryOptions`, TanStack Router `validateSearch`/`useNavigate`, the R2 semantic roles (`bg-canvas`, `bg-sand`, `border-hairline`, `text-ink-muted`), `RedesignContainer`, `MarketplacePageHero` and native labelled controls. Do not add a new state library or a Tailwind config.
 
 ## 6. Testing strategy
 
 - Small: next-session calculation at exact start, before/after a slot, week rollover and no schedules; filter schemas normalize before enforcing their shared limits, accept 90/120-character art values, preserve valid Unicode-expanded names and reject an invalid audience or empty name.
 - Contract: anonymous caller receives only active/full classes from two masters that share the same art and location names; one grouped option resolves both masters; each filter narrows the set and combined filters compose; paused and profile-less data do not appear; no account email or revision is present in the payload. Fixtures use unique shared names so unrelated development rows cannot change an exact assertion.
 - Runtime: seed two masters with the same art and location names and classes across audiences; verify URL filters, counts, empty states and the absence of Book.
-- UI: browser check at 1440, 980, 760 and 520 px; select each filter; confirm no horizontal page scroll and the header `Classes` link is active.
+- UI: browser check at 1440, 1024, 768 and 390 px; select each filter; confirm no horizontal page scroll and the header `Classes` link is active.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
 ## 7. Success criteria
@@ -169,7 +169,7 @@ Use the existing tRPC `publicProcedure`, Drizzle relational reads, TanStack Quer
 - A zero-result filter state names the active filters and offers a working clear action.
 - No Book action, rating, review, verification badge, invented fee or dead link is rendered.
 - `bun run gates` passes; the live directory contract passes against the development branch.
-- The screen matches the prototype's registry hero and table styling at 1440, 980, 760 and 520 px, with the documented responsive adaptation.
+- The screen matches the R2 marketplace hero, pill filters and typographic table at 1440, 1024, 768 and 390 px, with the documented responsive adaptation.
 
 ## 8. Open questions
 
