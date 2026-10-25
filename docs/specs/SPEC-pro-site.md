@@ -2,7 +2,7 @@
 
 ## Status and provenance
 
-Accepted on 2026-10-25 for Task 16 under the owner's decisions: read-only renderer and console status, city/locations-only Contact, and the site's existing native typography. The owner's instruction was to proceed with the next planned task; this contract records the approved boundaries before implementation, per `tasks/plan.md`'s specification-first rule.
+Accepted on 2026-10-25 for Task 16 under the owner's decisions: read-only renderer and console status, city/locations-only Contact, and the site's existing native typography. The owner's instruction was to proceed with the next planned task; this contract records the approved boundaries before implementation, per `tasks/plan.md`'s specification-first rule. Task 17 controls are governed by `docs/specs/SPEC-pro-site-settings.md` and implemented on 2026-10-25.
 
 Sources: `product-vision.md` §20.3, §20.5-§20.9 and §30.2; `docs/decisions/ADR-002-mvp-scope-and-free-pro-site.md` (free Pro Site, first-release scope); `docs/decisions/ADR-003-design-source-of-truth-and-port.md` (prototype layout); `docs/decisions/ADR-004-first-release-infrastructure-decisions.md` §2 (path address, subdomain target); `docs/specs/SPEC-redesign.md` §2 and Phase R6 (earth/parchment Pro Site); `docs/specs/SPEC-master-profile-page.md` (public slug and class payload).
 
@@ -40,7 +40,7 @@ Success: `/pro/{slug}` renders a published site with real About, Programs, Sched
 
 ### 2.2 Out of scope
 
-- Publishing/unpublishing controls, site name editing, style choice, preview controls and the sync panel (Task 17).
+- Publishing/unpublishing controls, site name editing, style choice, preview controls and the sync panel; these are implemented in Task 17 under `docs/specs/SPEC-pro-site-settings.md`.
 - Subdomain DNS, wildcard routing, certificates and host-based Worker routing. The path address ships; the subdomain remains the canonical target once the zone exists (ADR-004).
 - Contact forms, enquiry delivery, trial booking, phone numbers, public email addresses, ratings, reviews, verification badges, galleries, events, achievements, lineage, maps, geocoded addresses, analytics, plans, billing and custom domains.
 - User-selected vanity slugs and site-specific slugs.
@@ -116,7 +116,7 @@ It returns `null` when the account has no master profile. It never returns anoth
 - No profile: keep the existing truthful empty state.
 - Profile, unpublished: show the reserved path address and `Not published`. Do not show a control that does nothing.
 - Profile, published: show the path address and `Live`, with an **Open site** link to `/pro/{slug}`.
-- No plan, billing, custom-domain, verification or sync claim. No publish button until Task 17.
+- No plan, billing, custom-domain, verification or sync claim. Task 16 has no publish button; Task 17 adds publication in `docs/specs/SPEC-pro-site-settings.md`.
 
 ### 3.4 Screen
 
@@ -218,12 +218,12 @@ Use the existing public slug helpers, `DirectoryMasterClassView`, `formatFee`, `
 2. A missing section removes its content, heading, nav item and gap.
 3. An unpublished or unknown slug shows the same branded not-available screen and leaks no profile data.
 4. The renderer has no marketplace chrome and no MastersCorner navigation beyond `Powered by MastersCorner`.
-5. The console shows the live path address and publication status; Task 17 adds all editing/publishing controls.
+5. The console shows the live path address and publication status; Task 17 adds all editing/publishing controls under `docs/specs/SPEC-pro-site-settings.md`.
 6. The same host-independent component can serve the future subdomain without a content rewrite.
 7. `bun run gates` and the live Pro Site contract pass; browser checks at four widths have no overflow.
 
 ## 8. Owner decisions
 
-1. **Publication boundary.** Task 16 is read-only: it adds the `pro_site` table, public read, publication gate and console status, but no publish/unpublish mutation or UI. Task 17 adds those controls. The live suite and browser walkthrough use a temporary published fixture.
+1. **Publication boundary.** Task 16 is read-only: it adds the `pro_site` table, public read, publication gate and console status, but no publish/unpublish mutation or UI. Task 17 adds those controls under `docs/specs/SPEC-pro-site-settings.md`. The live suite and browser walkthrough use a temporary published fixture.
 2. **Contact section.** Contact shows stored city and teaching locations with an internal schedule link. Email, phone, forms and booking stay out until the Phase 2 enquiry module; no public contact field is added.
 3. **Typography.** Pro Site uses the app's existing native Outfit stack. No Fraunces package or face is added; this is a recorded deviation from the redesign's display-font note.
