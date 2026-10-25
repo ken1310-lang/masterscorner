@@ -180,6 +180,7 @@ async function setup() {
   const proSiteBySlugQueryKey = trpc.proSite.bySlug.queryKey({
     slug: "profile-a",
   });
+  const proSitePreviewQueryKey = trpc.proSite.preview.queryKey();
   const proSiteStatusQueryKey = trpc.proSite.status.queryKey();
 
   function Editor() {
@@ -214,6 +215,7 @@ async function setup() {
     registryQueryKey,
     directoryProfileQueryKey,
     proSiteBySlugQueryKey,
+    proSitePreviewQueryKey,
     proSiteStatusQueryKey,
     requests,
     sessionQueries,
@@ -613,6 +615,7 @@ describe("public directory freshness", () => {
       martialArts: [],
     });
     view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
+    view.queryClient.setQueryData(view.proSitePreviewQueryKey, null);
     view.queryClient.setQueryData<{
       address: string;
       published: boolean;
@@ -651,6 +654,12 @@ describe("public directory freshness", () => {
     );
     await waitFor(() =>
       expect(
+        view.queryClient.getQueryState(view.proSitePreviewQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
         view.queryClient.getQueryState(view.proSiteStatusQueryKey)
           ?.isInvalidated
       ).toBe(true)
@@ -661,6 +670,8 @@ describe("public directory freshness", () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
     view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
+    view.queryClient.setQueryData(view.proSitePreviewQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteStatusQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -691,12 +702,26 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSitePreviewQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteStatusQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("successful photo removal invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
     view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
+    view.queryClient.setQueryData(view.proSitePreviewQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteStatusQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -726,12 +751,26 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSitePreviewQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteStatusQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("failed photo upload leaves the public profile and registry fresh", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
     view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
+    view.queryClient.setQueryData(view.proSitePreviewQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteStatusQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -755,6 +794,12 @@ describe("public directory freshness", () => {
     ).toBe(false);
     expect(
       view.queryClient.getQueryState(view.proSiteBySlugQueryKey)?.isInvalidated
+    ).toBe(false);
+    expect(
+      view.queryClient.getQueryState(view.proSitePreviewQueryKey)?.isInvalidated
+    ).toBe(false);
+    expect(
+      view.queryClient.getQueryState(view.proSiteStatusQueryKey)?.isInvalidated
     ).toBe(false);
   });
 });

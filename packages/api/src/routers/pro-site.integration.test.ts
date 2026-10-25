@@ -20,6 +20,10 @@ const mediaRateLimit: MediaRateLimit = {
 
 const databaseUrl = process.env.DATABASE_URL;
 const describeDb = databaseUrl ? describe : describe.skip;
+const HOOK_TIMEOUT = 30_000;
+const TEST_TIMEOUT = 30_000;
+const liveTest = (name: string, fn: () => Promise<void>) =>
+  test(name, fn, TEST_TIMEOUT);
 
 describeDb("public Pro Site database contract", () => {
   const db = createDb({ DATABASE_URL: databaseUrl ?? "" });
@@ -177,7 +181,7 @@ describeDb("public Pro Site database contract", () => {
       profileId: profileB.profile.id,
       publishedAt: null,
     });
-  });
+  }, HOOK_TIMEOUT);
 
   afterAll(async () => {
     await Promise.all(
@@ -185,29 +189,65 @@ describeDb("public Pro Site database contract", () => {
         db.delete(user).where(eq(user.id, id))
       )
     );
-  });
+  }, HOOK_TIMEOUT);
 
-  test("keeps an unpublished site invisible and reports its reserved address", async () => {
-    expect(await anonymous.proSite.bySlug({ slug: slugA })).toBeNull();
-    expect(
-      await anonymous.proSite.bySlug({ slug: `${slugA}-unknown` })
-    ).toBeNull();
-    expect(
-      await anonymous.proSite.bySlug({ slug: "not-a-profile-slug" })
-    ).toBeNull();
+  liveTest(
+    "keeps an unpublished site invisible and reports its reserved address",
+    async () => {
+      expect(await anonymous.proSite.bySlug({ slug: slugA })).toBeNull();
+      expect(
+        await anonymous.proSite.bySlug({ slug: `${slugA}-unknown` })
+      ).toBeNull();
+      expect(
+        await anonymous.proSite.bySlug({ slug: "not-a-profile-slug" })
+      ).toBeNull();
 
-    expect(await callerA.proSite.status()).toEqual({
-      address: `/pro/${slugA}`,
-      published: false,
-    });
-    expect(await callerB.proSite.status()).toEqual({
-      address: `/pro/${slugB}`,
-      published: false,
-    });
-    expect(await callerC.proSite.status()).toBeNull();
-  });
+      expect(await callerA.proSite.status()).toEqual({
+        address: `/pro/${slugA}`,
+        displayName: "Arun Vel",
+        published: false,
+        siteName: null,
+        style: "ochre",
+        sync: {
+          bio: true,
+          classes: true,
+          locations: true,
+          media: true,
+          schedule: true,
+        },
+      });
+      expect(await callerB.proSite.status()).toEqual({
+        address: `/pro/${slugB}`,
+        displayName: "Meera Rao",
+        published: false,
+        siteName: null,
+        style: "ochre",
+        sync: {
+          bio: false,
+          classes: false,
+          locations: false,
+          media: false,
+          schedule: false,
+        },
+      });
+      expect(await callerC.proSite.status()).toBeNull();
+      expect(await callerC.proSite.preview()).toBeNull();
+    }
+  );
 
-  test("returns only public data for a published site", async () => {
+  liveTest(
+    "requires a master profile for settings and publication writes",
+    async () => {
+      await expect(
+        callerC.proSite.saveSettings({ siteName: "No profile", style: "ochre" })
+      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+      await expect(
+        callerC.proSite.setPublished({ published: true })
+      ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    }
+  );
+
+  liveTest("returns only public data for a published site", async () => {
     await db.insert(proSite).values({ profileId: profileAId, publishedAt });
 
     const payload = await anonymous.proSite.bySlug({ slug: slugA });
@@ -274,7 +314,9 @@ describeDb("public Pro Site database contract", () => {
       logoUrl: expect.stringContaining("/logo.png"),
       martialArts: [`Silambam ${suffix}`],
       photoUrl: expect.stringContaining("/photo.jpg"),
+      siteName: "Arun Vel",
       slug: slugA,
+      style: "ochre",
       yearsTeaching: 18,
     });
     expect(payload.classes.map((item) => item.id)).not.toContain(pausedClassId);
@@ -287,36 +329,110 @@ describeDb("public Pro Site database contract", () => {
       "logoUrl",
       "martialArts",
       "photoUrl",
+      "siteName",
       "slug",
+      "style",
       "yearsTeaching",
     ]);
     expect(JSON.stringify(payload)).not.toContain("@example.com");
     expect(await callerA.proSite.status()).toEqual({
       address: `/pro/${slugA}`,
+      displayName: "Arun Vel",
       published: true,
+      siteName: null,
+      style: "ochre",
+      sync: {
+        bio: true,
+        classes: true,
+        locations: true,
+        media: true,
+        schedule: true,
+      },
     });
   });
 
-  test("does not reveal another master's unpublished site", async () => {
+  liveTest(
+    "saves branding, previews drafts and toggles publication",
+    async () => {
+      const saved = await callerA.proSite.saveSettings({
+        siteName: "  Veeram Silambam  ",
+        style: "terracotta",
+      });
+      expect(saved).toMatchObject({
+        displayName: "Arun Vel",
+        published: true,
+        siteName: "Veeram Silambam",
+        style: "terracotta",
+      });
+
+      const publicSite = await anonymous.proSite.bySlug({ slug: slugA });
+      expect(publicSite).toMatchObject({
+        displayName: "Arun Vel",
+        siteName: "Veeram Silambam",
+        style: "terracotta",
+      });
+      expect((await callerA.master.getProfile()).profile?.displayName).toBe(
+        "Arun Vel"
+      );
+
+      const previewA = await callerA.proSite.preview();
+      expect(previewA).toMatchObject({
+        siteName: "Veeram Silambam",
+        style: "terracotta",
+      });
+      const previewB = await callerB.proSite.preview();
+      expect(previewB?.displayName).toBe("Meera Rao");
+      expect(JSON.stringify(previewB)).not.toContain("Veeram Silambam");
+
+      const savedB = await callerB.proSite.saveSettings({
+        siteName: "Meera Site",
+        style: "sage",
+      });
+      expect(savedB.published).toBe(false);
+      expect(savedB.siteName).toBe("Meera Site");
+      expect(await anonymous.proSite.bySlug({ slug: slugB })).toBeNull();
+
+      const unpublished = await callerA.proSite.setPublished({
+        published: false,
+      });
+      expect(unpublished.published).toBe(false);
+      expect(unpublished.siteName).toBe("Veeram Silambam");
+      expect(await anonymous.proSite.bySlug({ slug: slugA })).toBeNull();
+      expect((await callerA.proSite.preview())?.siteName).toBe(
+        "Veeram Silambam"
+      );
+
+      const republished = await callerA.proSite.setPublished({
+        published: true,
+      });
+      expect(republished.published).toBe(true);
+      expect(await anonymous.proSite.bySlug({ slug: slugA })).not.toBeNull();
+    }
+  );
+
+  liveTest("does not reveal another master's unpublished site", async () => {
     expect(await anonymous.proSite.bySlug({ slug: slugB })).toBeNull();
     expect(await callerA.proSite.bySlug({ slug: slugB })).toBeNull();
   });
 
-  test("cascades the publication row when the profile is deleted", async () => {
-    const profile = await db.query.masterProfile.findFirst({
-      where: { userId: masterBId },
-      columns: { id: true },
-    });
-    if (!profile) {
-      throw new Error("Unpublished fixture profile was missing");
+  liveTest(
+    "cascades the publication row when the profile is deleted",
+    async () => {
+      const profile = await db.query.masterProfile.findFirst({
+        where: { userId: masterBId },
+        columns: { id: true },
+      });
+      if (!profile) {
+        throw new Error("Unpublished fixture profile was missing");
+      }
+
+      await db.delete(masterProfile).where(eq(masterProfile.id, profile.id));
+
+      const rows = await db
+        .select({ profileId: proSite.profileId })
+        .from(proSite)
+        .where(eq(proSite.profileId, profile.id));
+      expect(rows).toHaveLength(0);
     }
-
-    await db.delete(masterProfile).where(eq(masterProfile.id, profile.id));
-
-    const rows = await db
-      .select({ profileId: proSite.profileId })
-      .from(proSite)
-      .where(eq(proSite.profileId, profile.id));
-    expect(rows).toHaveLength(0);
-  });
+  );
 });

@@ -32,7 +32,9 @@ function site(overrides: Partial<ProSitePayload>): ProSitePayload {
     logoUrl: null,
     martialArts: [SILAMBAM.name],
     photoUrl: null,
+    siteName: "Audit Master",
     slug: "audit-master-profile-id",
+    style: "ochre",
     yearsTeaching: null,
     ...overrides,
   };
@@ -74,5 +76,19 @@ describe("Pro Site contact", () => {
     expect(html).toContain('id="contact"');
     expect(html).toContain("Based in Chennai.");
     expect(html).not.toContain("Teaching locations:");
+  });
+});
+
+describe("Pro Site branding", () => {
+  test("uses the site name in brand chrome and applies the selected style", () => {
+    const html = renderContact({
+      displayName: "Arun Vel",
+      siteName: "Veeram Silambam",
+      style: "terracotta",
+    });
+
+    expect(html).toContain('data-style="terracotta"');
+    expect(html).toContain("Veeram Silambam");
+    expect(html).toContain("Arun Vel");
   });
 });

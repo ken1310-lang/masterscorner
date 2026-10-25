@@ -62,12 +62,12 @@ function ProSiteHeader({ site }: { site: ProSitePayload }) {
               aria-hidden="true"
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pro-earth font-bold text-[13px] text-pro-parchment tracking-[.04em]"
             >
-              {initials(site.displayName)}
+              {initials(site.siteName)}
             </span>
           )}
           <span className="min-w-0">
             <span className="block truncate font-bold text-[15px] uppercase tracking-[.14em]">
-              {site.displayName}
+              {site.siteName}
             </span>
             {subtitle ? (
               <span className="mt-0.5 block truncate text-[10px] text-pro-muted uppercase tracking-[.1em]">
@@ -368,7 +368,7 @@ function ProSiteContact({ site }: { site: ProSitePayload }) {
           ) : null}
           {schedule ? (
             <a
-              className={`mt-6 inline-flex min-h-11 items-center font-semibold text-[13px] text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusOnParchment}`}
+              className={`mt-6 inline-flex min-h-11 items-center font-semibold text-[13px] text-pro-earth underline decoration-2 decoration-pro-ochre-ink underline-offset-4 ${focusOnParchment}`}
               href="#schedule"
             >
               See the weekly schedule
@@ -386,7 +386,7 @@ function ProSiteFooter({ site }: { site: ProSitePayload }) {
       <div className="pro-container grid rx-md:grid-cols-[1fr_auto] rx-md:items-end gap-8 py-12">
         <div className="min-w-0">
           <p className="break-words font-bold text-[15px] uppercase tracking-[.14em] [overflow-wrap:anywhere]">
-            {site.displayName}
+            {site.siteName}
           </p>
           {site.martialArts.length > 0 ? (
             <p className="mt-2 text-[13px] text-pro-parchment/65">
@@ -417,7 +417,10 @@ export function ProSitePage({
   const sections = visibleProSiteSections(site);
 
   return (
-    <div className="pro-site min-h-dvh bg-pro-parchment text-pro-earth">
+    <div
+      className="pro-site min-h-dvh bg-pro-parchment text-pro-earth"
+      data-style={site.style}
+    >
       <ProSiteSkipLink />
       <ProSiteHeader site={site} />
 
@@ -428,7 +431,7 @@ export function ProSitePage({
               This site could not refresh. Showing the last loaded content.
             </p>
             <button
-              className={`self-start font-semibold text-pro-earth underline decoration-2 decoration-pro-ochre underline-offset-4 ${focusOnParchment}`}
+              className={`self-start font-semibold text-pro-earth underline decoration-2 decoration-pro-ochre-ink underline-offset-4 ${focusOnParchment}`}
               onClick={onRetry}
               type="button"
             >
