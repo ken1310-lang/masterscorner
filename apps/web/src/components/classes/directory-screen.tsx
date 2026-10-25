@@ -70,7 +70,10 @@ function DirectoryErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16">
+    <div
+      className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16"
+      role="status"
+    >
       <h2 className="font-semibold text-[20px] text-navy">
         Classes could not load
       </h2>
@@ -264,7 +267,7 @@ function DirectoryResults({
 
       <div
         aria-hidden="true"
-        className="hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.8fr)] gap-4 border-ink border-b pb-3 font-semibold text-[13px] text-ink-muted md:grid"
+        className="rx-md:grid hidden grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,.8fr)] gap-4 border-ink border-b pb-3 font-semibold text-[13px] text-ink-muted"
       >
         <span>Class</span>
         <span>Master</span>

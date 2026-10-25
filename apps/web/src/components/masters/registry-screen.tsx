@@ -78,7 +78,10 @@ function RegistryErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16">
+    <div
+      className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16"
+      role="status"
+    >
       <h2 className="font-semibold text-[20px] text-navy">
         Masters could not load
       </h2>
@@ -267,7 +270,6 @@ function RegistryResults({
         <p className="text-[14px] text-ink-muted">Sorted by experience</p>
       </div>
 
-      <h3 className="sr-only">Masters</h3>
       <div className="mt-8 grid grid-cols-1 rx-sm:grid-cols-2 rx-xl:gap-7 gap-x-6 gap-y-10">
         {masters.map((master) => (
           <MasterCard key={master.id} master={master} />

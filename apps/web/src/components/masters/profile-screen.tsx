@@ -13,22 +13,22 @@ function ProfileSkeleton() {
     <div aria-busy="true" aria-label="Loading master profile" role="status">
       <section className="bg-canvas pt-6 rx-md:pt-10 pb-14 rx-md:pb-20">
         <RedesignContainer>
-          <div className="h-4 w-36 animate-pulse rounded bg-sand" />
+          <div className="h-4 w-36 animate-pulse rounded bg-sand motion-reduce:animate-none" />
           <div className="mt-8 grid rx-lg:grid-cols-[minmax(0,480px)_1fr] rx-md:grid-cols-[minmax(0,320px)_1fr] gap-8 rx-lg:gap-16 rx-md:gap-10">
-            <div className="aspect-[4/5] animate-pulse rounded-[24px] rx-sm:rounded-[32px] bg-sand" />
+            <div className="aspect-[4/5] animate-pulse rounded-[24px] rx-sm:rounded-[32px] bg-sand motion-reduce:animate-none" />
             <div>
-              <div className="h-14 w-3/4 max-w-[520px] animate-pulse rounded bg-sand" />
-              <div className="mt-4 h-5 w-1/2 animate-pulse rounded bg-sand" />
-              <div className="mt-8 h-10 w-64 animate-pulse rounded bg-sand" />
+              <div className="h-14 w-3/4 max-w-[520px] animate-pulse rounded bg-sand motion-reduce:animate-none" />
+              <div className="mt-4 h-5 w-1/2 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+              <div className="mt-8 h-10 w-64 animate-pulse rounded bg-sand motion-reduce:animate-none" />
             </div>
           </div>
         </RedesignContainer>
       </section>
       <section className="border-hairline border-t bg-canvas py-14 rx-md:py-20">
         <RedesignContainer className="max-w-[920px]">
-          <div className="h-9 w-52 animate-pulse rounded bg-sand" />
-          <div className="mt-5 h-4 w-full animate-pulse rounded bg-sand" />
-          <div className="mt-3 h-4 w-5/6 animate-pulse rounded bg-sand" />
+          <div className="h-9 w-52 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+          <div className="mt-5 h-4 w-full animate-pulse rounded bg-sand motion-reduce:animate-none" />
+          <div className="mt-3 h-4 w-5/6 animate-pulse rounded bg-sand motion-reduce:animate-none" />
         </RedesignContainer>
       </section>
     </div>
