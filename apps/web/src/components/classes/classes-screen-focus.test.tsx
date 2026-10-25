@@ -136,6 +136,8 @@ async function setup() {
   });
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   queryClient.setQueryData(trpc.classes.list.queryKey(), emptyPayload());
+  const proSiteKey = trpc.proSite.bySlug.queryKey({ slug: "profile-a" });
+  queryClient.setQueryData(proSiteKey, null);
 
   const rootRoute = createRootRouteWithContext<{
     sessionQueries: typeof sessionQueries;
@@ -154,7 +156,7 @@ async function setup() {
     </QueryClientProvider>
   );
   await view.findByRole("button", { name: "Create your first class" });
-  return view;
+  return { ...view, proSiteKey, queryClient };
 }
 
 async function settle(action: () => void | Promise<void>) {
@@ -223,6 +225,11 @@ describe("class editor focus restoration", () => {
     await clickButton(view, "Create class");
 
     await expectHeaderFocus(view);
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteKey)?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("focuses a mounted control after cancelling from the empty state", async () => {
