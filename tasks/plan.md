@@ -92,7 +92,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Phase 5: Pro Site (PR 16-17)
 
-- [ ] Task 16: Pro Site renderer — site generated from profile and class data, themable, reachable at the canonical address (path now, subdomain once the zone check passes; ADR-004).
+- [x] Task 16: Pro Site renderer — site generated from profile and class data, themable, reachable at the canonical address (path now, subdomain once the zone check passes; ADR-004). Zone check failed on 2026-10-25; `/pro/{slug}` ships, the subdomain remains deferred.
 - [ ] Task 17: Pro Site settings — site name, style choice, publish/unpublish, sync status in the console.
 
 ### Checkpoint F: Release candidate
