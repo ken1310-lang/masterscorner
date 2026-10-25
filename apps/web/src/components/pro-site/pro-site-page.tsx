@@ -362,7 +362,7 @@ function ProSiteContact({ site }: { site: ProSitePayload }) {
           {site.homeCity ? <p>Based in {site.homeCity}.</p> : null}
           {site.locations.length > 0 ? (
             <p className="mt-3">
-              Classes run at{" "}
+              Teaching locations:{" "}
               {site.locations.map((item) => item.name).join(", ")}.
             </p>
           ) : null}
