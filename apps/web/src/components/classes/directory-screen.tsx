@@ -149,7 +149,7 @@ function DirectoryFiltersBar({
     [onFilterChange]
   );
   const fieldClass =
-    "min-h-11 w-full rounded-full border border-hairline bg-canvas px-5 text-[15px] font-medium text-ink outline-none focus:border-navy";
+    "min-h-11 w-full rounded-full border border-hairline bg-canvas px-5 text-[15px] font-medium text-ink focus:border-navy";
   const unknownArt =
     filters.art &&
     !payload.martialArts.some((item) => item.value === filters.art)

@@ -157,7 +157,7 @@ function RegistryFiltersBar({
     [onFilterChange]
   );
   const fieldClass =
-    "mt-2 min-h-11 w-full rounded-full border border-hairline bg-canvas px-4 text-[15px] font-medium text-ink outline-none focus:border-navy rx-lg:rounded-[10px]";
+    "mt-2 min-h-11 w-full rounded-full border border-hairline bg-canvas px-4 text-[15px] font-medium text-ink focus:border-navy rx-lg:rounded-[10px]";
   const labelClass =
     "flex min-w-0 flex-col text-[14px] font-semibold text-ink-muted";
   const unknownArt =
