@@ -10,7 +10,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { type ChangeEvent, useCallback } from "react";
 
 import { AUDIENCE_LABELS } from "@/components/classes/class-values";
-import { ShellContainer } from "@/components/shell/container";
+import { MarketplacePageHero } from "@/components/marketplace/page-hero";
+import { RedesignContainer } from "@/components/shell/container";
 import { useTRPC } from "@/utils/trpc";
 
 import { MasterCard } from "./master-card";
@@ -50,40 +51,26 @@ function filterNames(
   ].filter((name): name is string => name !== null);
 }
 
-function RegistryHero() {
-  return (
-    <section className="bg-navy py-[62px] text-white md:py-[84px] md:pb-[72px]">
-      <ShellContainer>
-        <p className="font-extrabold text-[12px] text-brand-lifted uppercase tracking-[.16em]">
-          Master Registry
-        </p>
-        <h1 className="mt-4 max-w-[760px] font-extrabold text-[clamp(42px,5.7vw,72px)] leading-[.98] tracking-[-.055em]">
-          Find a martial arts master
-        </h1>
-        <p className="mt-6 max-w-[690px] text-[#bdc7d8] text-lg leading-relaxed">
-          Search by discipline, area and audience, then compare real profiles
-          built by martial-arts masters.
-        </p>
-      </ShellContainer>
-    </section>
-  );
-}
-
 function RegistrySkeleton() {
   return (
-    <div aria-busy="true" className="grid gap-5 md:grid-cols-2" role="status">
-      <span className="sr-only">Loading masters</span>
+    <div
+      aria-busy="true"
+      aria-label="Loading masters"
+      className="grid grid-cols-1 rx-sm:grid-cols-2 gap-x-6 gap-y-10"
+      role="status"
+    >
       {SKELETON_CARDS.map((card) => (
-        <div
-          className="h-[220px] animate-pulse rounded-[16px] border border-line bg-surface-alt"
-          key={card}
-        />
+        <div key={card}>
+          <div className="aspect-[4/5] animate-pulse rounded-[24px] bg-sand motion-reduce:animate-none" />
+          <div className="mt-5 h-6 w-3/4 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+          <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-sand motion-reduce:animate-none" />
+        </div>
       ))}
     </div>
   );
 }
 
-function RegistryError({
+function RegistryErrorState({
   message,
   onRetry,
 }: {
@@ -91,18 +78,17 @@ function RegistryError({
   onRetry: () => void;
 }) {
   return (
-    <div
-      className="rounded-[14px] border border-line bg-card p-6"
-      role="status"
-    >
-      <h2 className="font-extrabold text-lg">Masters could not load</h2>
-      <p className="mt-2 max-w-[60ch] text-muted-text text-sm">{message}</p>
+    <div className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16">
+      <h2 className="font-semibold text-[20px] text-navy">
+        Masters could not load
+      </h2>
+      <p className="mt-2 max-w-[60ch] text-ink leading-relaxed">{message}</p>
       <button
-        className="mt-4 min-h-11 rounded-[9px] bg-navy px-4 font-black text-white text-xs hover:bg-navy-deep"
+        className="mt-6 min-h-11 rounded-full bg-navy px-5 py-2.5 font-semibold text-[15px] text-white hover:bg-navy-deep"
         onClick={onRetry}
         type="button"
       >
-        Try again
+        Retry
       </button>
     </div>
   );
@@ -111,14 +97,14 @@ function RegistryError({
 function RefreshBanner({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="mb-4 flex flex-col gap-2 rounded-[10px] border border-line bg-surface-alt px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      className="mb-6 flex rx-sm:flex-row flex-col rx-sm:items-center rx-sm:justify-between gap-2 rounded-[16px] border border-hairline bg-sand px-4 py-3"
       role="status"
     >
-      <p className="text-muted-text text-xs">
+      <p className="text-ink-muted text-sm">
         Could not refresh masters. Showing the last loaded page.
       </p>
       <button
-        className="min-h-9 font-extrabold text-accent-text text-xs underline-offset-4 hover:underline"
+        className="min-h-9 rx-sm:self-auto self-start font-semibold text-accent-text text-sm underline-offset-4 hover:underline"
         onClick={onRetry}
         type="button"
       >
@@ -168,9 +154,9 @@ function RegistryFiltersBar({
     [onFilterChange]
   );
   const fieldClass =
-    "min-h-11 w-full rounded-[9px] border border-line bg-card px-3 font-normal text-ink text-sm normal-case tracking-normal md:w-auto";
+    "mt-2 min-h-11 w-full rounded-full border border-hairline bg-canvas px-4 text-[15px] font-medium text-ink outline-none focus:border-navy rx-lg:rounded-[10px]";
   const labelClass =
-    "flex min-w-0 flex-col gap-1 font-extrabold text-[10px] text-muted-text uppercase tracking-[.1em]";
+    "flex min-w-0 flex-col text-[14px] font-semibold text-ink-muted";
   const unknownArt =
     filters.art &&
     !payload.martialArts.some((item) => item.value === filters.art)
@@ -183,86 +169,82 @@ function RegistryFiltersBar({
       : undefined;
 
   return (
-    <div className="mb-6 flex flex-col gap-3 border-line border-t-[3px] border-t-navy pt-4 md:flex-row md:flex-wrap md:items-end">
-      <div className="md:mr-auto">
-        <strong className="text-sm">Filter masters</strong>
-        <p className="mt-1 text-muted-text text-xs">
-          Narrow the list by discipline, area and who the classes are for.
-        </p>
-        {hasFilters ? (
-          <p className="mt-1 text-muted-text text-xs">
-            Showing {activeNames.join(", ")}
-          </p>
-        ) : null}
+    <aside className="self-start">
+      <h2 className="font-semibold text-[17px] text-navy">Filter results</h2>
+      <div className="mt-3 grid grid-cols-1 rx-lg:grid-cols-1 rx-sm:grid-cols-3 gap-3">
+        <label className={labelClass} htmlFor="filter-art">
+          Martial art
+          <select
+            className={fieldClass}
+            id="filter-art"
+            onChange={handleArt}
+            value={filters.art ?? ""}
+          >
+            <option value="">All martial arts</option>
+            {unknownArt ? (
+              <option value={unknownArt}>Selected martial art</option>
+            ) : null}
+            {payload.martialArts.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className={labelClass} htmlFor="filter-location">
+          Location
+          <select
+            className={fieldClass}
+            id="filter-location"
+            onChange={handleLocation}
+            value={filters.location ?? ""}
+          >
+            <option value="">All locations</option>
+            {unknownLocation ? (
+              <option value={unknownLocation}>Selected location</option>
+            ) : null}
+            {payload.locations.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className={labelClass} htmlFor="filter-audience">
+          Audience
+          <select
+            className={fieldClass}
+            id="filter-audience"
+            onChange={handleAudience}
+            value={filters.audience ?? ""}
+          >
+            <option value="">All audiences</option>
+            {CLASS_AUDIENCES.map((audience) => (
+              <option key={audience} value={audience}>
+                {AUDIENCE_LABELS[audience]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
-
-      <label className={labelClass} htmlFor="filter-art">
-        Martial art
-        <select
-          className={fieldClass}
-          id="filter-art"
-          onChange={handleArt}
-          value={filters.art ?? ""}
-        >
-          <option value="">All martial arts</option>
-          {unknownArt ? (
-            <option value={unknownArt}>Selected martial art</option>
-          ) : null}
-          {payload.martialArts.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className={labelClass} htmlFor="filter-location">
-        Location
-        <select
-          className={fieldClass}
-          id="filter-location"
-          onChange={handleLocation}
-          value={filters.location ?? ""}
-        >
-          <option value="">All locations</option>
-          {unknownLocation ? (
-            <option value={unknownLocation}>Selected location</option>
-          ) : null}
-          {payload.locations.map((item) => (
-            <option key={item.value} value={item.value}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className={labelClass} htmlFor="filter-audience">
-        Audience
-        <select
-          className={fieldClass}
-          id="filter-audience"
-          onChange={handleAudience}
-          value={filters.audience ?? ""}
-        >
-          <option value="">All audiences</option>
-          {CLASS_AUDIENCES.map((audience) => (
-            <option key={audience} value={audience}>
-              {AUDIENCE_LABELS[audience]}
-            </option>
-          ))}
-        </select>
-      </label>
 
       {hasFilters ? (
         <button
-          className="min-h-11 self-start font-extrabold text-accent-text text-xs underline-offset-4 hover:underline md:self-end"
+          className="mt-5 min-h-11 font-semibold text-[14px] text-brand-strong underline-offset-4 hover:underline"
           onClick={onClear}
           type="button"
         >
           Clear filters
         </button>
       ) : null}
-    </div>
+      {hasFilters ? (
+        <p className="mt-4 text-[13px] text-ink-muted leading-relaxed">
+          Showing {activeNames.join(", ")}.
+        </p>
+      ) : null}
+    </aside>
   );
 }
 
@@ -275,15 +257,18 @@ function RegistryResults({
 }) {
   return (
     <>
-      <div className="mb-4 flex items-baseline justify-between gap-3">
-        <p aria-live="polite" className="text-muted-text text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-hairline rx-lg:border-0 border-t pt-6 rx-lg:pt-0">
+        <h2
+          aria-live="polite"
+          className="font-semibold rx-sm:text-[22px] text-[20px] text-navy tracking-[-0.02em]"
+        >
           {total} {total === 1 ? "master" : "masters"}
-        </p>
-        <p className="text-muted-text text-xs">Sorted by experience</p>
+        </h2>
+        <p className="text-[14px] text-ink-muted">Sorted by experience</p>
       </div>
 
-      <h2 className="sr-only">Masters</h2>
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <h3 className="sr-only">Masters</h3>
+      <div className="mt-8 grid grid-cols-1 rx-sm:grid-cols-2 rx-xl:gap-7 gap-x-6 gap-y-10">
         {masters.map((master) => (
           <MasterCard key={master.id} master={master} />
         ))}
@@ -315,21 +300,21 @@ function RegistryPagination({
   return (
     <nav
       aria-label="Master pages"
-      className="mt-8 flex items-center justify-between gap-3"
+      className="mt-10 flex items-center justify-between gap-3"
     >
       <button
-        className="min-h-11 rounded-[9px] border border-line bg-card px-4 font-extrabold text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-11 rounded-full border border-hairline bg-canvas px-5 font-semibold text-[14px] text-navy hover:bg-sand disabled:cursor-not-allowed disabled:opacity-40"
         disabled={page <= 1}
         onClick={previousPage}
         type="button"
       >
         Previous
       </button>
-      <span aria-live="polite" className="text-muted-text text-xs">
+      <span aria-live="polite" className="text-ink-muted text-sm">
         Page {page} of {totalPages}
       </span>
       <button
-        className="min-h-11 rounded-[9px] border border-line bg-card px-4 font-extrabold text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        className="min-h-11 rounded-full border border-hairline bg-canvas px-5 font-semibold text-[14px] text-navy hover:bg-sand disabled:cursor-not-allowed disabled:opacity-40"
         disabled={page >= totalPages}
         onClick={nextPage}
         type="button"
@@ -351,20 +336,20 @@ function RegistryEmpty({
 }) {
   return (
     <div
-      className="rounded-[14px] border border-line bg-card p-6"
+      className="rounded-[24px] bg-sand px-6 rx-sm:px-8 py-12 rx-sm:py-16 text-center"
       role="status"
     >
-      <h2 className="font-extrabold text-lg">
+      <h2 className="font-semibold text-[20px] text-navy">
         {hasFilters ? "No masters match these filters" : "No masters yet"}
       </h2>
-      <p className="mt-2 max-w-[60ch] text-muted-text text-sm leading-relaxed">
+      <p className="mx-auto mt-2 max-w-[52ch] text-ink leading-relaxed">
         {hasFilters
           ? `No stored master matches ${activeNames.join(", ")}. Try another martial art, location or audience.`
           : "No master profile has been created yet. When a master completes their profile, they will appear here."}
       </p>
       {hasFilters ? (
         <button
-          className="mt-4 min-h-11 rounded-[9px] bg-navy px-4 font-black text-white text-xs hover:bg-navy-deep"
+          className="mt-6 min-h-11 rounded-full bg-navy px-5 py-2.5 font-semibold text-[15px] text-white hover:bg-navy-deep"
           onClick={onClear}
           type="button"
         >
@@ -404,13 +389,23 @@ export function RegistryScreen({
 
   return (
     <>
-      <RegistryHero />
-      <section className="py-[68px] md:py-[92px]">
-        <ShellContainer>
+      <MarketplacePageHero
+        body="Search by discipline, area and audience, then compare real profiles built by martial-arts masters."
+        eyebrow="Master registry"
+        title="Find a martial arts master"
+      />
+      <section className="border-hairline border-t bg-canvas pt-12 pb-16 rx-md:pb-24">
+        <RedesignContainer
+          className={
+            showFilters
+              ? "grid grid-cols-1 rx-lg:grid-cols-[232px_minmax(0,1fr)] gap-8 rx-lg:gap-14"
+              : undefined
+          }
+        >
           {mastersQuery.status === "pending" ? <RegistrySkeleton /> : null}
 
           {mastersQuery.isError && !payload ? (
-            <RegistryError
+            <RegistryErrorState
               message={mastersQuery.error.message}
               onRetry={handleRetry}
             />
@@ -418,10 +413,6 @@ export function RegistryScreen({
 
           {payload ? (
             <>
-              {mastersQuery.isError ? (
-                <RefreshBanner onRetry={handleRetry} />
-              ) : null}
-
               {showFilters ? (
                 <RegistryFiltersBar
                   activeNames={activeNames}
@@ -433,28 +424,34 @@ export function RegistryScreen({
                 />
               ) : null}
 
-              {payload.total > 0 ? (
-                <>
-                  <RegistryResults
-                    masters={payload.masters}
-                    total={payload.total}
+              <div className="min-w-0">
+                {mastersQuery.isError ? (
+                  <RefreshBanner onRetry={handleRetry} />
+                ) : null}
+
+                {payload.total > 0 ? (
+                  <>
+                    <RegistryResults
+                      masters={payload.masters}
+                      total={payload.total}
+                    />
+                    <RegistryPagination
+                      onPageChange={onPageChange}
+                      page={payload.page}
+                      totalPages={payload.totalPages}
+                    />
+                  </>
+                ) : (
+                  <RegistryEmpty
+                    activeNames={activeNames}
+                    hasFilters={hasFilters}
+                    onClear={onClear}
                   />
-                  <RegistryPagination
-                    onPageChange={onPageChange}
-                    page={payload.page}
-                    totalPages={payload.totalPages}
-                  />
-                </>
-              ) : (
-                <RegistryEmpty
-                  activeNames={activeNames}
-                  hasFilters={hasFilters}
-                  onClear={onClear}
-                />
-              )}
+                )}
+              </div>
             </>
           ) : null}
-        </ShellContainer>
+        </RedesignContainer>
       </section>
     </>
   );
