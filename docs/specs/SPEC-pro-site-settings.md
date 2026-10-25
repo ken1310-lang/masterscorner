@@ -158,7 +158,7 @@ The page keeps the console shell and adds:
 5. **Data sync** card: the five rows and truthful `Synced`/`Not added` states from `status.sync`.
 6. No plan, billing, premium, custom-domain, Events, verification or analytics claim.
 
-Name/style share one save mutation. A successful save updates the cached status and invalidates public Pro Site queries after the identity-scope guard. A failed save preserves the draft and shows the error. Publication changes invalidate status and both public/preview queries. The existing no-profile empty state remains.
+Name/style share one save mutation. A successful save updates the cached status and invalidates public Pro Site queries after the identity-scope guard. A failed save preserves the draft and shows the error. Publication changes invalidate status and both public/preview queries. The existing no-profile empty state remains. The site-name input does not use a pre-trim `maxLength`; the post-trim validator owns the 80-character limit so a pasted leading space cannot drop a valid character.
 
 ### 5.2 `/site-preview`
 
@@ -176,7 +176,7 @@ Auth-only, outside the console shell. It renders the existing `ProSitePage` with
 - Small: site-name normalization (trim, empty -> null, 80-character limit, 81 rejected), style enum, effective name fallback, sync derivation.
 - Contract: settings insert/update preserves publication; publish/unpublish gate; preview is owner-only and returns draft data; another account cannot change or preview; no-profile behavior; public payload exact keys and values.
 - Migration: generated SQL reviewed, applied to development, and existing `pro_site` rows read with default style and null name.
-- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; a style-only save preserves the unresolved profile-name fallback; style visibly changes; sync states; no plan/custom-domain copy; keyboard/focus, including the inline unpublish confirmation; no horizontal overflow.
+- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; a style-only save preserves the unresolved profile-name fallback; a leading-space paste of 80 characters survives the input and saves all 80; style visibly changes; sync states; no plan/custom-domain copy; keyboard/focus, including the inline unpublish confirmation; no horizontal overflow.
 - Gates: `bun run gates`, focused API tests, `bun run test:db` against development.
 
 ## 7. Success criteria

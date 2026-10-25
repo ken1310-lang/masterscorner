@@ -384,12 +384,12 @@ function SiteNameField({
       >
         Site name
       </Label>
+      {/* No maxLength: the browser would truncate before the schema trims. */}
       <Input
         aria-describedby={describedBy}
         aria-invalid={errors.length > 0}
         className="min-h-11 rounded-[10px] border-line bg-card px-3.5 py-[11px] text-sm focus-visible:border-navy focus-visible:ring-0"
         id="site-name"
-        maxLength={MAX_PRO_SITE_NAME}
         onBlur={field.handleBlur}
         onChange={handleChange}
         placeholder={displayName}
