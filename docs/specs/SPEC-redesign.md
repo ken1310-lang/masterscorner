@@ -30,7 +30,7 @@ Transcribe these values into `packages/ui/src/styles/globals.css` under new name
 | Accent deep | `#9e2f3c` | Button hover |
 | Saffron | `#f4c64e` | Master CTA surface |
 | Earth / earth 2 / ochre / parchment | `#17110c` / `#241a12` / `#e0954a` / `#f3e9da` | Pro Site phase |
-| Display | Fraunces | Pro Site phase only; the marketplace OS uses Outfit |
+| Display | Outfit (Fraunces deferred) | Task 16 owner decision: Pro Site uses the existing native Outfit stack; Fraunces remains a future option |
 | Sans | Outfit | Existing self-hosted variable font |
 | Container | `min(100% - 40px, 1240px)` | New `redesign-container`; old `shell-container` stays for unported screens |
 | Breakpoints | 640 / 768 / 1024 / 1280 px | OS uses Tailwind defaults; add `dsm`/`dmd`/`dlg`/`dxl` tokens or exact arbitrary variants, do not reuse the old 521/761/981 tokens |

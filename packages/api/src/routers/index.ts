@@ -3,6 +3,7 @@ import { classesRouter } from "./classes";
 import { directoryRouter } from "./directory";
 import { masterRouter } from "./master";
 import { mediaRouter } from "./media";
+import { proSiteRouter } from "./pro-site";
 
 export const appRouter = router({
   classes: classesRouter,
@@ -10,6 +11,7 @@ export const appRouter = router({
   healthCheck: publicProcedure.query(() => "OK"),
   master: masterRouter,
   media: mediaRouter,
+  proSite: proSiteRouter,
   privateData: protectedProcedure.query(({ ctx }) => ({
     message: "This is private",
     user: ctx.session.user,

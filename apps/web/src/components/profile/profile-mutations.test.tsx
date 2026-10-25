@@ -177,6 +177,10 @@ async function setup() {
   const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
     slug: "profile-a",
   });
+  const proSiteBySlugQueryKey = trpc.proSite.bySlug.queryKey({
+    slug: "profile-a",
+  });
+  const proSiteStatusQueryKey = trpc.proSite.status.queryKey();
 
   function Editor() {
     const profile = useQuery(trpc.master.getProfile.queryOptions());
@@ -209,6 +213,8 @@ async function setup() {
     directoryClassesQueryKey,
     registryQueryKey,
     directoryProfileQueryKey,
+    proSiteBySlugQueryKey,
+    proSiteStatusQueryKey,
     requests,
     sessionQueries,
     cached: () => queryClient.getQueryData<MasterProfilePayload>(queryKey),
@@ -606,6 +612,14 @@ describe("public directory freshness", () => {
       locations: [],
       martialArts: [],
     });
+    view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
+    view.queryClient.setQueryData<{
+      address: string;
+      published: boolean;
+    }>(view.proSiteStatusQueryKey, {
+      address: "/pro/profile-a",
+      published: true,
+    });
     fireEvent.change(view.getByLabelText("Display name"), {
       target: { value: "Saved master" },
     });
@@ -629,11 +643,24 @@ describe("public directory freshness", () => {
           ?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteBySlugQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteStatusQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("successful photo upload invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -658,11 +685,18 @@ describe("public directory freshness", () => {
         view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteBySlugQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("successful photo removal invalidates the public profile and registry", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -686,11 +720,18 @@ describe("public directory freshness", () => {
         view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
       ).toBe(true)
     );
+    await waitFor(() =>
+      expect(
+        view.queryClient.getQueryState(view.proSiteBySlugQueryKey)
+          ?.isInvalidated
+      ).toBe(true)
+    );
   });
 
   test("failed photo upload leaves the public profile and registry fresh", async () => {
     const view = await setup();
     view.queryClient.setQueryData(view.directoryProfileQueryKey, null);
+    view.queryClient.setQueryData(view.proSiteBySlugQueryKey, null);
     view.queryClient.setQueryData(view.registryQueryKey, {
       locations: [],
       martialArts: [],
@@ -711,6 +752,9 @@ describe("public directory freshness", () => {
     ).toBe(false);
     expect(
       view.queryClient.getQueryState(view.registryQueryKey)?.isInvalidated
+    ).toBe(false);
+    expect(
+      view.queryClient.getQueryState(view.proSiteBySlugQueryKey)?.isInvalidated
     ).toBe(false);
   });
 });

@@ -45,15 +45,23 @@ function Overview() {
         <article className="rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-extrabold text-base">Next step</h2>
           <p className="mt-2 text-muted-text text-sm leading-relaxed">
-            Your master profile and current classes appear in the public
-            directory. Your Pro Site address is not assigned yet.
+            Keep your master profile and current classes up to date. Open Pro
+            Site to see your address and whether the site is published.
           </p>
-          <Link
-            className="mt-4 inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
-            to="/dashboard/profile"
-          >
-            Open profile
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+            <Link
+              className="inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
+              to="/dashboard/profile"
+            >
+              Open profile
+            </Link>
+            <Link
+              className="inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
+              to="/dashboard/site"
+            >
+              Open Pro Site
+            </Link>
+          </div>
         </article>
       </div>
     </>
