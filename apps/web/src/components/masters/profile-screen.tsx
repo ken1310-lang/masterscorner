@@ -37,7 +37,7 @@ function ProfileSkeleton() {
 
 function ProfileError({ onRetry }: { onRetry: () => void }) {
   return (
-    <section className="bg-canvas py-14 rx-md:py-20">
+    <section className="bg-canvas py-14 rx-md:py-20" role="status">
       <RedesignContainer className="max-w-[620px]">
         <p className="font-semibold text-[16px] text-brand-strong">
           Master profile
@@ -70,7 +70,10 @@ function ProfileNotFound() {
 
 function RefreshBanner({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mb-8 flex rx-sm:flex-row flex-col rx-sm:items-center rx-sm:justify-between gap-2 rounded-[16px] border border-hairline bg-sand px-4 py-3">
+    <div
+      className="mb-8 flex rx-sm:flex-row flex-col rx-sm:items-center rx-sm:justify-between gap-2 rounded-[16px] border border-hairline bg-sand px-4 py-3"
+      role="status"
+    >
       <p className="text-ink-muted text-sm">
         This profile could not refresh. Showing the last loaded data.
       </p>
