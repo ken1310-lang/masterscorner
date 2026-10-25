@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted 2026-10-23. Owner decisions: full MVP rebrand; include reviews, verification, booking/trial and pricing as modules; use Magic Patterns images as temporary marketing assets. Phase R1 (tokens, shell and Home) is implemented; phases R2-R6 remain.
+Accepted 2026-10-23. Owner decisions: full MVP rebrand; include reviews, verification, booking/trial and pricing as modules; use Magic Patterns images as temporary marketing assets. Phases R1 (tokens, shell and Home) and R2 (Masters registry, master profile, Classes and For Masters) are implemented; phases R3-R6 remain.
 
 ## 1. Objective
 
@@ -150,4 +150,4 @@ The first four visual phases do not block on those decisions; they omit the unba
 - Every OS route is classified.
 - The visual values and breakpoints are explicit.
 - The owner's feature choices are recorded with the required follow-up specs.
-- Phase R1 has observable acceptance criteria.
+- Phases R1 and R2 have observable acceptance criteria.

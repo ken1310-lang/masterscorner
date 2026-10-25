@@ -15,7 +15,7 @@ Success: `/masters` lists only stored master profiles; every filter and page is 
 - A public profile slug and card action linking to `/masters/$slug` once Task 13 ships (see `SPEC-master-profile-page.md`).
 - The `Masters` destination in the marketplace header.
 - Pure pagination/filter-schema tests and live contract tests for first page, last page, no results and anonymous access.
-- Browser verification at 1440, 980, 760 and 520 px.
+- Browser verification at 1440, 1024, 768 and 390 px.
 
 ### 2.2 Out of scope
 
@@ -99,16 +99,16 @@ Console profile saves, profile photo uploads/removals, and class save/status/rem
 
 ### 3.3 Screen
 
-`/masters` is a marketplace route under `_marketplace`, sharing the existing header, footer and skip link. The hero contains the kicker `Master Registry`, the heading `Find a martial arts master`, and a sentence describing real master profiles. The filter bar has labelled selects for martial art, location and audience plus a visible `Clear filters` action when any filter is active. Selecting a filter writes `art`, `location` and `audience` to the URL and resets `page`; selecting a page writes `page`. Reloading or sharing restores both.
+`/masters` is a marketplace route under `_marketplace`, sharing the existing header, footer and skip link. The R2 hero is the shared `MarketplacePageHero`: eyebrow `Master registry`, the heading `Find a martial arts master`, and a sentence describing real master profiles. Below it, results use a two-column layout at `rx-lg` with a 232px filter sidebar and the result column. The sidebar has labelled selects for martial art, location and audience plus a visible `Clear filters` action when any filter is active; below `rx-lg` the controls stack and then form a three-column row at `rx-sm`. Selecting a filter writes `art`, `location` and `audience` to the URL and resets `page`; selecting a page writes `page`. Reloading or sharing restores both.
 
-The result header shows the real count (`6 masters`, `1 master`) and `Sorted by experience`. The card grid uses two columns above the mobile breakpoint and one below. Each card shows:
+The result header shows the real count (`6 masters`, `1 master`) and `Sorted by experience`. The card grid uses two columns at `rx-sm` and one below. Each card shows:
 
 - a current profile photo when supplied, otherwise an intentional initials fallback;
 - display name;
 - all martial arts in profile order, joined for the subtitle;
 - `homeCity` when supplied;
 - `yearsTeaching` when supplied, as `18 years teaching`;
-- audience tags using the class labels;
+- audience tags using the class labels, rendered as bordered pills;
 - the whole card is a link to `/masters/$slug`.
 
 Cards have no rating, review count, verification badge, fee or profile-completeness score. A card with no city, years or audiences simply omits those lines.
@@ -175,13 +175,13 @@ const rows = await ctx.db
   .offset((page - 1) * MASTER_PAGE_SIZE);
 ```
 
-Use the existing `publicProcedure`, Drizzle relational/data reads, TanStack Query `queryOptions`, TanStack Router `validateSearch`/`useNavigate`, semantic Tailwind roles and `ShellContainer`. Do not add a state library, Tailwind config or a new generic pagination abstraction.
+Use the existing `publicProcedure`, Drizzle relational/data reads, TanStack Query `queryOptions`, TanStack Router `validateSearch`/`useNavigate`, the R2 semantic roles (`bg-canvas`, `bg-sand`, `border-hairline`, `text-ink-muted`), `RedesignContainer` and `MarketplacePageHero`. Do not add a state library, Tailwind config or a new generic pagination abstraction.
 
 ## 6. Testing strategy
 
 - Small: master filter schema accepts normalized art/location names and page numbers; rejects page 0 and invalid audience; inherited length limits remain enforced.
 - Contract: anonymous caller sees stored masters ordered by experience with nulls last and stable id tie-breaks; first and last pages contain no duplicates or omissions; page beyond the end clamps; unknown filters return `total: 0`; shared art/location names resolve all profiles; audience matches current classes only, excludes paused classes, and leaves classless masters listed without tags; every card has the derived slug and only the current profile-photo URL; payload contains no email, user id, revision, fee, object key or introduction.
-- UI: browser check at 1440, 980, 760 and 520 px with seeded masters; inspect filter controls, cards, tags, pagination, filter reset, first/last page and empty state; confirm no horizontal page scroll, no rating/badge/fee, a working profile link, and keyboard-usable controls.
+- UI: browser check at 1440, 1024, 768 and 390 px with seeded masters; inspect filter controls, cards, tags, pagination, filter reset, first/last page and empty state; confirm no horizontal page scroll, no rating/badge/fee, a working profile link, and keyboard-usable controls.
 - Freshness: a profile save invalidates a non-default registry page key; a browser walkthrough changes years and class state, then returns inside the 60-second window and observes the new card position/tag without a manual reload.
 - No database schema change is expected. If one becomes necessary, generate and apply a versioned migration to the development branch first.
 
