@@ -80,6 +80,19 @@ describe("Pro Site contact", () => {
 });
 
 describe("Pro Site branding", () => {
+  test("renders the stored logo instead of initials", () => {
+    const html = renderContact({ logoUrl: "https://image.test/logo.png" });
+
+    expect(html).toContain('src="https://image.test/logo.png"');
+    expect(html).not.toContain(">AM</span>");
+  });
+
+  test("keeps the initials fallback when no logo is stored", () => {
+    const html = renderContact({});
+
+    expect(html).toContain(">AM</span>");
+  });
+
   test("uses the site name in brand chrome and applies the selected style", () => {
     const html = renderContact({
       displayName: "Arun Vel",

@@ -234,6 +234,10 @@ Four things the first rehearsal taught:
 - **Turbo hides environment variables it does not know** (strict env mode). A variable reaches a task only when it is declared — in `globalEnv` or the task's own `env` — otherwise the task silently reads the value from the env files instead. `NEON_BRANCH`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` and `ALCHEMY_PASSWORD` are declared for that reason; when `NEON_BRANCH` was missing from that list, the guard inside `bun run deploy:production` reported `NEON_BRANCH is "development"` while the operator's shell said `production`.
 - **Verify the deploy against the branch, not the URL.** A deployed API can answer on its workers.dev URL while pointing at the wrong database, so sign a probe account up through the deployed API and count it on the branch (`select count(*) from public."user"`), then remove it.
 
+### Rolling back a production deploy
+
+If a production deploy regresses, revert the release commit on `master`, merge the revert, and rerun `bun run deploy:production` from the same exported production environment. The first release's migrations are additive; do not rewrite applied migrations. Verify both Worker roots and `/trpc/healthCheck`, then repeat the sign-up/count/delete probe above. The rollback itself needs no database restore unless a future migration is destructive.
+
 Padding `packages/infra/.env` with the same values works too, but that file also feeds `alchemy dev`, so a production database parked there points local development at production.
 
 The `db:generate`, `db:push`, `deploy`, `deploy:production` and `destroy` scripts run Turbo tasks marked `interactive: true`. Turbo refuses an interactive task when there is no terminal UI, and `TURBO_UI=true` does not lift that, so run these from a real terminal; a CI job must call the package script directly instead. `db:migrate` is deliberately **not** interactive — `drizzle-kit migrate` never reads stdin — so a CI job can run it through Turbo.
