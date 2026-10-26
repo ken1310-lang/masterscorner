@@ -1,4 +1,5 @@
 import {
+  effectiveSiteName,
   MAX_PRO_SITE_NAME,
   PRO_SITE_STYLES,
   type ProSiteStatus,
@@ -661,7 +662,10 @@ function ProSite() {
         {profileQuery.data ? (
           <div className="lg:col-span-2">
             <PhotoField
-              accountName={status.displayName}
+              accountName={effectiveSiteName(
+                status.displayName,
+                status.siteName
+              )}
               disabled={false}
               hasProfile
               kind="site_logo"

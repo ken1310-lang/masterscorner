@@ -308,7 +308,12 @@ afterEach(() => {
   }
 });
 
-afterAll(() => {
+afterAll(async () => {
+  // React 19's scheduler may still hold a macrotask that reads `window.event`.
+  // Drain it while the DOM globals are installed, then close the window.
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, 10);
+  await promise;
   dom.window.close();
   for (const [key, descriptor] of originalGlobals) {
     if (descriptor) {
