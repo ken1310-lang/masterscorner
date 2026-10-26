@@ -57,7 +57,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Checkpoint B
 
-- [ ] A master can sign up, verify email, sign in, reset a password and reach an empty console.
+- [~] A master can sign up, sign in and reach an empty console; email verification and password reset remain owner-deferred pending a provider/sender (PRD §30.3).
 
 ### Phase 2: Master profile and media (PR 6-8)
 
@@ -67,7 +67,7 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Checkpoint C
 
-- [ ] A master edits their profile and sees the photo and locations persist across a fresh session.
+- [x] A master edits their profile and sees the photo and locations persist across a fresh session. Verified on 2026-10-26 with the release-candidate fixture.
 
 ### Phase 3: Classes (PR 9-10)
 
@@ -88,18 +88,20 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Checkpoint E
 
-- [ ] A visitor with no account can find a master, open their profile and see their classes, with no fabricated trust signal or dead CTA anywhere.
+- [x] A visitor with no account can find a master, open their profile and see their classes, with no fabricated trust signal or dead CTA anywhere. Verified on 2026-10-26.
 
 ### Phase 5: Pro Site (PR 16-17)
 
 - [x] Task 16: Pro Site renderer — site generated from profile and class data, themable, reachable at the canonical address (path now, subdomain once the zone check passes; ADR-004). Zone check failed on 2026-10-25; `/pro/{slug}` ships, the subdomain remains deferred.
-- [x] Task 17: Pro Site settings — site name, three supported styles, publish/unpublish with confirmation, owner draft preview, and profile-owned sync status. Migration applied to development; public gate and privacy unchanged.
+- [x] Task 17: Pro Site settings — site name, three supported styles, logo upload, publish/unpublish with confirmation, owner draft preview, and profile-owned sync status. Migration applied to development; public gate and privacy unchanged.
 
 ### Checkpoint F: Release candidate
 
-- [ ] Every PRD §30.2 acceptance item is demonstrable end to end on the development environment.
-- [ ] Every ported screen matches the prototype except the documented deviations.
-- [ ] Migrations applied to development; production deployment rehearsed.
+- [x] Every PRD §30.2 acceptance item is demonstrable end to end on the development environment.
+- [x] Every ported screen matches the prototype except the documented deviations.
+- [x] Migrations applied to development; production deployment rehearsed.
+
+Release evidence is recorded in `tasks/todo.md` under Checkpoint F. The candidate shipped with the owner-recorded exceptions: `/pro/{slug}` instead of the deferred `{slug}.masterscorner.in` subdomain (ADR-004), email verification/reset as §30.3 should-haves, and hosted CI/branch protection as the postponed `Last` item.
 
 ## Redesign program (owner decision 2026-10-23)
 
