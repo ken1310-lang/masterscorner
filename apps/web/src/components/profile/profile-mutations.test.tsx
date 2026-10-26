@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import type { MasterProfilePayload } from "@my-better-t-app/api/master-profile";
+import type { MediaView } from "@my-better-t-app/api/media";
 import type { AppRouter } from "@my-better-t-app/api/routers/index";
 import type { RenderResult } from "@testing-library/react";
 import { JSDOM } from "jsdom";
@@ -51,6 +52,7 @@ const {
 const { createTRPCClient, httpLink } = await import("@trpc/client");
 const { createTRPCOptionsProxy } = await import("@trpc/tanstack-react-query");
 const { TRPCProvider } = await import("../../utils/trpc");
+const { PhotoField } = await import("./photo-field");
 const { ProfileForm } = await import("./profile-form");
 
 const INITIAL_REVISION = "11111111-1111-4111-8111-111111111111";
@@ -127,7 +129,10 @@ interface HeldRequest {
   resolve: (payload: MasterProfilePayload) => void;
 }
 
-async function setup() {
+async function setup(
+  surface: "logo" | "profile" = "profile",
+  payload: MasterProfilePayload = initialPayload()
+) {
   globalThis.FileReader = HeldFileReader as unknown as typeof FileReader;
   const requests: HeldRequest[] = [];
   const queryClient = new QueryClient({
@@ -161,8 +166,8 @@ async function setup() {
                   { status: 409 }
                 )
               ),
-            resolve: (payload) =>
-              resolve(Response.json({ result: { data: payload } })),
+            resolve: (result) =>
+              resolve(Response.json({ result: { data: result } })),
           });
           return promise;
         },
@@ -171,7 +176,7 @@ async function setup() {
   });
   const trpc = createTRPCOptionsProxy({ client: trpcClient, queryClient });
   const queryKey = trpc.master.getProfile.queryKey();
-  queryClient.setQueryData(queryKey, initialPayload());
+  queryClient.setQueryData(queryKey, payload);
   const directoryClassesQueryKey = trpc.directory.classes.queryKey();
   const registryQueryKey = trpc.directory.masters.queryKey({ page: 2 });
   const directoryProfileQueryKey = trpc.directory.masterProfile.queryKey({
@@ -185,9 +190,21 @@ async function setup() {
 
   function Editor() {
     const profile = useQuery(trpc.master.getProfile.queryOptions());
-    return profile.data ? (
-      <ProfileForm accountName="Account A" payload={profile.data} />
-    ) : null;
+    if (!profile.data) {
+      return null;
+    }
+    if (surface === "logo") {
+      return (
+        <PhotoField
+          accountName="Account A"
+          disabled={false}
+          hasProfile
+          kind="site_logo"
+          media={profile.data.media}
+        />
+      );
+    }
+    return <ProfileForm accountName="Account A" payload={profile.data} />;
   }
 
   const rootRoute = createRootRouteWithContext<{
@@ -206,7 +223,13 @@ async function setup() {
       </TRPCProvider>
     </QueryClientProvider>
   );
-  await view.findByLabelText("Display name");
+  let surfaceLabel = "Display name";
+  if (surface === "logo") {
+    surfaceLabel = payload.media.some((item) => item.kind === "site_logo")
+      ? "Replace logo"
+      : "Choose logo";
+  }
+  await view.findByLabelText(surfaceLabel);
   return {
     ...view,
     queryClient,
@@ -801,5 +824,56 @@ describe("public directory freshness", () => {
     expect(
       view.queryClient.getQueryState(view.proSiteStatusQueryKey)?.isInvalidated
     ).toBe(false);
+  });
+});
+
+describe("Pro Site logo field", () => {
+  test("uploads a logo without dropping the cached profile photo", async () => {
+    const payload = initialPayload();
+    payload.media = payload.media.filter((item) => item.kind !== "site_logo");
+    const view = await setup("logo", payload);
+    expect(view.getByRole("heading", { name: "Pro Site logo" })).toBeTruthy();
+    const reader = choosePhoto(view.container);
+    await settle(() => reader.succeed());
+    const upload = await view.request("media.upload");
+    expect(upload.input).toMatchObject({
+      contentType: "image/png",
+      data: "aGVsbG8=",
+      kind: "site_logo",
+    });
+    const saved = initialPayload();
+    const newLogo: MediaView = {
+      createdAt: "2026-10-21T10:00:00.000Z",
+      id: "new-logo",
+      kind: "site_logo",
+      url: "https://image.test/new-logo",
+    };
+    saved.media = [
+      newLogo,
+      ...saved.media.filter((item) => item.kind === "profile_photo"),
+    ];
+    await settle(() => upload.resolve(saved));
+    await waitFor(() =>
+      expect(view.cached()?.media.map((item) => item.id)).toEqual([
+        "new-logo",
+        "old-photo",
+      ])
+    );
+    expect(view.getByLabelText("Replace logo")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Remove logo" })).toBeTruthy();
+  });
+
+  test("removes the logo and keeps the profile photo", async () => {
+    const view = await setup("logo");
+    await clickButton(view, "Remove logo");
+    const remove = await view.request("media.remove");
+    expect(remove.input).toEqual({ kind: "site_logo" });
+    const saved = initialPayload();
+    saved.media = saved.media.filter((item) => item.kind !== "site_logo");
+    await settle(() => remove.resolve(saved));
+    await waitFor(() =>
+      expect(view.cached()?.media.map((item) => item.id)).toEqual(["old-photo"])
+    );
+    expect(view.getByLabelText("Choose logo")).toBeTruthy();
   });
 });

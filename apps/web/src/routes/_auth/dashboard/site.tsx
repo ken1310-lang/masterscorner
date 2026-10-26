@@ -18,6 +18,7 @@ import { z } from "zod";
 import { ConsoleEmptyState } from "@/components/console/empty-state";
 import { ConsolePageHeader } from "@/components/console/page-header";
 import { siteSettingsFormValues } from "@/components/pro-site/site-settings-values";
+import { PhotoField } from "@/components/profile/photo-field";
 import { useTRPC } from "@/utils/trpc";
 
 export const Route = createFileRoute("/_auth/dashboard/site")({
@@ -575,6 +576,7 @@ function ProSite() {
   const queryClient = useQueryClient();
   const { sessionQueries } = useRouter().options.context;
   const statusQuery = useQuery(trpc.proSite.status.queryOptions());
+  const profileQuery = useQuery(trpc.master.getProfile.queryOptions());
   const status = statusQuery.data;
 
   const saveSettings = useMutation(trpc.proSite.saveSettings.mutationOptions());
@@ -656,6 +658,17 @@ function ProSite() {
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <PublicationCard onChange={handlePublished} status={status} />
         <SiteSettingsCard onSave={handleSave} status={status} />
+        {profileQuery.data ? (
+          <div className="lg:col-span-2">
+            <PhotoField
+              accountName={status.displayName}
+              disabled={false}
+              hasProfile
+              kind="site_logo"
+              media={profileQuery.data.media}
+            />
+          </div>
+        ) : null}
         <DataSyncCard sync={status.sync} />
       </div>
     );
