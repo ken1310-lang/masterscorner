@@ -46,8 +46,9 @@ Task 2 added the test runner and CI workflow. Local `bun run gates` is the curre
 
 ### Checkpoint A
 
-- [ ] API and web run against the development branch; CI is green on a throwaway PR. **CI green is postponed to `Last` in `tasks/todo.md`:** the workflow is merged and the pipeline was rehearsed green in a clean worktree, but GitHub refuses to start a job for this account — "your account is locked due to a billing issue" — and the owner is fixing that later. Until then `bun run gates` is the merge gate and branch protection is deliberately off.
-- [ ] The production stack deploys from `master` as an empty rehearsal: both Workers serve their public URLs and the custom domain resolves.
+- [x] API and web run against the development branch; `bun run gates` passes.
+- [ ] Hosted CI is green on a throwaway PR. **Postponed to `Last` in `tasks/todo.md`:** the workflow is merged and the pipeline was rehearsed green in a clean worktree, but GitHub refuses to start a job for this account — "your account is locked due to a billing issue" — and the owner is fixing that later. Until then `bun run gates` is the merge gate and branch protection is deliberately off.
+- [~] The production stack deploys from `master`: both Workers serve their public URLs and the deployed API uses the production branch. The custom domain still does not resolve because the account has no zones (ADR-004).
 - [ ] Review with owner before feature work starts.
 
 ### Phase 1: Identity (PR 4-5)

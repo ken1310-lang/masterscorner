@@ -125,7 +125,7 @@ It returns `null` when the account has no master profile. It never returns anoth
 The page order and omission rules:
 
 1. **Skip link** to `#pro-main`.
-2. **Pro Site header**: brand mark (current `site_logo` if present, otherwise the master's initials), site/display name, arts·city subtitle when present, and anchor navigation. Navigation items render only for sections that will render: About, Programs, Schedule, Contact. No Book Trial, sign-in, console or marketplace links.
+2. **Pro Site header**: brand mark (current `site_logo` if present, otherwise the effective site name's initials), site/display name, arts·city subtitle when present, and anchor navigation. Navigation items render only for sections that will render: About, Programs, Schedule, Contact. No Book Trial, sign-in, console or marketplace links.
 3. **Hero**: earth/parchment surface; the current profile photo when present with a contrast scrim, otherwise a deliberate typographic panel with no stock image. `h1` is the display name; arts and home city are metadata. No fabricated headline, claim or primary CTA. An internal `See programs`/`See schedule` link may appear only when that section exists.
 4. **About**: the stored introduction with preserved line breaks. The section is absent when `introduction` is null or blank. Real stats (years teaching, locations, current classes) may sit beside it only when stored; no rating.
 5. **Programs**: one card per current class, showing name, martial art, audience, level, optional fee and `Full` status. No invented description, duration, objective or outcome. Absent when there are no current classes.
