@@ -6,6 +6,8 @@ Accepted — decided on 2026-10-20 under the owner's instruction to close the fl
 
 Revised on 2026-10-20: decision 1 changed from Cloudflare R2 to Neon Object Storage at the owner's instruction. The owner's requirement ("images saved in Neon storage") is satisfied by Neon's S3-compatible object storage, not by storing image bytes in Postgres rows; the rejection of the latter is part of the decision below.
 
+Revised on 2026-10-23: verification showed that storage credentials are project-wide, not branch-scoped. Every bucket is still branch-specific and served from that branch's endpoint, but the same credential can call another branch's endpoint. Isolation therefore comes from each Worker carrying its own branch endpoint, not from credential enforcement. The owner accepted endpoint-scoped isolation for the release on 2026-10-23. The decision to use Neon Object Storage is unchanged; the isolation claim and the related verification are corrected below.
+
 ## Date
 
 2026-10-20
@@ -26,7 +28,7 @@ Four items were carried as "spike or fallback" in `tasks/plan.md`, which is not 
 Uploaded files live in an S3-compatible bucket inside the same Neon project that holds the data. The bucket is declared in `neon.ts` (`buckets: { media: { access: "public_read" } }`) and provisioned with `neon deploy`; Neon injects AWS-standard credentials into the environment (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3`, `AWS_REGION`). Postgres stores the object key on the media record, never the bytes.
 
 - **One vendor for data and files.** The same Neon project, credential system and CLI back the database and the media, so there is no second provider, second billing relationship or second credential to rotate.
-- **Environment isolation is structural.** Buckets branch copy-on-write with the database branch, and credentials are branch-scoped. The development branch's images are not production's, and the development and production Workers receive their own branch credentials. This is ADR-001's "environments never share credentials or data" enforced by the platform instead of by convention.
+- **Environment isolation is endpoint-scoped.** Buckets branch copy-on-write with the database branch, so each branch has its own objects and its own endpoint. Credentials are not branch-scoped in practice: a credential issued with `neon credentials create --branch production` could list objects on both the production and development endpoints on 2026-10-23. Each Worker must therefore be configured with its branch endpoint (`AWS_ENDPOINT_URL_S3`), and that configuration is the isolation boundary; a credential cannot enforce it.
 - **Upload path.** The Worker validates size and content-type, applies rate limiting, writes the object, and stores the key — one request, one choke point, one place to reject bad input. A browser-to-bucket presigned PUT is a later optimisation, not the first release.
 - **Serving.** The bucket is `public_read`, so objects are served from `${AWS_ENDPOINT_URL_S3}/<bucket>/<key>` with no credential and no Worker in the path. Keys are versioned (`masters/<masterId>/<uuid>.<ext>`) and never overwritten, and `Cache-Control` is set on upload, so a CDN can be placed in front of the branch endpoint when image traffic justifies it.
 - **Region is a precondition, and it is fixed.** Object Storage exists in `aws-us-east-1`, `aws-us-east-2`, `aws-eu-central-1` and `aws-ap-southeast-1` only, and a project's region cannot be changed after creation. The project is therefore created in `aws-ap-southeast-1` (Singapore) — the only supported region in Asia-Pacific and the closest to the product's market. Task 1 creates the project, so this is decided before any project exists.
@@ -34,7 +36,7 @@ Uploaded files live in an S3-compatible bucket inside the same Neon project that
 
 Alternatives:
 
-- **Cloudflare R2** (the previous decision) — zero egress and already configured in the Alchemy stack, but a second provider, a second credential set and a manual development/production bucket split, when the project already has branch-scoped storage that isolates environments for free. Rejected. The accepted cost of this reversal is metered object egress, which is why media is served from the bucket endpoint directly and never proxied through the Worker.
+- **Cloudflare R2** (the previous decision) — zero egress and already configured in the Alchemy stack, but a second provider, a second credential set and a manual development/production bucket split, when the project already has branch-specific bucket views and endpoints. Rejected. The accepted cost of this reversal is metered object egress, which is why media is served from the bucket endpoint directly and never proxied through the Worker.
 - **`bytea` columns in Postgres** — every image read would ride the Neon HTTP driver, inflate branch storage and backup size, and have no cacheable URL. Rejected.
 
 References: [Object Storage overview](https://neon.com/docs/storage/overview.md), [S3 compatibility](https://neon.com/docs/storage/s3-compatibility.md), [Regions and product availability](https://neon.com/docs/introduction/regions.md), [Plans and object-storage rates](https://neon.com/docs/introduction/plans.md).
@@ -57,7 +59,7 @@ The first release uses one shared development database branch, exercised from th
 
 - Two infrastructure planes, each with one owner: `neon.ts` declares data-plane services (the media bucket) and `packages/infra/alchemy.run.ts` declares Cloudflare compute (Worker, website). Neither file provisions the other's resources.
 - Task 8 has a concrete storage target and a concrete SDK task: an S3 client that works inside a Cloudflare Worker with path-style addressing (`forcePathStyle: true`). The AWS SDK is heavy for a Worker bundle; `aws4fetch` or the bundled approach is chosen in that task's spec, verified against the provider's documentation.
-- Development and production media are isolated by the platform, so a development upload can never appear on a production Pro Site.
+- Development and production media are isolated by endpoint configuration: each Worker receives its own branch's endpoint, so an upload written by the production Worker lands on the production branch. The platform does not isolate credentials, so a misconfigured Worker could reach the other branch's endpoint. The deploy guard verifies only that an endpoint is present; reviewing that the endpoint belongs to the production branch is a manual deployment check.
 - Task 1 must create the Neon project in `aws-ap-southeast-1` and declare the bucket on both branches; the region cannot be corrected later without recreating the project.
 - The Free plan's 5 GB object-storage cap and metered egress are the accepted cost of dropping R2; both are monitored through the project's usage panel rather than through application code.
 - The Pro Site module can be built and reviewed before DNS exists, and its public address is a configuration change rather than a rewrite.
@@ -66,6 +68,6 @@ The first release uses one shared development database branch, exercised from th
 
 ## Verification
 
-- Media: upload, render and delete a file through the console against the development branch's bucket; oversized and wrong-type uploads are rejected; the stored object is readable without credentials while the key lives on the media record; a production-branch credential cannot read a development object.
+- Media: upload, render and delete a file through the console against the development branch's bucket; oversized and wrong-type uploads are rejected; the stored object is readable without credentials while the key lives on the media record; the production Worker is configured with the production endpoint. Credential-level cross-branch denial is not a valid check on this platform: credentials are project-wide (verified 2026-10-23).
 - Addressing: the Pro Site renders with no session at its live address; the console shows the same address; enabling the subdomain does not change rendered content.
 - Environments: `bun run dev` targets the development branch; production configuration is untouched by development runs.

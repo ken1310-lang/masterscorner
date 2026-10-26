@@ -25,8 +25,8 @@ function Overview() {
         title={`Welcome, ${user.name}.`}
       />
 
-      <div className="grid gap-4 md:grid-cols-[1.2fr_.8fr]">
-        <article className="rounded-[14px] border border-line bg-card p-5">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]">
+        <article className="min-w-0 rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-extrabold text-base">Your account</h2>
           <dl className="mt-3 text-sm">
             <div className="flex items-center justify-between gap-4 border-line border-t py-3">
@@ -35,7 +35,7 @@ function Overview() {
             </div>
             <div className="flex items-center justify-between gap-4 border-line border-t py-3">
               <dt className="shrink-0 text-muted-text">Email</dt>
-              <dd className="min-w-0 truncate text-right font-extrabold">
+              <dd className="min-w-0 text-right font-extrabold [overflow-wrap:anywhere]">
                 {user.email}
               </dd>
             </div>
@@ -45,15 +45,23 @@ function Overview() {
         <article className="rounded-[14px] border border-line bg-card p-5">
           <h2 className="font-extrabold text-base">Next step</h2>
           <p className="mt-2 text-muted-text text-sm leading-relaxed">
-            Your master profile will appear on the public site once the profile
-            module ships. Nothing has been published yet.
+            Keep your master profile and current classes up to date. Open Pro
+            Site to see your address and whether the site is published.
           </p>
-          <Link
-            className="mt-4 inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
-            to="/dashboard/profile"
-          >
-            Open profile
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+            <Link
+              className="inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
+              to="/dashboard/profile"
+            >
+              Open profile
+            </Link>
+            <Link
+              className="inline-flex min-h-11 items-center font-extrabold text-accent-text text-sm underline-offset-4 hover:underline"
+              to="/dashboard/site"
+            >
+              Open Pro Site
+            </Link>
+          </div>
         </article>
       </div>
     </>

@@ -1,6 +1,8 @@
 # MastersCorner — Design ↔ PRD Alignment
 
-**Status:** Ready for review
+> **Superseded for ported screens:** ADR-005 and `docs/specs/SPEC-redesign.md` make the Magic Patterns OS the visual source for the redesign. This document remains the contract for screens not yet ported and as the historical deviation register.
+
+**Status:** Historical for ported screens; current for unported screens
 **Date:** 2026-10-20
 **Sources**
 
@@ -153,6 +155,8 @@ These map onto Tailwind v4 theme tokens in `packages/ui/src/styles/globals.css`;
 | Notification centre (Phase 3) | Absent | Console shell |
 | Student account area (Phase 3) | Absent | `/masters/$slug` and the booking screens |
 | Admin screens (Phase 2) | Absent | Console patterns |
+
+The console classes screen was designed and implemented in Task 10; `docs/specs/SPEC-classes.md` §5 records its layout, states, responsive rules and confirmation flow. The public class filter bar and empty/error states were implemented in Task 11; `docs/specs/SPEC-directory.md` §3.3 records the public route contract.
 
 ## 8. Deviation register ("pixel-perfect" exceptions)
 

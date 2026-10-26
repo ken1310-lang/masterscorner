@@ -58,6 +58,8 @@ describe("master profile schema", () => {
   test("a profile has exactly one owner and cascades with the account", () => {
     expect(masterProfile.userId.notNull).toBe(true);
     expect(masterProfile.userId.isUnique).toBe(true);
+    expect(masterProfile.revision.notNull).toBe(true);
+    expect(masterProfile.revision.hasDefault).toBe(true);
 
     const owner = foreignKey(masterProfile, "user_id");
     expect(owner?.onDelete).toBe("cascade");

@@ -22,7 +22,7 @@ export function AuthScreen({ children, title }: AuthScreenProps) {
         id="main"
         tabIndex={-1}
       >
-        <div className="flex min-h-[300px] flex-col justify-between bg-navy p-[30px] text-white md:min-h-0 md:p-14">
+        <div className="on-navy flex min-h-[300px] flex-col justify-between bg-navy p-[30px] text-white md:min-h-0 md:p-14">
           <Link
             aria-label="MastersCorner home"
             className="inline-flex w-fit items-center gap-2.5 whitespace-nowrap font-extrabold text-[17px] tracking-[-0.03em] sm:text-xl"

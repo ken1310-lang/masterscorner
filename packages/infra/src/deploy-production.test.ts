@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
 import { spawn } from "bun";
+import { assertProfileRevisionReadable } from "./deploy-production";
 
 describe("production deploy invocation", () => {
   test.each([
@@ -37,5 +38,21 @@ describe("production deploy invocation", () => {
     expect(exitCode).toBe(1);
     expect(stdout).toBe("");
     expect(stderr).toContain("deploy:production accepts no arguments");
+  });
+});
+
+describe("production schema preflight", () => {
+  test("accepts a readable profile revision column", async () => {
+    await expect(
+      assertProfileRevisionReadable(async () => ({ revision: "ok" }))
+    ).resolves.toBeUndefined();
+  });
+
+  test("refuses to deploy when the revision read fails", async () => {
+    await expect(
+      assertProfileRevisionReadable(() => {
+        throw new Error("column master_profile.revision does not exist");
+      })
+    ).rejects.toThrow("bun run db:migrate");
   });
 });

@@ -6,6 +6,7 @@ import {
   assertProductionTarget,
   type DeployTarget,
   isSameDatabase,
+  isSameStorageEndpoint,
   readDotenvValue,
 } from "./deploy-guard";
 
@@ -32,6 +33,8 @@ const target = (overrides: Partial<DeployTarget> = {}): DeployTarget => ({
   databaseUrl:
     "postgresql://master:pw@ep-production-pooler.ap-southeast-1.aws.neon.tech/db",
   developmentAuthSecret: "development-auth-secret",
+  developmentBucketEndpoint:
+    "https://br-development.storage.c-3.ap-southeast-1.aws.neon.tech",
   developmentCorsOrigin: "http://localhost:3001",
   developmentDatabaseUrl,
   neonBranch: "production",
@@ -79,6 +82,17 @@ describe("assertProductionTarget", () => {
     expect(() =>
       assertProductionTarget(target({ bucketEndpoint: undefined }))
     ).toThrow(BUCKET_REFUSAL);
+  });
+
+  test("refuses the development branch's bucket endpoint", () => {
+    expect(() =>
+      assertProductionTarget(
+        target({
+          bucketEndpoint:
+            "https://br-development.storage.c-3.ap-southeast-1.aws.neon.tech/media",
+        })
+      )
+    ).toThrow(DEVELOPMENT_DATABASE_REFUSAL);
   });
 
   test("refuses the development branch's database, credentials or not", () => {
@@ -148,6 +162,94 @@ describe("assertProductionTarget", () => {
       )
     ).toThrow(CORS_REFUSAL);
   });
+
+  test.each([
+    {
+      form: "unquoted",
+      format: (value: string) => `${value} # development value`,
+      developmentAuthSecret: "development-secret",
+    },
+    {
+      form: "double-quoted",
+      format: (value: string) => `"${value}" # development value`,
+      developmentAuthSecret: "development-secret#literal",
+    },
+    {
+      form: "single-quoted",
+      format: (value: string) => `'${value}' # development value`,
+      developmentAuthSecret: "development-secret#literal",
+    },
+  ])(
+    "refuses reused values from a $form commented dotenv file",
+    ({ format, developmentAuthSecret }) => {
+      const directory = mkdtempSync(join(tmpdir(), "mc-deploy-dotenv-"));
+      const file = join(directory, ".env");
+      writeFileSync(
+        file,
+        [
+          `\uFEFFexport BETTER_AUTH_SECRET=${format("development-secret#literal")}`,
+          `export CORS_ORIGIN=${format("http://localhost:3001")}`,
+          `export DATABASE_URL=${format(developmentDatabaseUrl)}`,
+        ].join("\r\n")
+      );
+
+      try {
+        const fromFile = {
+          developmentAuthSecret: readDotenvValue(file, "BETTER_AUTH_SECRET"),
+          developmentCorsOrigin: readDotenvValue(file, "CORS_ORIGIN"),
+          developmentDatabaseUrl: readDotenvValue(file, "DATABASE_URL"),
+        };
+        expect(() => assertProductionTarget(target(fromFile))).not.toThrow();
+        expect(() =>
+          assertProductionTarget(
+            target({ ...fromFile, authSecret: developmentAuthSecret })
+          )
+        ).toThrow(AUTH_SECRET_REFUSAL);
+        expect(() =>
+          assertProductionTarget(
+            target({ ...fromFile, corsOrigin: "http://localhost:3001" })
+          )
+        ).toThrow(CORS_REFUSAL);
+        expect(() =>
+          assertProductionTarget(
+            target({
+              ...fromFile,
+              databaseUrl:
+                "postgresql://deploy:fixture@ep-development.ap-southeast-1.aws.neon.tech:5432/another",
+            })
+          )
+        ).toThrow(DEVELOPMENT_DATABASE_REFUSAL);
+      } finally {
+        rmSync(directory, { force: true, recursive: true });
+      }
+    }
+  );
+});
+
+describe("isSameStorageEndpoint", () => {
+  test("matches the same host and port regardless of path", () => {
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com/media",
+        "https://storage.example.com/other"
+      )
+    ).toBe(true);
+  });
+
+  test("keeps different hosts and ports distinct", () => {
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com",
+        "https://other.example.com"
+      )
+    ).toBe(false);
+    expect(
+      isSameStorageEndpoint(
+        "https://storage.example.com:9000",
+        "https://storage.example.com"
+      )
+    ).toBe(false);
+  });
 });
 
 describe("isSameDatabase", () => {
@@ -199,10 +301,13 @@ describe("readDotenvValue", () => {
     writeFileSync(
       file,
       [
+        "\uFEFFPLAIN=value",
         "# a comment",
-        "PLAIN=value",
         'QUOTED="quoted value"',
         "export EXPORTED='single'",
+        "REPEATED=obsolete",
+        'export REPEATED="latest # literal" # inline comment',
+        "EMPTY=obsolete",
         "EMPTY=",
         "",
       ].join("\n")
@@ -212,6 +317,7 @@ describe("readDotenvValue", () => {
       expect(readDotenvValue(file, "PLAIN")).toBe("value");
       expect(readDotenvValue(file, "QUOTED")).toBe("quoted value");
       expect(readDotenvValue(file, "EXPORTED")).toBe("single");
+      expect(readDotenvValue(file, "REPEATED")).toBe("latest # literal");
       expect(readDotenvValue(file, "EMPTY")).toBeUndefined();
       expect(readDotenvValue(file, "ABSENT")).toBeUndefined();
       expect(

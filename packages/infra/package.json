@@ -7,7 +7,7 @@
     "deploy": "alchemy deploy",
     "deploy:production": "bun --no-env-file ./src/deploy-production.ts",
     "destroy": "alchemy destroy",
-    "dev": "alchemy dev",
+    "dev": "bun --env-file=../../apps/server/.env alchemy dev",
     "test": "bun test"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
     "@my-better-t-app/db": "workspace:*",
     "@types/bun": "catalog:",
     "alchemy": "2.0.0-beta.83",
+    "dotenv": "^17.4.2",
     "effect": "4.0.5",
     "typescript": "^6.0.3",
     "varlock": "catalog:"

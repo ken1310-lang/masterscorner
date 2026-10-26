@@ -10,11 +10,13 @@ Deliver the first release defined in PRD §30: a master creates an account, publ
 
 No code is written until each module's spec is written, reviewed and approved, per `spec-driven-development`. Specs live in `docs/specs/SPEC-<module-id>.md` for the module ids in PRD §39; `docs/specs/SPEC-platform.md` is the first. This document sequences the modules; it is not a substitute for module specs.
 
+Audit correction (2026-10-23): the master-profile specification was missing when Tasks 6–7 shipped. `docs/specs/SPEC-master-profile.md` now records the implemented contract retrospectively; it is not evidence of pre-implementation approval. The specification-first rule above remains mandatory for future modules. `tasks/todo.md` is the delivery-status authority; the task index below is synchronized with its accepted scope amendments.
+
 ## Architecture Decisions
 
 - **Stack is the existing template, unchanged in shape.** TanStack Start web app, Hono on Cloudflare Workers, tRPC router in `packages/api`, Better Auth in `packages/auth`, Drizzle on Neon HTTP in `packages/db`, Alchemy deployment in `packages/infra`. See `AGENTS.md`.
 - **Environments and migrations** — ADR-001: development and production, each on its own Neon branch; versioned migrations only; expand/contract.
-- **Infrastructure decisions closed before building** — ADR-004: media in Neon Object Storage on an `aws-ap-southeast-1` project, branch-scoped with the database; Pro Site served at a path address and switched to the `{slug}.masterscorner.in` subdomain when the zone check passes; per-PR preview environments deferred; no UI regression suite in the first release.
+- **Infrastructure decisions closed before building** — ADR-004: media in Neon Object Storage on an `aws-ap-southeast-1` project, with bucket views and endpoints branching with the database (credentials are project-wide; the endpoint is the isolation boundary); Pro Site served at a path address and switched to the `{slug}.masterscorner.in` subdomain when the zone check passes; per-PR preview environments deferred; no UI regression suite in the first release.
 - **MVP scope** — ADR-002: masters only (no academy entity), web only (Expo untouched), no verification badge, no contact or trial CTAs, Pro Site free.
 - **Design** — ADR-003: `masterscorner.html` is the visual source of truth; its tokens become Tailwind v4 theme tokens in `packages/ui/src/styles/globals.css`; screens are ported route by route; deviations are exactly the register in `docs/design-alignment.md` §8.
 - **Data access** stays factory-based (`createDb(env)`, `createAuth(env, db)`, per-request context with `session`); no module-level singletons.
@@ -29,18 +31,18 @@ No code is written until each module's spec is written, reviewed and approved, p
 | Runtime | `bun run dev` against the development database branch | Every slice, with real sign-up, profile and class data |
 | UI | Browser check of the ported screen | Each screen at 1440, 980, 760 and 520 px against the prototype plus `docs/design-alignment.md` §8 |
 | Schema | `bun run db:generate` + `bun run db:migrate` | Every migration, applied to the development branch before the PR merges |
-| Object storage | Upload through the console, then read the object back from the branch endpoint | Every media change; confirms the key on the row resolves and the development object is not reachable with production credentials |
+| Object storage | Upload through the console, then read the object back from the branch endpoint | Every media change; confirms the key resolves on the configured branch endpoint. Credentials are project-wide; credential-denial isolation was superseded by ADR-004's owner-accepted endpoint boundary. |
 | Repository | `bun run check-types`, `bun run check`, `bun run build` | Every PR |
 
-There is no test runner, no CI and no git hooks in the repository today; Task 2 adds the test task and the workflow so these gates exist before feature work starts.
+Task 2 added the test runner and CI workflow. Local `bun run gates` is the current merge gate; hosted CI execution and required-check enforcement remain blocked/deferred as recorded in `tasks/todo.md`.
 
 ## Task List
 
 ### Phase 0: Platform (PR 1-3)
 
 - [x] Task 1: Environments and database branches — Neon project in `aws-ap-southeast-1` with `development` and `production` branches and the media bucket declared on each (`neon.ts`); dev/prod configuration, per-environment secrets, README setup; development runs locally (`bun run dev`: API on 3000, web on 3001) against the development branch, and production is the only deployed environment — one Alchemy stack deploying the API Worker (Hono) and the web Worker (TanStack Start); preview environments deferred (ADR-004).
-- [ ] Task 2: Test and CI wiring — `test` task in `turbo.json`, `bun:test` in the packages, workflow running check-types/check/build/test on every PR.
-- [ ] Task 3: Web shell and design tokens — palette, type scale and breakpoints from the prototype into `packages/ui/src/styles/globals.css`; self-hosted Outfit/Manrope; the pathless `_marketplace` layout with container, header and footer; not-found and error screens.
+- [x] Task 2: Test and CI wiring — runner and workflow implemented; hosted red→green and branch protection remain deferred to `Last` in `tasks/todo.md`.
+- [x] Task 3: Web shell and design tokens — centralized tokens, real fonts, marketplace shell and root error/not-found screens.
 
 ### Checkpoint A
 
@@ -50,8 +52,8 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 1: Identity (PR 4-5)
 
-- [ ] Task 4: Master account and auth — account type/role on the user record, sign-up and sign-in through Better Auth, password reset, email verification configuration.
-- [ ] Task 5: Auth screens and guards — sign-up, sign-in and reset screens ported from the prototype's auth layout; protected console routes.
+- [~] Task 4: Master account and auth — account type, sign-up/sign-in and session boundary implemented; password reset and email verification remain owner-deferred pending provider/sender setup.
+- [x] Task 5: Auth screens and guards — sign-up/sign-in and protected console routes; reset UI belongs to the deferred Task 4 email follow-up.
 
 ### Checkpoint B
 
@@ -59,9 +61,9 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 2: Master profile and media (PR 6-8)
 
-- [ ] Task 6: Profile schema — profile, teaching locations and media references, with migration.
-- [ ] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
-- [ ] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
+- [x] Task 6: Profile schema — profile, teaching locations and media references, with versioned migrations.
+- [x] Task 7: Console profile editor — identity, martial arts, years teaching, home city, introduction, teaching locations.
+- [x] Task 8: Media upload — Neon Object Storage bucket declared in `neon.ts`, upload path from the Worker, size and type limits, rate limiting, `503` retry, rendering; profile photo and Pro Site logo.
 
 ### Checkpoint C
 
@@ -69,20 +71,20 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 3: Classes (PR 9-10)
 
-- [ ] Task 9: Class schema — martial art, audience, level, schedule rows, location reference, optional fee, status; migration.
-- [ ] Task 10: Console classes CRUD — create, edit, pause, remove; validation that a class has a location and at least one schedule row.
+- [x] Task 9: Class schema — martial art, audience, level, schedule rows, location reference, optional fee, status; migration.
+- [x] Task 10: Console classes CRUD — create, edit, pause, remove; validation that a class has a location and at least one schedule row.
 
 ### Checkpoint D
 
-- [ ] A master creates three classes and they survive a round trip through the database.
+- [x] A master creates three classes and they survive a round trip through the database.
 
 ### Phase 4: Directory (PR 11-15)
 
-- [ ] Task 11: Public class listing — `/classes` from real classes, filters for art, location and audience, empty state.
-- [ ] Task 12: Master registry — `/masters` with the same filters, sort by experience, pagination, empty state.
-- [ ] Task 13: Master profile page — `/masters/$slug`, sections for identity, about, training paths, locations and schedule; no ratings, reviews, badges or contact CTAs.
-- [ ] Task 14: Home page — hero, search, featured masters and class preview from real data.
-- [ ] Task 15: For Masters page — what a listing includes, console preview, sign-up call to action; no plan, price or verification claim.
+- [x] Task 11: Public class listing — `/classes` from real classes, filters for art, location and audience, empty state.
+- [x] Task 12: Master registry — `/masters` with the same filters, sort by experience, pagination, empty state.
+- [x] Task 13: Master profile page — `/masters/$slug`, sections for identity, about, training paths, locations and schedule; no ratings, reviews, badges or contact CTAs.
+- [x] Task 14: Home page — hero, search, featured masters and class preview from real data; ported to the Phase R1 Magic Patterns shell.
+- [x] Task 15: For Masters page — editorial page from shipped profile, directory and class facts; console preview without sample metrics; header, Home, footer and mobile master links; session-aware profile/sign-up CTA; signed-in signup redirects to the profile editor. No plan, price or verification claim.
 
 ### Checkpoint E
 
@@ -90,14 +92,29 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 
 ### Phase 5: Pro Site (PR 16-17)
 
-- [ ] Task 16: Pro Site renderer — site generated from profile and class data, themable, reachable at the canonical address (path now, subdomain once the zone check passes; ADR-004).
-- [ ] Task 17: Pro Site settings — site name, style choice, publish/unpublish, sync status in the console.
+- [x] Task 16: Pro Site renderer — site generated from profile and class data, themable, reachable at the canonical address (path now, subdomain once the zone check passes; ADR-004). Zone check failed on 2026-10-25; `/pro/{slug}` ships, the subdomain remains deferred.
+- [x] Task 17: Pro Site settings — site name, three supported styles, publish/unpublish with confirmation, owner draft preview, and profile-owned sync status. Migration applied to development; public gate and privacy unchanged.
 
 ### Checkpoint F: Release candidate
 
 - [ ] Every PRD §30.2 acceptance item is demonstrable end to end on the development environment.
 - [ ] Every ported screen matches the prototype except the documented deviations.
 - [ ] Migrations applied to development; production deployment rehearsed.
+
+## Redesign program (owner decision 2026-10-23)
+
+The Magic Patterns OS supersedes the old prototype for screens as they are ported; the full contract is `docs/specs/SPEC-redesign.md` and ADR-005. The program runs alongside the remaining first-release tasks and does not make unbacked trust or conversion content shippable.
+
+| Phase | Scope | Depends on |
+| --- | --- | --- |
+| R1 | Design tokens, marketplace shell, Home with real featured masters/class preview | 12, 13 |
+| R2 | Masters registry, master profile, Classes, For Masters visual port | R1 |
+| R3 | Login port and sign-up design in the same language | R1 |
+| R4 | Console shell, profile, classes and site settings | R1, R3 |
+| R5 | Reviews, verification, booking/trial and pricing modules, each with its own approved spec and migration | R2, module specs |
+| R6 | Pro Site earth theme and settings | R2, 16, 17 |
+
+Phase R1 acceptance: new tokens do not alter unported screens; Home uses only real directory data; search navigates to filtered `/masters`; live nav/footer only; Magic Patterns images are local marketing assets, not master portraits; 1440/1024/768/390 browser checks; `bun run gates` and live API tests pass.
 
 ## Risks and Mitigations
 
@@ -110,8 +127,10 @@ There is no test runner, no CI and no git hooks in the repository today; Task 2 
 | Only production is deployed, so the deployed path (TLS, custom domain, per-environment secrets) is untested until the first release | Medium | The production stack is deployed once from `master` in Phase 0 as an empty rehearsal and redeployed at each checkpoint, so the deploy path is exercised long before there is anything to lose (ADR-001) |
 | Email delivery for verification and reset needs a provider — the one open question | Medium | Task 4 owns it: settle the provider before that PR, otherwise ship sign-up and sign-in and add verification and reset in a follow-up PR for the same task |
 | Media upload abuse (oversized files, wrong types, hotlinking), and the Free plan's 5 GB object-storage cap | Low | Media is stored in Neon Object Storage (ADR-004) with size and type limits and rate limiting on the upload endpoint (Task 8); the bucket is `public_read`, so hotlinking is not prevented and is accepted at this size |
-| Mock pressure to re-add contact CTAs, ratings and badges | Medium | ADR-002 owner decisions and deviations D1-D4 are review-blocking, not preferences |
+| Mock pressure to re-add contact CTAs, ratings and badges | Medium | ADR-002 owner decisions and deviations D1-D4 are review-blocking, not preferences. **Owner changed this on 2026-10-23:** ADR-005 adds reviews, verification, booking/trial and pricing as spec-gated modules; until each module ships, its unbacked element stays absent. |
 | Fee information arrives as free text and becomes unusable | Low | Task 9 decides the shape (amount plus period) before the console form is built |
+| Redesign scope expands visually before the supporting modules exist | High | ADR-005 and `SPEC-redesign.md` make the port route-scoped; no placeholder ratings, reviews, badges, prices or CTAs; feature modules need their own specs and migrations |
+| Magic Patterns generated images have unresolved production provenance | Medium | Use them only as temporary marketing assets, keep master portraits real, and record/replace the assets before launch |
 
 ## Open Questions
 
@@ -120,3 +139,8 @@ Closed in ADR-004 on 2026-10-20: Pro Site addressing (subdomain target, path unt
 Still open:
 
 1. Email provider for verification and reset (Resend, SES, MailChannels or other)? Owned by Task 4; nothing else in the first release depends on it.
+2. Reviews: student verification, moderation, one-review-per-student and aggregate rating policy.
+3. Verification: evidence, manual/admin workflow, badge eligibility, expiry and revocation.
+4. Booking/trial: request lifecycle, contact capture and consent, notifications, lead ownership and pricing.
+5. Pricing/plans: billing provider, plan prices, entitlement enforcement and the conflict with the free Pro Site decision.
+6. Magic Patterns image licensing/provenance for production use.

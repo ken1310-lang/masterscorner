@@ -11,14 +11,9 @@ import {
 } from "drizzle-orm/pg-core";
 
 import { user } from "./auth";
+import { MEDIA_KINDS, type MediaKind } from "./media-kinds";
 
-/**
- * The first release has two media roles. Keep this list and the
- * `media_kind_check` constraint in sync; the type prevents a third value in
- * application code, and the check keeps it out of the database.
- */
-export const MEDIA_KINDS = ["profile_photo", "site_logo"] as const;
-export type MediaKind = (typeof MEDIA_KINDS)[number];
+export { MEDIA_KINDS, type MediaKind } from "./media-kinds";
 
 /** Constants only; this keeps the migration check in step with the type. */
 const mediaKindList = sql.raw(
@@ -34,6 +29,11 @@ export const masterProfile = pgTable(
   "master_profile",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Optimistic concurrency token. Every save writes a new value and scopes
+     * its child writes to it, so a stale snapshot cannot apply.
+     */
+    revision: uuid("revision").defaultRandom().notNull(),
     userId: text("user_id")
       .notNull()
       .unique()
@@ -44,8 +44,9 @@ export const masterProfile = pgTable(
     introduction: text("introduction"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     /**
-     * Profile activity time. Child triggers bump it on location, martial-art
-     * and media inserts, updates and deletes; direct edits bump it here.
+     * Profile activity time. Child triggers bump it on location, martial-art,
+     * media, class and schedule inserts, updates and deletes; direct edits bump
+     * it here.
      */
     updatedAt: timestamp("updated_at")
       .defaultNow()

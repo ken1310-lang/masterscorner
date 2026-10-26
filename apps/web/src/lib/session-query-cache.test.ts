@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { QueryClient } from "@tanstack/react-query";
+import { MutationObserver, QueryClient } from "@tanstack/react-query";
 import { createAuthClient } from "better-auth/client";
 
 import { createSessionQueryCache } from "./session-query-cache";
@@ -21,6 +21,51 @@ function createClient() {
 }
 
 describe("session query cache", () => {
+  test.each(["account-b", "account-a"])(
+    "a pending mutation cannot write after leaving and returning to %s",
+    async (nextAccount) => {
+      const queryClient = createClient();
+      const sessionQueries = createSessionQueryCache(queryClient);
+      await sessionQueries.setIdentity("account-a");
+      const response = deferred<string>();
+      const started = deferred<void>();
+      const isCurrentSession = sessionQueries.captureScope();
+      const mutation = new MutationObserver(queryClient, {
+        mutationFn: () => {
+          started.resolve();
+          return response.promise;
+        },
+      });
+      const pendingSave = mutation.mutate().then((data) => {
+        if (isCurrentSession()) {
+          queryClient.setQueryData(privateKey, data);
+        }
+      });
+      await started.promise;
+      await sessionQueries.setIdentity(null);
+      await sessionQueries.setIdentity(nextAccount);
+      queryClient.setQueryData(privateKey, "current-profile");
+      response.resolve("old-profile");
+      await pendingSave;
+      expect(queryClient.getQueryData(privateKey)).toBe("current-profile");
+      queryClient.clear();
+    }
+  );
+
+  test("a settled refresh of the same account keeps an in-flight save valid", async () => {
+    const queryClient = createClient();
+    const sessionQueries = createSessionQueryCache(queryClient);
+    await sessionQueries.setIdentity("account-a");
+    const isCurrentSession = sessionQueries.captureScope();
+    sessionQueries.observeSession({
+      data: { user: { id: "account-a" } },
+      isPending: false,
+      isRefetching: false,
+    });
+    expect(isCurrentSession()).toBe(true);
+    queryClient.clear();
+  });
+
   test("sign-out removes fresh private data before the next account reads it", async () => {
     const queryClient = createClient();
     const sessionQueries = createSessionQueryCache(queryClient);
