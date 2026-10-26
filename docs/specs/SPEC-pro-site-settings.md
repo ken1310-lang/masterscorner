@@ -2,7 +2,7 @@
 
 ## Status and provenance
 
-Accepted on 2026-10-25 for Task 17 under the owner's instruction to proceed with the next planned task. This contract records the decisions required by the task before code, per `tasks/plan.md`'s specification-first rule. It extends `docs/specs/SPEC-pro-site.md`; that contract continues to govern the public renderer and read-only states.
+Accepted on 2026-10-25 for Task 17 under the owner's instruction to proceed with the next planned task. This contract records the decisions required by the task before code, per `tasks/plan.md`'s specification-first rule. It extends `docs/specs/SPEC-pro-site.md`; that contract continues to govern the public renderer and read-only states. The release-candidate audit added the Pro Site logo control promised by PRD §30.2 and deferred here from Task 8.
 
 Sources: `product-vision.md` §20.3, §20.8, §20.9 and §30.2; `docs/decisions/ADR-002-mvp-scope-and-free-pro-site.md`; `docs/decisions/ADR-004-first-release-infrastructure-decisions.md` §2; `docs/specs/SPEC-redesign.md` Phase R6; `docs/specs/SPEC-pro-site.md`.
 
@@ -18,9 +18,9 @@ The Magic Patterns OS list on 2026-10-25 exposes only `8mSrQnjckjwek16BQjQewn` (
 
 ## 1. Objective
 
-A master can name the site, choose a supported accent, preview the result, publish or unpublish it, and see which profile-owned content feeds the public site.
+A master can name the site, choose a supported accent, upload a logo, preview the result, publish or unpublish it, and see which profile-owned content feeds the public site.
 
-Success: a saved name and style are visible on the public site; publishing makes the address readable without a session; unpublishing returns the same not-available screen as an unknown address; draft preview remains owner-only; sync rows mention only content the profile owns.
+Success: a saved name, style and logo are visible on the public site; publishing makes the address readable without a session; unpublishing returns the same not-available screen as an unknown address; draft preview remains owner-only; sync rows mention only content the profile owns.
 
 ## 2. Scope
 
@@ -28,7 +28,8 @@ Success: a saved name and style are visible on the public site; publishing makes
 
 - `pro_site.site_name` (nullable) and `pro_site.style` (non-null, default `ochre`) with a checked, versioned migration.
 - Protected settings save, publication change and draft preview procedures.
-- `/dashboard/site` controls for site name, style, publish/unpublish, preview and sync.
+- Pro Site logo upload, replacement and removal using the existing `media.upload`/`media.remove` contract.
+- `/dashboard/site` controls for site name, style, logo, publish/unpublish, preview and sync.
 - `/site-preview`, an authenticated standalone draft preview using the existing renderer.
 - Public payload additions for the effective site name and style.
 - Unit, contract and browser verification of the settings lifecycle.
@@ -155,8 +156,9 @@ The page keeps the console shell and adds:
 2. **Publication** card: live/reserved path address, `Live`/`Not published` status, short truthful description, and `Publish site`/`Unpublish site`. Unpublish requires an inline confirmation.
 3. **Site name** card/form: labelled input, hint that clearing uses the profile name, submit with `Save changes`.
 4. **Site style** card/form: a radio group of the three supported accents with visible labels and swatches. No free colour picker.
-5. **Data sync** card: the five rows and truthful `Synced`/`Not added` states from `status.sync`.
-6. No plan, billing, premium, custom-domain, Events, verification or analytics claim.
+5. **Pro Site logo** card: the current `site_logo` or the site name's initials, with choose/replace/remove actions. It reuses the profile media field with `kind="site_logo"`, keeps the cached profile photo when a response arrives, and invalidates the public and preview Pro Site queries. JPEG, PNG and WebP up to 5 MiB use the existing server validation and rate limit.
+6. **Data sync** card: the five rows and truthful `Synced`/`Not added` states from `status.sync`.
+7. No plan, billing, premium, custom-domain, Events, verification or analytics claim.
 
 Name/style share one save mutation. A successful save updates the cached status and invalidates public Pro Site queries after the identity-scope guard. A failed save preserves the draft and shows the error. Publication changes invalidate status and both public/preview queries. The existing no-profile empty state remains. The site-name input does not use a pre-trim `maxLength`; the post-trim validator owns the 80-character limit so a pasted leading space cannot drop a valid character.
 
@@ -176,17 +178,18 @@ Auth-only, outside the console shell. It renders the existing `ProSitePage` with
 - Small: site-name normalization (trim, empty -> null, 80-character limit, 81 rejected), style enum, effective name fallback, sync derivation.
 - Contract: settings insert/update preserves publication; publish/unpublish gate; preview is owner-only and returns draft data; another account cannot change or preview; no-profile behavior; public payload exact keys and values.
 - Migration: generated SQL reviewed, applied to development, and existing `pro_site` rows read with default style and null name.
-- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; a style-only save preserves the unresolved profile-name fallback; a leading-space paste of 80 characters survives the input and saves all 80; style visibly changes; sync states; no plan/custom-domain copy; keyboard/focus, including the inline unpublish confirmation; no horizontal overflow.
+- UI: browser walkthrough at 1440/1024/768/390 of change -> save -> preview -> publish -> public -> unpublish -> not available; a style-only save preserves the unresolved profile-name fallback; a leading-space paste of 80 characters survives the input and saves all 80; style visibly changes; logo upload replaces the initials in the public header and removal restores them; sync states; no plan/custom-domain copy; keyboard/focus, including the inline unpublish confirmation; no horizontal overflow.
 - Gates: `bun run gates`, focused API tests, `bun run test:db` against development.
 
 ## 7. Success criteria
 
-1. Saving a site name and style changes the public site without changing the master profile name.
+1. Saving a site name, style and logo changes the public site without changing the master profile name.
 2. An unpublished site cannot be read through `/pro/{slug}`; the owner can preview it.
 3. Publishing makes the address public; unpublishing restores the indistinguishable unavailable state.
 4. Sync rows describe only bio, locations, classes, schedule and media, and are accurate.
 5. No plan, billing, custom-domain, Events or verification claim appears.
-6. Existing public Pro Site behavior, privacy, class-status filtering and profile save rules remain intact.
+6. A current logo replaces the header initials; removing it restores them, and the profile photo is unchanged.
+7. Existing public Pro Site behavior, privacy, class-status filtering and profile save rules remain intact.
 
 ## 8. Owner decisions recorded
 

@@ -4,6 +4,8 @@ import {
 } from "@my-better-t-app/db/schema/media-kinds";
 import { z } from "zod";
 
+export type { MediaKind } from "@my-better-t-app/db/schema/media-kinds";
+
 /** 5 MiB: well inside Neon's 5 GiB object limit and the Free plan's 5 GB cap. */
 export const MEDIA_MAX_BYTES = 5 * 1024 * 1024;
 export const MEDIA_IMAGE_TYPES = [

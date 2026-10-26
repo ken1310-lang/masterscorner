@@ -3,6 +3,7 @@ import {
   MEDIA_IMAGE_TYPES,
   MEDIA_MAX_BYTES,
   type MediaImageType,
+  type MediaKind,
   type MediaView,
 } from "@my-better-t-app/api/media";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,17 +18,56 @@ import { useTRPC } from "@/utils/trpc";
 const SIZE_LABEL = "5 MB";
 const NAME_SEPARATOR = /\s+/;
 const TYPE_MESSAGE = "Choose a JPEG, PNG or WebP image.";
-const INPUT_ID = "profile-photo-input";
-const HINT_ID = "profile-photo-hint";
-const ERROR_ID = "profile-photo-error";
 
-type PhotoStatus = "idle" | "reading" | "uploading" | "removing";
+type MediaFieldStatus = "idle" | "reading" | "uploading" | "removing";
 
-const STATUS_MESSAGES: Record<PhotoStatus, string> = {
+const STATUS_MESSAGES: Record<MediaFieldStatus, string> = {
   idle: "",
   reading: "Reading the image…",
   removing: "Removing…",
   uploading: "Uploading…",
+};
+
+interface MediaFieldCopy {
+  added: string;
+  choose: string;
+  heading: string;
+  hint: string;
+  missingProfile: string;
+  remove: string;
+  removed: string;
+  removeError: string;
+  replace: string;
+  replaced: string;
+  uploadError: string;
+}
+
+const PROFILE_PHOTO_COPY: MediaFieldCopy = {
+  added: "Photo added",
+  choose: "Choose photo",
+  heading: "Profile photo",
+  hint: `JPEG, PNG or WebP, up to ${SIZE_LABEL}. Replacing it keeps the old image out of your profile.`,
+  missingProfile: "Save your profile once to add a photo.",
+  remove: "Remove photo",
+  removed: "Photo removed",
+  removeError: "The photo could not be removed. Try again.",
+  replace: "Replace photo",
+  replaced: "Photo replaced",
+  uploadError: "The photo could not be uploaded. Try again.",
+};
+
+const SITE_LOGO_COPY: MediaFieldCopy = {
+  added: "Logo added",
+  choose: "Choose logo",
+  heading: "Pro Site logo",
+  hint: `JPEG, PNG or WebP, up to ${SIZE_LABEL}. Appears in the Pro Site header.`,
+  missingProfile: "Save your profile once to add a logo.",
+  remove: "Remove logo",
+  removed: "Logo removed",
+  removeError: "The logo could not be removed. Try again.",
+  replace: "Replace logo",
+  replaced: "Logo replaced",
+  uploadError: "The logo could not be uploaded. Try again.",
 };
 
 function readBase64(file: File): Promise<string> {
@@ -65,22 +105,23 @@ function initialsFor(name: string) {
   return initials || "MC";
 }
 
-function mergePhotoMedia(
+function mergeMedia(
   current: readonly MediaView[],
-  saved: readonly MediaView[]
+  saved: readonly MediaView[],
+  kind: MediaKind
 ): MediaView[] {
   const merged = new Map<string, MediaView>();
-  // The photo mutation owns only profile_photo rows. A response may carry a
-  // different logo replaced elsewhere; seeding it beside the cached logo would
-  // leave two ids of the same kind. Keep the cached logo until a profile read
-  // adopts the server's current row.
+  // Each field owns one kind. A response may carry the other kind replaced
+  // elsewhere; seeding it beside the cached row would leave two ids of the same
+  // kind. Keep the cached other kind until a profile read adopts the server's
+  // current row.
   for (const item of current) {
-    if (item.kind !== "profile_photo") {
+    if (item.kind !== kind) {
       merged.set(item.id, item);
     }
   }
   for (const item of saved) {
-    if (item.kind === "profile_photo") {
+    if (item.kind === kind) {
       merged.set(item.id, item);
     }
   }
@@ -93,6 +134,7 @@ interface PhotoFieldProps {
   accountName: string;
   disabled: boolean;
   hasProfile: boolean;
+  kind?: MediaKind;
   media: MediaView[];
 }
 
@@ -100,6 +142,7 @@ export function PhotoField({
   accountName,
   disabled,
   hasProfile,
+  kind = "profile_photo",
   media,
 }: PhotoFieldProps) {
   const trpc = useTRPC();
@@ -107,10 +150,15 @@ export function PhotoField({
   const { sessionQueries } = useRouter().options.context;
   const upload = useMutation(trpc.media.upload.mutationOptions());
   const remove = useMutation(trpc.media.remove.mutationOptions());
-  const [status, setStatus] = useState<PhotoStatus>("idle");
+  const [status, setStatus] = useState<MediaFieldStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const copy = kind === "site_logo" ? SITE_LOGO_COPY : PROFILE_PHOTO_COPY;
+  const prefix = kind === "site_logo" ? "site-logo" : "profile-photo";
+  const inputId = `${prefix}-input`;
+  const hintId = `${prefix}-hint`;
+  const errorId = `${prefix}-error`;
 
-  const photo = media.find((item) => item.kind === "profile_photo") ?? null;
+  const asset = media.find((item) => item.kind === kind) ?? null;
   const busy = status !== "idle";
   const canEdit = hasProfile && !disabled && !busy;
 
@@ -119,7 +167,7 @@ export function PhotoField({
     setStatus("idle");
   }, []);
 
-  const applyPhoto = useCallback(
+  const applyMedia = useCallback(
     (saved: MasterProfilePayload) => {
       queryClient.setQueryData<MasterProfilePayload>(
         trpc.master.getProfile.queryKey(),
@@ -127,12 +175,12 @@ export function PhotoField({
           current
             ? {
                 ...current,
-                media: mergePhotoMedia(current.media, saved.media),
+                media: mergeMedia(current.media, saved.media, kind),
               }
             : undefined
       );
     },
-    [queryClient, trpc.master.getProfile]
+    [kind, queryClient, trpc.master.getProfile]
   );
 
   const proSiteBySlugKey = trpc.proSite.bySlug.queryKey();
@@ -181,7 +229,7 @@ export function PhotoField({
         const saved = await upload.mutateAsync({
           contentType,
           data,
-          kind: "profile_photo",
+          kind,
         });
         if (!isCurrentSession()) {
           return;
@@ -193,28 +241,30 @@ export function PhotoField({
         if (!isCurrentSession()) {
           return;
         }
-        applyPhoto(saved);
+        applyMedia(saved);
         await invalidatePublicProfile();
         if (!isCurrentSession()) {
           return;
         }
-        toast.success(photo ? "Photo replaced" : "Photo added");
+        toast.success(asset ? copy.replaced : copy.added);
         setStatus("idle");
       } catch (uploadError) {
         if (isCurrentSession()) {
           fail(
             uploadError instanceof Error
               ? uploadError.message
-              : "The photo could not be uploaded. Try again."
+              : copy.uploadError
           );
         }
       }
     },
     [
-      applyPhoto,
+      applyMedia,
+      asset,
+      copy,
       fail,
       invalidatePublicProfile,
-      photo,
+      kind,
       queryClient,
       trpc.master.getProfile,
       upload,
@@ -273,7 +323,7 @@ export function PhotoField({
       if (!isCurrentSession()) {
         return;
       }
-      const saved = await remove.mutateAsync({ kind: "profile_photo" });
+      const saved = await remove.mutateAsync({ kind });
       if (!isCurrentSession()) {
         return;
       }
@@ -284,26 +334,26 @@ export function PhotoField({
       if (!isCurrentSession()) {
         return;
       }
-      applyPhoto(saved);
+      applyMedia(saved);
       await invalidatePublicProfile();
       if (!isCurrentSession()) {
         return;
       }
-      toast.success("Photo removed");
+      toast.success(copy.removed);
       setStatus("idle");
     } catch (removeError) {
       if (isCurrentSession()) {
         fail(
-          removeError instanceof Error
-            ? removeError.message
-            : "The photo could not be removed. Try again."
+          removeError instanceof Error ? removeError.message : copy.removeError
         );
       }
     }
   }, [
-    applyPhoto,
+    applyMedia,
+    copy,
     fail,
     invalidatePublicProfile,
+    kind,
     queryClient,
     remove,
     sessionQueries,
@@ -315,15 +365,19 @@ export function PhotoField({
       aria-busy={busy}
       className="rounded-[14px] border border-line bg-card p-5"
     >
-      <h2 className="mb-[18px] font-extrabold text-base">Profile photo</h2>
+      <h2 className="mb-[18px] font-extrabold text-base">{copy.heading}</h2>
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-navy font-extrabold text-white text-xl">
-          {photo ? (
+          {asset ? (
             <img
-              alt={accountName}
+              alt={
+                kind === "site_logo"
+                  ? `${accountName} Pro Site logo`
+                  : accountName
+              }
               className="size-full object-cover"
               height={96}
-              src={photo.url}
+              src={asset.url}
               width={96}
             />
           ) : (
@@ -339,36 +393,34 @@ export function PhotoField({
                     ? "cursor-pointer hover:border-navy"
                     : "cursor-not-allowed opacity-60"
                 }`}
-                htmlFor={INPUT_ID}
+                htmlFor={inputId}
               >
-                {photo ? "Replace photo" : "Choose photo"}
+                {asset ? copy.replace : copy.choose}
               </label>
               <input
                 accept={MEDIA_IMAGE_TYPES.join(",")}
-                aria-describedby={error ? `${HINT_ID} ${ERROR_ID}` : HINT_ID}
+                aria-describedby={error ? `${hintId} ${errorId}` : hintId}
                 aria-invalid={error ? true : undefined}
                 className="sr-only"
                 disabled={!canEdit}
-                id={INPUT_ID}
+                id={inputId}
                 onChange={handleFile}
                 type="file"
               />
             </div>
-            {photo ? (
+            {asset ? (
               <button
                 className="min-h-11 rounded-[9px] px-3 font-extrabold text-brand-strong text-xs underline-offset-4 hover:underline disabled:opacity-60"
                 disabled={!canEdit}
                 onClick={removePhoto}
                 type="button"
               >
-                Remove photo
+                {copy.remove}
               </button>
             ) : null}
           </div>
-          <p className="mt-2 text-[11px] text-muted-text" id={HINT_ID}>
-            {hasProfile
-              ? `JPEG, PNG or WebP, up to ${SIZE_LABEL}. Replacing it keeps the old image out of your profile.`
-              : "Save your profile once to add a photo."}
+          <p className="mt-2 text-[11px] text-muted-text" id={hintId}>
+            {hasProfile ? copy.hint : copy.missingProfile}
           </p>
           <p
             aria-live="polite"
@@ -380,7 +432,7 @@ export function PhotoField({
           {error ? (
             <p
               className="mt-2 text-[11px] text-brand-strong"
-              id={ERROR_ID}
+              id={errorId}
               role="alert"
             >
               {error}

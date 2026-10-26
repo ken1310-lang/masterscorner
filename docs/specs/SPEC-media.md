@@ -23,7 +23,7 @@ Success: an uploaded JPEG, PNG or WebP is visible after a reload, an oversized o
 
 - Gallery uploads, video links, cropping, resizing, EXIF stripping and image transformation (Phase 3).
 - Browser-to-bucket presigned PUT (ADR-004 defers it).
-- Pro Site logo UI: the storage kind and procedure accept it; Task 17 adds the screen.
+- Pro Site logo UI: delivered with Task 17 / the release-candidate audit; see `docs/specs/SPEC-pro-site-settings.md`.
 - Public profile and Pro Site rendering: Tasks 13 and 16 consume `media`; this task proves the console and the URL.
 - Object lifecycle cleanup for orphaned keys. Failed best-effort deletes leave an unreachable object; it is not referenced by any row.
 
@@ -88,9 +88,10 @@ The profile revision is deliberately untouched by media writes, so a photo opera
 
 ## 6. Console UI
 
-`apps/web/src/components/profile/photo-field.tsx`, rendered as a "Profile photo" card inside the profile form:
+`apps/web/src/components/profile/photo-field.tsx`, rendered as a "Profile photo" card inside the profile form and as a "Pro Site logo" card in `/dashboard/site`:
 
-- 96 px circular preview with the image or account initials, plus a visible `Choose photo` file input (`accept="image/jpeg,image/png,image/webp"`, keyboard reachable).
+- The component accepts `kind` (default `profile_photo`); the logo variant uses `site-logo-input`, logo-specific copy, and merges only `site_logo` rows into the cached profile, preserving the profile photo.
+- 96 px circular preview with the image or account initials, plus a visible `Choose photo`/`Choose logo` file input (`accept="image/jpeg,image/png,image/webp"`, keyboard reachable).
 - Hint: formats and the 5 MiB cap. Server messages surface inline with `role="alert"`.
 - States: idle, reading, uploading, error; `aria-busy` while uploading. `Save changes` and the photo controls are disabled together while the profile form submits.
 - Without a profile row, controls are disabled and explain "Save your profile once to add a photo."
@@ -137,7 +138,7 @@ cd apps/server && bun --env-file=.env test src/media-storage.integration.test.ts
 | Contract | Anonymous calls rejected before validation; invalid input rejected before the database; missing profile rejected before storage; rate-limit refusal; write calls in order (write → row → cleanup) through a fake store |
 | Integration (database) | Real user/profile, fake storage: upload inserts and returns a URL; replacement changes key and deletes the old object; remove clears the row and leaves the profile readable; another account's profile is untouched |
 | Integration (bucket) | Real PUT through `aws4fetch`, anonymous GET of the returned URL with matching bytes and content type, DELETE, then 404; skipped without `AWS_*` |
-| UI | Browser: sign-up/sign-in, save profile, upload a PNG, reload, replace, remove, wrong-type and oversized errors, no layout overflow at 1440/760 |
+| UI | Browser: sign-up/sign-in, save profile, upload a PNG, reload, replace, remove, wrong-type and oversized errors, no layout overflow at 1440/760; Pro Site logo upload/replacement/removal and the public-header swap |
 | Repository | `bun run check`, `check-types`, `build`, `test` |
 
 ## 10. Success criteria
